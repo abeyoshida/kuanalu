@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { Settings, Users, BarChart3, Plus, ChevronRight, ChevronDown } from "lucide-react"
+import Image from "next/image"
 
 interface Project {
   id: string
@@ -85,7 +86,7 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
     }))
   }
 
-  const activeProjects = mockProjects.filter((p) => p.status === "active")
+  //const activeProjects = mockProjects.filter((p) => p.status === "active")
   const recentProjects = mockProjects.slice(0, 3)
 
   return (
@@ -230,7 +231,13 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
         {/* Sidebar Footer */}
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center gap-3">
-            <img src="/placeholder.svg?height=32&width=32" alt="User avatar" className="w-8 h-8 rounded-full" />
+            <Image
+              src="/placeholder.svg?height=32&width=32"
+              alt="User avatar"
+              width={32}
+              height={32}
+              className="rounded-full"
+            />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">John Doe</p>
               <p className="text-xs text-gray-500 truncate">john@company.com</p>

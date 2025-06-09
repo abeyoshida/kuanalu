@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import type { Task, TaskPriority, TaskStatus } from "@/types/task"
 import type { Subtask, Comment } from "@/types/task-details"
+import Image from "next/image"
 
 // Mock data - in a real app this would come from an API
 const mockTask: Task & {
@@ -131,12 +132,13 @@ const priorityColors: Record<TaskPriority, string> = {
 }
 
 interface TaskDetailProps {
-  taskId: string
+  _taskId: string
   toggleSidebar: () => void
   sidebarOpen: boolean
 }
 
-export default function TaskDetail({ taskId, toggleSidebar, sidebarOpen }: TaskDetailProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function TaskDetail({ _taskId, toggleSidebar, sidebarOpen }: TaskDetailProps) {
   const [task] = useState(mockTask)
   const [newComment, setNewComment] = useState("")
   const [subtasks, setSubtasks] = useState(task.subtasks)
@@ -337,10 +339,12 @@ export default function TaskDetail({ taskId, toggleSidebar, sidebarOpen }: TaskD
               <div className="space-y-4">
                 {task.comments.map((comment) => (
                   <div key={comment.id} className="flex gap-3">
-                    <img
+                    <Image
                       src={comment.avatar || "/placeholder.svg"}
                       alt={comment.author}
-                      className="w-8 h-8 rounded-full"
+                      width={32}
+                      height={32}
+                      className="rounded-full"
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
