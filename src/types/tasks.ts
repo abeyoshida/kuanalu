@@ -1,6 +1,6 @@
 export type TaskStatus = "todo" | "today" | "doing" | "blocked" | "done"
 
-export type TaskPriority = "low" | "medium" | "high"
+export type TaskPriority = "low" | "medium" | "high" | "urgent"
 
 export interface Task {
   id: string

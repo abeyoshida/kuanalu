@@ -12,6 +12,6 @@ export interface Subtask {
     author: string
     content: string
     createdAt: Date
-    avatar: string
+    avatar?: string
   }
   

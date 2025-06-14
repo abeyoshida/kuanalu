@@ -232,7 +232,7 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center gap-3">
             <Image
-              src="/placeholder.svg?height=32&width=32"
+              src="/placeholder.svg"
               alt="User avatar"
               width={32}
               height={32}

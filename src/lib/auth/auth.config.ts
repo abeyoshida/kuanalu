@@ -32,6 +32,7 @@ export const authConfig: NextAuthConfig = {
     verifyRequest: "/auth/verify-request",
     newUser: "/auth/register",
   },
+  secret: process.env.NEXTAUTH_SECRET || "fallback_secret_do_not_use_in_production",
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;

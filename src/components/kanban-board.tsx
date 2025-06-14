@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import KanbanColumn from "@/components/kanban-column"
-import type { Task, TaskStatus } from "@/types/task"
+import type { Task, TaskStatus } from "@/types/tasks"
 
 const initialTasks: Task[] = [
   {

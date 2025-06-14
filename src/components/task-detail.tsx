@@ -19,7 +19,7 @@ import {
   Menu,
   X,
 } from "lucide-react"
-import type { Task, TaskPriority, TaskStatus } from "@/types/task"
+import type { Task, TaskPriority, TaskStatus } from "@/types/tasks"
 import type { Subtask, Comment } from "@/types/task-details"
 import Image from "next/image"
 
@@ -98,21 +98,21 @@ const mockTask: Task & {
       author: "Sarah Wilson",
       content: "This is a critical feature for user experience. Please prioritize the visual feedback implementation.",
       createdAt: new Date("2024-01-20T10:30:00"),
-      avatar: "/placeholder.svg?height=32&width=32",
+      avatar: "/placeholder.svg",
     },
     {
       id: "c2",
       author: "John Doe",
       content: "I've completed the research phase. React DnD looks like the best option for our use case.",
       createdAt: new Date("2024-01-21T14:15:00"),
-      avatar: "/placeholder.svg?height=32&width=32",
+      avatar: "/placeholder.svg",
     },
     {
       id: "c3",
       author: "Mike Johnson",
       content: "Make sure to test on mobile devices as well. Touch interactions can be tricky.",
       createdAt: new Date("2024-01-22T09:45:00"),
-      avatar: "/placeholder.svg?height=32&width=32",
+      avatar: "/placeholder.svg",
     },
   ],
 }
@@ -129,6 +129,7 @@ const priorityColors: Record<TaskPriority, string> = {
   low: "text-green-600",
   medium: "text-yellow-600",
   high: "text-red-600",
+  urgent: "text-purple-600",
 }
 
 interface TaskDetailProps {
@@ -160,6 +161,13 @@ export default function TaskDetail({ _taskId, toggleSidebar, sidebarOpen }: Task
       setNewComment("")
     }
   }
+
+  const formatDate = (date: Date | string) => {
+    if (date instanceof Date) {
+      return date.toLocaleDateString();
+    }
+    return String(date);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -208,7 +216,7 @@ export default function TaskDetail({ _taskId, toggleSidebar, sidebarOpen }: Task
                   <div className="flex items-center gap-4 text-sm text-gray-600">
                     <span>TASK-{task.id}</span>
                     <span>•</span>
-                    <span>Created {task.createdAt.toLocaleDateString()}</span>
+                    <span>Created {formatDate(task.createdAt)}</span>
                   </div>
                 </div>
                 <Button variant="outline" size="sm">
@@ -410,7 +418,7 @@ export default function TaskDetail({ _taskId, toggleSidebar, sidebarOpen }: Task
                   <label className="text-sm font-medium text-gray-600">Created</label>
                   <div className="flex items-center gap-2 mt-1">
                     <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-900">{task.createdAt.toLocaleDateString()}</span>
+                    <span className="text-gray-900">{formatDate(task.createdAt)}</span>
                   </div>
                 </div>
               </div>

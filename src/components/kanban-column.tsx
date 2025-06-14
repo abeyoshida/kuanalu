@@ -3,7 +3,7 @@
 import type React from "react"
 
 import TaskCard from "./task-card"
-import type { Task } from "@/types/task"
+import type { Task } from "@/types/tasks"
 
 interface KanbanColumnProps {
   title: string

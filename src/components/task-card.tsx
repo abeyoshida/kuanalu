@@ -1,6 +1,6 @@
 "use client"
 
-import type { Task } from "@/types/task"
+import type { Task } from "@/types/tasks"
 import { Calendar, User, AlertCircle } from "lucide-react"
 
 interface TaskCardProps {
@@ -12,9 +12,18 @@ const priorityColors = {
   low: "bg-green-100 text-green-800",
   medium: "bg-yellow-100 text-yellow-800",
   high: "bg-red-100 text-red-800",
+  urgent: "bg-purple-100 text-purple-800",
 }
 
 export default function TaskCard({ task, onDragStart }: TaskCardProps) {
+  // Format the date safely
+  const formatDate = (date: Date | string) => {
+    if (date instanceof Date) {
+      return date.toLocaleDateString();
+    }
+    return date;
+  };
+
   return (
     <div
       draggable
@@ -37,7 +46,7 @@ export default function TaskCard({ task, onDragStart }: TaskCardProps) {
         </div>
         <div className="flex items-center gap-1">
           <Calendar className="w-3 h-3" />
-          <span>{task.createdAt.toLocaleDateString()}</span>
+          <span>{formatDate(task.createdAt)}</span>
         </div>
       </div>
 
