@@ -137,6 +137,16 @@ export default function LandingPage() {
                 Visualize your workflow with drag and drop updates
               </p>
             </div>
+
+            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+              <div className="bg-red-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-6">
+                <CheckCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Task Management</h3>
+              <p className="text-gray-600">
+                Create tasks with descriptions, due dates, priorities, and subtasks to stay organized.
+              </p>
+            </div>
             
             <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
               <div className="bg-green-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-6">
@@ -168,15 +178,7 @@ export default function LandingPage() {
               </p>
             </div>*/}
             
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
-              <div className="bg-red-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-6">
-                <CheckCircle className="h-6 w-6 text-red-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Task Management</h3>
-              <p className="text-gray-600">
-                Create tasks with descriptions, due dates, priorities, and subtasks to stay organized.
-              </p>
-            </div>
+            
             
             {/*<div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
               <div className="bg-yellow-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-6">
