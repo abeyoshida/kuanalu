@@ -1,12 +1,11 @@
 import 'dotenv/config';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import { migrate } from 'drizzle-orm/neon-http/migrator';
 import { sql } from 'drizzle-orm';
 
-// This script runs migrations on your database
+// This script adds the role enum to the database
 async function main() {
-  console.log('🔄 Running migrations...');
+  console.log('🔄 Adding role enum to database...');
   
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -20,16 +19,24 @@ async function main() {
   const db = drizzle(client);
 
   try {
-    // This runs migrations from the 'drizzle' folder
-    await migrate(db, { migrationsFolder: 'drizzle' });
-    
-    // Add bio column to users table if it doesn't exist
+    // Create role enum type if it doesn't exist
     await db.execute(sql`
-      ALTER TABLE users 
-      ADD COLUMN IF NOT EXISTS bio TEXT;
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
+          CREATE TYPE role AS ENUM ('owner', 'admin', 'member', 'guest');
+        END IF;
+      END
+      $$;
     `);
     
-    console.log('✅ Migrations completed successfully');
+    // Alter organization_members table to use role enum
+    await db.execute(sql`
+      ALTER TABLE organization_members 
+      ALTER COLUMN role TYPE role USING role::role;
+    `);
+    
+    console.log('✅ Role enum added successfully');
   } catch (error) {
     console.error('❌ Migration failed:', error);
     process.exit(1);

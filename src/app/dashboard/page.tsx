@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth/auth";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { LogOut, User } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -10,12 +11,21 @@ export default async function DashboardPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-4">
-          <div>
-            Welcome, {session?.user?.name || "User"}
+          <div className="text-sm">
+            Welcome, <span className="font-medium">{session?.user?.name || "User"}</span>
           </div>
-          <form action="/api/auth/signout" method="post">
-            <Button type="submit" variant="outline">Sign Out</Button>
-          </form>
+          <Link href="/profile">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Profile
+            </Button>
+          </Link>
+          <Link href="/auth/logout">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </Link>
         </div>
       </div>
       

@@ -33,6 +33,10 @@ export const authConfig: NextAuthConfig = {
     newUser: "/auth/register",
   },
   secret: process.env.NEXTAUTH_SECRET || "fallback_secret_do_not_use_in_production",
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;

@@ -1,44 +1,41 @@
-import { NextResponse } from "next/server";
-import { NextRequest } from "next/server";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { auth } from '@/lib/auth/auth';
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export async function middleware(request: NextRequest) {
+  const session = await auth();
+  const pathname = request.nextUrl.pathname;
   
-  // Get authentication status from cookie
-  const isAuthenticated = request.cookies.has("next-auth.session-token") || 
-                         request.cookies.has("__Secure-next-auth.session-token");
-
-  // Define protected routes
-  const isProtectedRoute = 
-    pathname.startsWith("/dashboard") || 
-    pathname.startsWith("/projects") || 
-    pathname.startsWith("/task");
-
-  // Define auth routes
-  const isAuthRoute = 
-    pathname.startsWith("/auth/login") || 
-    pathname.startsWith("/auth/register");
-
-  // Redirect logged in users away from auth pages
-  if (isAuthenticated && isAuthRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // Public routes that don't require authentication
+  const publicRoutes = [
+    '/',
+    '/auth/login',
+    '/auth/register',
+    '/api/auth/register',
+    '/api/auth/verify-credentials'
+  ];
+  
+  // Check if the route is public
+  if (publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
+    return NextResponse.next();
   }
-
-  // Allow access to protected routes for authenticated users
-  if (isProtectedRoute && !isAuthenticated) {
-    const callbackUrl = encodeURIComponent(pathname);
-    return NextResponse.redirect(new URL(`/auth/login?callbackUrl=${callbackUrl}`, request.url));
+  
+  // If not authenticated and trying to access protected route, redirect to login
+  if (!session?.user) {
+    const url = new URL('/auth/login', request.url);
+    url.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(url);
   }
-
+  
+  // If authenticated, allow access to all routes
+  // Note: Specific permission checks will be handled in the route handlers
   return NextResponse.next();
 }
 
-// Ensure middleware runs on specific paths
+// Configure the middleware to run on specific paths
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/projects/:path*",
-    "/task/:path*",
-    "/auth/:path*",
+    // Match all routes except static files, api/auth routes, and _next routes
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.svg$).*)',
   ],
 }; 

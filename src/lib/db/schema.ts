@@ -26,6 +26,14 @@ export const priorityEnum = pgEnum('priority', [
   'urgent'
 ]);
 
+// Role enum for organization members
+export const roleEnum = pgEnum('role', [
+  'owner',
+  'admin',
+  'member',
+  'guest'
+]);
+
 // Organizations table
 export const organizations = pgTable('organizations', {
   id: serial('id').primaryKey(),
@@ -41,6 +49,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   password: text('password'), // Hashed password
   image: text('image'), // Profile image URL
+  bio: text('bio'), // User bio
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
@@ -49,7 +58,7 @@ export const users = pgTable('users', {
 export const organizationMembers = pgTable('organization_members', {
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   organizationId: integer('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
-  role: text('role').notNull().default('member'), // 'owner', 'admin', 'member'
+  role: roleEnum('role').notNull().default('member'), // 'owner', 'admin', 'member'
   createdAt: timestamp('created_at').defaultNow().notNull()
 }, (table) => {
   return {

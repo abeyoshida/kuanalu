@@ -17,6 +17,22 @@
 - `app/projects/[id]/page.tsx` - Project page with task board
 - `app/projects/[id]/list/page.tsx` - List view for tasks
 - `app/projects/[id]/calendar/page.tsx` - Calendar view for tasks
+- `app/auth/register/page.tsx` - User registration page
+- `app/auth/login/page.tsx` - User login page
+- `app/auth/logout/page.tsx` - User logout page
+- `app/profile/page.tsx` - User profile page
+- `app/api/user/profile/route.ts` - User profile update API endpoint
+- `app/api/user/password/route.ts` - User password update API endpoint
+- `components/auth/user-profile-form.tsx` - User profile form component
+- `app/api/auth/register/route.ts` - User registration API endpoint
+- `app/api/auth/verify-credentials/route.ts` - Credential verification API endpoint
+- `app/dashboard/page.tsx` - Dashboard page for authenticated users
+- `lib/auth/permissions.ts` - Role-based permissions utility
+- `lib/auth/server-permissions.ts` - Server-side permission checking utility
+- `lib/actions/role-actions.ts` - Server actions for role management
+- `components/auth/role-manager.tsx` - Role management UI component
+- `components/auth/with-permission.tsx` - Permission-based component wrapper
+- `middleware.ts` - Authentication and authorization middleware
 
 ### Notes
 
@@ -39,10 +55,10 @@
   - [x] 1.9 Create reusable UI components with Shadcn UI
 
 - [ ] 2.0 Authentication and User Management
-  - [ ] 2.1 Implement user registration flow
-  - [ ] 2.2 Implement login functionality
-  - [ ] 2.3 Create user profile page
-  - [ ] 2.4 Implement role-based access control
+  - [x] 2.1 Implement user registration flow
+  - [x] 2.2 Implement login functionality
+  - [x] 2.3 Create user profile page
+  - [x] 2.4 Implement role-based access control
   - [ ] 2.5 Create organization creation and management UI
   - [ ] 2.6 Implement user invitation system
   - [ ] 2.7 Create organization settings page

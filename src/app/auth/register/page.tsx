@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -10,10 +17,37 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Password strength calculation
+  const calculatePasswordStrength = (password: string): { score: number; message: string; color: string } => {
+    if (!password) return { score: 0, message: "No password", color: "bg-gray-200" };
+    
+    let score = 0;
+    if (password.length >= 8) score += 1;
+    if (password.match(/[A-Z]/)) score += 1;
+    if (password.match(/[0-9]/)) score += 1;
+    if (password.match(/[^A-Za-z0-9]/)) score += 1;
+    
+    const strengthMap = [
+      { message: "Very weak", color: "bg-red-500" },
+      { message: "Weak", color: "bg-orange-500" },
+      { message: "Medium", color: "bg-yellow-500" },
+      { message: "Strong", color: "bg-green-500" },
+      { message: "Very strong", color: "bg-green-600" }
+    ];
+    
+    return { 
+      score, 
+      ...strengthMap[score] 
+    };
+  };
+  
+  const passwordStrength = calculatePasswordStrength(password);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
@@ -27,6 +61,12 @@ export default function RegisterPage() {
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters long");
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!acceptTerms) {
+      setError("You must accept the terms of service");
       setIsLoading(false);
       return;
     }
@@ -63,117 +103,124 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div>
-          <h1 className="text-center text-3xl font-bold tracking-tight">
-            Create your account
-          </h1>
-          <p className="mt-2 text-center text-sm text-gray-600">
+    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
+          <CardDescription className="text-center">
             Sign up to start using Kuanalu
-          </p>
-        </div>
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-4 rounded-md shadow-sm">
-            <div>
-              <label htmlFor="name" className="sr-only">
-                Full name
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="name">Full name</Label>
+              <Input
                 id="name"
-                name="name"
                 type="text"
                 autoComplete="name"
                 required
-                className="relative block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                placeholder="Full name"
+                placeholder="John Doe"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
               />
             </div>
 
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
                 id="email"
-                name="email"
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                placeholder="Email address"
+                placeholder="john@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
                 id="password"
-                name="password"
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                placeholder="Password"
+                placeholder="********"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               />
+              
+              {password && (
+                <div className="mt-2 space-y-2">
+                  <div className="flex h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div 
+                      className={`${passwordStrength.color} transition-all duration-300`} 
+                      style={{ width: `${(passwordStrength.score / 4) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 flex items-center">
+                    <Info className="h-3 w-3 mr-1" />
+                    {passwordStrength.message}
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="sr-only">
-                Confirm Password
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
                 id="confirmPassword"
-                name="confirmPassword"
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                placeholder="Confirm Password"
+                placeholder="********"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
               />
             </div>
-          </div>
+            
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox 
+                id="terms" 
+                checked={acceptTerms}
+                onCheckedChange={(checked: boolean) => setAcceptTerms(checked)}
+              />
+              <label
+                htmlFor="terms"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                I accept the <Link href="#" className="text-blue-600 hover:underline">terms of service</Link> and <Link href="#" className="text-blue-600 hover:underline">privacy policy</Link>
+              </label>
+            </div>
 
-          <div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full mt-6"
               disabled={isLoading}
             >
               {isLoading ? "Creating account..." : "Create account"}
             </Button>
-          </div>
-        </form>
-
-        <div className="mt-6 text-center text-sm">
-          <p>
+          </form>
+        </CardContent>
+        
+        <CardFooter className="flex justify-center">
+          <p className="text-sm text-gray-600">
             Already have an account?{" "}
-            <a
-              href="/auth/login"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
+            <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
               Sign in
-            </a>
+            </Link>
           </p>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 } 
