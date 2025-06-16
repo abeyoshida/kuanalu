@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kuanalu - Task Management",
+  title: "FlowBoard - Task Management",
   description: "A modern task management application",
 };
 

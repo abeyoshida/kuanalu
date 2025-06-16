@@ -1,6 +1,6 @@
-# Using Drizzle ORM in Kuanalu
+# Using Drizzle ORM in FlowBoard
 
-This guide explains how to use Drizzle ORM in the Kuanalu project to interact with the Neon Postgres database.
+This guide explains how to use Drizzle ORM in the FlowBoard project to interact with the Neon Postgres database.
 
 ## Table of Contents
 

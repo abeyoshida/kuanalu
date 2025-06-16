@@ -83,7 +83,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Sign in to Kuanalu</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Sign in to FlowBoard</CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access your account
           </CardDescription>

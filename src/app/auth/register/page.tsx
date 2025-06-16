@@ -108,7 +108,7 @@ export default function RegisterPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
           <CardDescription className="text-center">
-            Sign up to start using Kuanalu
+            Sign up to start using FlowBoard
           </CardDescription>
         </CardHeader>
         
