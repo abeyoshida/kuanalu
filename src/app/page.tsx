@@ -132,7 +132,7 @@ export default function LandingPage() {
               <div className="bg-blue-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-6">
                 <Layers className="h-6 w-6 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Kanban Boards</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Flow Boards</h3>
               <p className="text-gray-600">
                 Visualize your workflow with drag and drop updates
               </p>
@@ -148,7 +148,7 @@ export default function LandingPage() {
               </p>
             </div>
             
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+            {/*<div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
               <div className="bg-purple-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-6">
                 <Calendar className="h-6 w-6 text-purple-600" />
               </div>
@@ -166,7 +166,7 @@ export default function LandingPage() {
               <p className="text-gray-600">
                 Track progress with visual reports and analytics to keep your projects on schedule.
               </p>
-            </div>
+            </div>*/}
             
             <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
               <div className="bg-red-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-6">
@@ -178,7 +178,7 @@ export default function LandingPage() {
               </p>
             </div>
             
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+            {/*<div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
               <div className="bg-yellow-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-6">
                 <Users className="h-6 w-6 text-yellow-600" />
               </div>
@@ -186,7 +186,7 @@ export default function LandingPage() {
               <p className="text-gray-600">
                 Organize your work with organizations, projects, and role-based permissions.
               </p>
-            </div>
+            </div>*/}
           </div>
         </div>
       </section>
@@ -223,8 +223,8 @@ export default function LandingPage() {
                 </h3>
                 <ul className="space-y-2">
                   <li><Link href="#" className="text-gray-600 hover:text-gray-900">Features</Link></li>
-                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Pricing</Link></li>
-                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Integrations</Link></li>
+                  {/*<li><Link href="#" className="text-gray-600 hover:text-gray-900">Pricing</Link></li>
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Integrations</Link></li>*/}
                 </ul>
               </div>
               <div>
@@ -233,8 +233,8 @@ export default function LandingPage() {
                 </h3>
                 <ul className="space-y-2">
                   <li><Link href="#" className="text-gray-600 hover:text-gray-900">About</Link></li>
-                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Blog</Link></li>
-                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Careers</Link></li>
+                  {/*<li><Link href="#" className="text-gray-600 hover:text-gray-900">Blog</Link></li>
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Careers</Link></li>*/}
                 </ul>
               </div>
               <div>
@@ -242,9 +242,9 @@ export default function LandingPage() {
                   Support
                 </h3>
                 <ul className="space-y-2">
-                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Help Center</Link></li>
                   <li><Link href="#" className="text-gray-600 hover:text-gray-900">Contact</Link></li>
-                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Privacy</Link></li>
+                  {/*<li><Link href="#" className="text-gray-600 hover:text-gray-900">Help Center</Link></li>*/}
+                  {/*<li><Link href="#" className="text-gray-600 hover:text-gray-900">Privacy</Link></li>*/}
                 </ul>
               </div>
             </div>
