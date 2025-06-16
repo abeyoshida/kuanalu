@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth/auth";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Building } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -31,6 +31,19 @@ export default async function DashboardPage() {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">My Organizations</h2>
+          <p className="text-gray-600 mb-4">
+            Manage your organizations and teams
+          </p>
+          <Link href="/organizations">
+            <Button className="flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              View Organizations
+            </Button>
+          </Link>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">My Projects</h2>
           <p className="text-gray-600 mb-4">
             View and manage your projects
@@ -46,13 +59,6 @@ export default async function DashboardPage() {
             View tasks assigned to you
           </p>
           <Button>View Tasks</Button>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-          <p className="text-gray-600">
-            No recent activity
-          </p>
         </div>
       </div>
     </div>

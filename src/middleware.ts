@@ -12,7 +12,10 @@ export async function middleware(request: NextRequest) {
     '/auth/login',
     '/auth/register',
     '/api/auth/register',
-    '/api/auth/verify-credentials'
+    '/api/auth/verify-credentials',
+    '/api/auth/session',
+    '/api/auth/check',
+    '/api/auth/[...nextauth]',
   ];
   
   // Check if the route is public

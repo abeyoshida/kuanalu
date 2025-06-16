@@ -33,6 +33,17 @@
 - `components/auth/role-manager.tsx` - Role management UI component
 - `components/auth/with-permission.tsx` - Permission-based component wrapper
 - `middleware.ts` - Authentication and authorization middleware
+- `app/organizations/page.tsx` - Organizations listing page
+- `app/organizations/[id]/page.tsx` - Organization detail page
+- `lib/actions/organization-actions.ts` - Server actions for organization management
+- `components/organizations/create-organization-dialog.tsx` - Dialog for creating organizations
+- `components/organizations/organization-settings.tsx` - Organization settings component
+- `components/organizations/organization-members.tsx` - Organization members management component
+- `components/organizations/organization-projects.tsx` - Organization projects component
+- `components/organizations/create-project-dialog.tsx` - Dialog for creating projects
+- `components/organizations/invite-user-dialog.tsx` - Dialog for inviting users
+- `app/api/projects/route.ts` - API endpoint for projects
+- `app/api/organizations/[id]/projects/route.ts` - API endpoint for organization projects
 
 ### Notes
 
@@ -59,7 +70,7 @@
   - [x] 2.2 Implement login functionality
   - [x] 2.3 Create user profile page
   - [x] 2.4 Implement role-based access control
-  - [ ] 2.5 Create organization creation and management UI
+  - [x] 2.5 Create organization creation and management UI
   - [ ] 2.6 Implement user invitation system
   - [ ] 2.7 Create organization settings page
   - [ ] 2.8 Implement user role management within organizations

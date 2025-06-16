@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { signIn } from "@/lib/auth/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,24 +56,24 @@ export default function LoginPage() {
     setSuccessMessage(null);
 
     try {
-      const result = await signIn("credentials", {
+      const result = await signIn({
         email,
-        password,
-        redirect: false,
-        callbackUrl: callbackUrl,
-        remember: rememberMe
+        password
       });
 
-      if (result?.error) {
+      if (!result.success) {
         setError("Invalid email or password");
         setIsLoading(false);
         return;
       }
 
-      // Redirect to callback URL or dashboard
+      // On success, redirect to callback URL
       router.push(callbackUrl);
+      
+      // Force a refresh to ensure session is loaded
       router.refresh();
     } catch (error) {
+      console.error("Login error:", error);
       setError("Something went wrong. Please try again.");
       setIsLoading(false);
     }
@@ -140,7 +140,7 @@ export default function LoginPage() {
               <Checkbox 
                 id="remember" 
                 checked={rememberMe}
-                onCheckedChange={(checked: boolean) => setRememberMe(checked)}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
               />
               <label
                 htmlFor="remember"
