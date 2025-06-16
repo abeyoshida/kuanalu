@@ -57,7 +57,7 @@ export async function PUT(request: Request) {
       .returning();
     
     // Return updated user without password
-    const { password: _, ...userWithoutPassword } = updatedUser[0];
+    const { password: _password, ...userWithoutPassword } = updatedUser[0];
     
     return NextResponse.json(
       { message: "Profile updated successfully", user: userWithoutPassword },

@@ -25,10 +25,9 @@ import { Loader2 } from "lucide-react";
 
 interface InviteUserDialogProps {
   children: React.ReactNode;
-  organizationId: number;
 }
 
-export function InviteUserDialog({ children, organizationId }: InviteUserDialogProps) {
+export function InviteUserDialog({ children }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [email, setEmail] = useState("");

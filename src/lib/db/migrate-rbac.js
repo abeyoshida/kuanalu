@@ -1,7 +1,9 @@
-require('dotenv').config();
-const { neon } = require('@neondatabase/serverless');
-const { drizzle } = require('drizzle-orm/neon-http');
-const { sql } = require('drizzle-orm');
+import dotenv from 'dotenv';
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { sql } from 'drizzle-orm';
+
+dotenv.config();
 
 // This script sets up the role-based access control system in the database
 async function main() {

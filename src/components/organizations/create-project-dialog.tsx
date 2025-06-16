@@ -53,7 +53,7 @@ export function CreateProjectDialog({ children, organizationId }: CreateProjectD
         throw new Error(error.message || "Failed to create project");
       }
 
-      const project = await response.json();
+      await response.json();
       
       toast({
         title: "Project created",

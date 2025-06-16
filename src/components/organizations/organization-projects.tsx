@@ -5,9 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, FolderKanban } from "lucide-react";
 import Link from "next/link";
-import { db } from "@/lib/db";
-import { projects } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 import { CreateProjectDialog } from "@/components/organizations/create-project-dialog";
 
 interface OrganizationProjectsProps {
@@ -64,7 +61,7 @@ export function OrganizationProjects({ organizationId }: OrganizationProjectsPro
           <div>
             <CardTitle>Projects</CardTitle>
             <CardDescription>
-              Manage your organization's projects
+              Manage your organization&apos;s projects
             </CardDescription>
           </div>
           <CreateProjectDialog organizationId={organizationId}>

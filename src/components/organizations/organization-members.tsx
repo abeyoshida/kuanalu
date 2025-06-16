@@ -10,6 +10,9 @@ import { RoleManager } from "@/components/auth/role-manager";
 import { UserPlus } from "lucide-react";
 import { InviteUserDialog } from "@/components/organizations/invite-user-dialog";
 
+// Define the Role type
+type Role = 'owner' | 'admin' | 'member' | 'guest';
+
 interface OrganizationMembersProps {
   organizationId: number;
   currentUserId: number;
@@ -80,7 +83,7 @@ export function OrganizationMembers({ organizationId, currentUserId }: Organizat
             </CardDescription>
           </div>
           {canInviteUsers && (
-            <InviteUserDialog organizationId={organizationId}>
+            <InviteUserDialog>
               <Button size="sm" className="flex items-center gap-2">
                 <UserPlus className="h-4 w-4" />
                 Invite User
@@ -122,9 +125,9 @@ export function OrganizationMembers({ organizationId, currentUserId }: Organizat
                             <RoleManager
                               userId={member.userId}
                               organizationId={organizationId}
-                              currentRole={member.role as any}
+                              currentRole={member.role as Role}
                               userName={member.name}
-                              currentUserRole={currentUserRole as any}
+                              currentUserRole={currentUserRole as Role}
                               currentUserId={currentUserId}
                             />
                           )}

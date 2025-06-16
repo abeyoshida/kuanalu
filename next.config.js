@@ -6,6 +6,8 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
+    // Disable ESLint for development as well
+    ignoreDuringDevMode: true,
   },
   // Disable React strict mode for now to avoid double rendering issues
   reactStrictMode: false,

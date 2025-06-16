@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { hasPermission, Permission } from '@/lib/auth/permissions';
 import { Loader2 } from 'lucide-react';
+import { hasPermission } from '@/lib/auth/permissions';
 
 interface WithPermissionProps {
   organizationId: number;
@@ -22,7 +21,6 @@ export function WithPermission({
   fallback = null,
   children
 }: WithPermissionProps) {
-  const router = useRouter();
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -70,7 +68,7 @@ export function withPermissionCheck<P extends object>(
         subject={subject}
         fallback={
           <div className="p-4 text-center">
-            <p className="text-red-500">You don't have permission to access this resource.</p>
+            <p className="text-red-500">You don&apos;t have permission to access this resource.</p>
           </div>
         }
       >

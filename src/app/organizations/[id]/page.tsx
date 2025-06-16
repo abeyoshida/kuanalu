@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import { getOrganizationById } from "@/lib/actions/organization-actions";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OrganizationSettings } from "@/components/organizations/organization-settings";
 import { OrganizationMembers } from "@/components/organizations/organization-members";
@@ -73,7 +72,7 @@ export default async function OrganizationPage({ params, searchParams }: Organiz
         </Tabs>
       </div>
     );
-  } catch (error) {
+  } catch (_error) {
     // If the user doesn't have access or organization doesn't exist
     redirect("/organizations");
   }

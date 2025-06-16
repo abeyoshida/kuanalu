@@ -92,7 +92,7 @@ export function RoleManager({
           description: result.message,
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -121,7 +121,7 @@ export function RoleManager({
           description: result.message,
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',
