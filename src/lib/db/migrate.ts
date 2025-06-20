@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { migrate } from 'drizzle-orm/neon-http/migrator';
 import { sql } from 'drizzle-orm';
 import { addInvitationsTable } from './migrations/add-invitations-table';
+import { enhanceOrganizationSchema } from './migrations/enhance-organization-schema';
 
 // This script runs migrations on your database
 async function main() {
@@ -32,6 +33,9 @@ async function main() {
     
     // Add invitations table
     await addInvitationsTable();
+    
+    // Enhance organization schema
+    await enhanceOrganizationSchema();
     
     console.log('✅ Migrations completed successfully');
   } catch (error) {

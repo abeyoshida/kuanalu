@@ -48,6 +48,8 @@
 - `components/organizations/pending-invitations.tsx` - Component for displaying pending invitations
 - `app/api/invitations/accept/route.ts` - API endpoint for accepting invitations
 - `lib/db/migrations/add-invitations-table.ts` - Migration script for invitations table
+- `lib/db/migrations/enhance-organization-schema.ts` - Migration script for enhancing organization schema
+- `types/organization.ts` - TypeScript types for organization schema
 
 ### Notes
 
@@ -81,7 +83,7 @@
   - [x] 2.9 Add protected routes and authentication middleware
 
 - [ ] 3.0 Database Schema and API Development
-  - [ ] 3.1 Define organization schema
+  - [x] 3.1 Define organization schema
   - [ ] 3.2 Define user schema with role information
   - [ ] 3.3 Define project schema
   - [ ] 3.4 Define task schema with status, priority fields

@@ -7,7 +7,8 @@ import {
   boolean, 
   pgEnum,
   primaryKey,
-  uuid
+  uuid,
+  jsonb
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -35,11 +36,22 @@ export const roleEnum = pgEnum('role', [
   'guest'
 ]);
 
+// Organization visibility enum
+export const visibilityEnum = pgEnum('visibility', [
+  'public',
+  'private'
+]);
+
 // Organizations table
 export const organizations = pgTable('organizations', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
+  slug: text('slug').notNull().unique(), // URL-friendly name
   description: text('description'),
+  visibility: visibilityEnum('visibility').notNull().default('private'),
+  logo: text('logo'), // URL to organization logo
+  website: text('website'), // Organization website URL
+  settings: jsonb('settings'), // JSON field for organization settings (theme, notifications, etc.)
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
@@ -61,6 +73,9 @@ export const organizationMembers = pgTable('organization_members', {
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   organizationId: integer('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
   role: roleEnum('role').notNull().default('member'), // 'owner', 'admin', 'member'
+  title: text('title'), // Optional job title/position within the organization
+  invitedBy: integer('invited_by').references(() => users.id), // Who invited this member
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull()
 }, (table) => {
   return {

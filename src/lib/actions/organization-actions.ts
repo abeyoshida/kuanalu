@@ -7,6 +7,12 @@ import { and, eq, count } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { hasPermission } from "@/lib/auth/permissions";
 import { redirect } from "next/navigation";
+import { 
+  CreateOrganizationInput, 
+  UpdateOrganizationInput, 
+  Organization,
+  OrganizationWithMeta 
+} from "@/types/organization";
 
 export interface OrganizationWithMemberCount {
   id: number;
@@ -27,6 +33,8 @@ export async function createOrganization(formData: FormData) {
   }
   
   const name = formData.get('name') as string;
+  const description = formData.get('description') as string;
+  const visibility = formData.get('visibility') as 'public' | 'private' || 'private';
   
   if (!name || name.trim() === '') {
     throw new Error("Organization name is required");
@@ -35,6 +43,13 @@ export async function createOrganization(formData: FormData) {
   const userId = parseInt(session.user.id);
   
   try {
+    // Generate a slug from the name
+    const slug = name.trim()
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove special chars except whitespace and hyphens
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
+    
     // Begin transaction
     const result = await db.transaction(async (tx) => {
       // Create the organization
@@ -42,6 +57,9 @@ export async function createOrganization(formData: FormData) {
         .insert(organizations)
         .values({
           name: name.trim(),
+          slug,
+          description: description ? description.trim() : null,
+          visibility,
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -54,6 +72,8 @@ export async function createOrganization(formData: FormData) {
           userId,
           organizationId: newOrg.id,
           role: 'owner',
+          invitedBy: userId,
+          joinedAt: new Date(),
           createdAt: new Date(),
         });
       
@@ -73,7 +93,7 @@ export async function createOrganization(formData: FormData) {
 /**
  * Get all organizations for the current user
  */
-export async function getUserOrganizations(): Promise<OrganizationWithMemberCount[]> {
+export async function getUserOrganizations(): Promise<OrganizationWithMeta[]> {
   const session = await auth();
   
   if (!session?.user) {
@@ -88,7 +108,14 @@ export async function getUserOrganizations(): Promise<OrganizationWithMemberCoun
       .select({
         id: organizations.id,
         name: organizations.name,
+        slug: organizations.slug,
+        description: organizations.description,
+        visibility: organizations.visibility,
+        logo: organizations.logo,
+        website: organizations.website,
+        settings: organizations.settings,
         createdAt: organizations.createdAt,
+        updatedAt: organizations.updatedAt,
         role: organizationMembers.role,
       })
       .from(organizations)
@@ -99,24 +126,28 @@ export async function getUserOrganizations(): Promise<OrganizationWithMemberCoun
       .where(eq(organizationMembers.userId, userId));
     
     // Get member count for each organization
-    const orgsWithMemberCount = await Promise.all(
+    const orgsWithMeta = await Promise.all(
       userOrgs.map(async (org) => {
-        const [result] = await db
+        const [memberResult] = await db
           .select({ count: count() })
           .from(organizationMembers)
           .where(eq(organizationMembers.organizationId, org.id));
         
+        const [projectResult] = await db
+          .select({ count: count() })
+          .from(organizations)
+          .where(eq(organizations.id, org.id));
+        
         return {
-          id: org.id,
-          name: org.name,
-          memberCount: Number(result.count),
+          ...org,
+          memberCount: Number(memberResult.count),
+          projectCount: Number(projectResult.count),
           userRole: org.role,
-          createdAt: org.createdAt,
         };
       })
     );
     
-    return orgsWithMemberCount;
+    return orgsWithMeta;
   } catch (error) {
     console.error('Failed to get user organizations:', error);
     return [];
@@ -126,7 +157,7 @@ export async function getUserOrganizations(): Promise<OrganizationWithMemberCoun
 /**
  * Get organization details by ID
  */
-export async function getOrganizationById(orgId: number) {
+export async function getOrganizationById(orgId: number): Promise<Organization> {
   const session = await auth();
   
   if (!session?.user) {
@@ -184,6 +215,9 @@ export async function updateOrganization(orgId: number, formData: FormData) {
   const userId = parseInt(session.user.id);
   const name = formData.get('name') as string;
   const description = formData.get('description') as string;
+  const visibility = formData.get('visibility') as 'public' | 'private';
+  const logo = formData.get('logo') as string;
+  const website = formData.get('website') as string;
   
   if (!name || name.trim() === '') {
     throw new Error("Organization name is required");
@@ -208,6 +242,9 @@ export async function updateOrganization(orgId: number, formData: FormData) {
       .set({
         name: name.trim(),
         description: description ? description.trim() : null,
+        visibility: visibility || undefined,
+        logo: logo || undefined,
+        website: website || undefined,
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, orgId));
@@ -217,6 +254,47 @@ export async function updateOrganization(orgId: number, formData: FormData) {
   } catch (error) {
     console.error('Failed to update organization:', error);
     throw new Error("Failed to update organization");
+  }
+}
+
+/**
+ * Update organization settings
+ */
+export async function updateOrganizationSettings(orgId: number, settings: any) {
+  const session = await auth();
+  
+  if (!session?.user) {
+    throw new Error("You must be logged in to update organization settings");
+  }
+  
+  const userId = parseInt(session.user.id);
+  
+  try {
+    // Check if user has permission to update the organization
+    const hasUpdatePermission = await hasPermission(
+      userId,
+      orgId,
+      'update',
+      'organization'
+    );
+    
+    if (!hasUpdatePermission) {
+      throw new Error("You don't have permission to update organization settings");
+    }
+    
+    // Update the organization settings
+    await db
+      .update(organizations)
+      .set({
+        settings,
+        updatedAt: new Date(),
+      })
+      .where(eq(organizations.id, orgId));
+    
+    revalidatePath(`/organizations/${orgId}`);
+  } catch (error) {
+    console.error('Failed to update organization settings:', error);
+    throw new Error("Failed to update organization settings");
   }
 }
 
@@ -251,8 +329,6 @@ export async function deleteOrganization(orgId: number) {
       .where(eq(organizations.id, orgId));
     
     revalidatePath('/organizations');
-    
-    // Redirect to organizations list
     return redirect('/organizations');
   } catch (error) {
     console.error('Failed to delete organization:', error);

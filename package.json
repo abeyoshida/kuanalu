@@ -11,6 +11,7 @@
     "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx src/lib/db/migrate.ts",
+    "db:migrate:org": "tsx src/lib/db/run-organization-migration.ts",
     "clean-dev": "rm -rf .next && next dev"
   },
   "dependencies": {
