@@ -231,7 +231,7 @@ export const tasks = pgTable('tasks', {
   projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   assigneeId: integer('assignee_id').references(() => users.id),
   reporterId: integer('reporter_id').references(() => users.id), // Person who reported/created the task
-  parentTaskId: integer('parent_task_id').references((): any => tasks.id), // For hierarchical tasks (epics, subtasks)
+  parentTaskId: integer('parent_task_id'), // For hierarchical tasks (epics, subtasks)
   dueDate: timestamp('due_date'),
   startDate: timestamp('start_date'),
   estimatedHours: integer('estimated_hours'), // Time estimation

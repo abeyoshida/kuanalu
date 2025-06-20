@@ -38,7 +38,7 @@ export interface TaskLabel {
 
 // Task metadata type
 export interface TaskMetadata {
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
   links?: {
     url: string;
     title?: string;
@@ -49,8 +49,8 @@ export interface TaskMetadata {
     timestamp: string;
     userId: number;
     field: string;
-    oldValue: any;
-    newValue: any;
+    oldValue: unknown;
+    newValue: unknown;
   }[];
 }
 

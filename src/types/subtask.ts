@@ -1,4 +1,4 @@
-import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
+import { InferSelectModel } from 'drizzle-orm';
 import { subtasks } from '@/lib/db/schema';
 import { User } from '@/types/user';
 import { Task } from '@/types/task';
@@ -23,7 +23,7 @@ export interface CreateSubtaskInput {
   estimatedHours?: number;
   dueDate?: Date;
   position?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Input type for updating an existing subtask
@@ -38,7 +38,7 @@ export interface UpdateSubtaskInput {
   actualHours?: number;
   dueDate?: Date | null;
   position?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   completedAt?: Date | null;
 }
 

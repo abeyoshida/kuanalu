@@ -1,5 +1,4 @@
 import { db } from '@/lib/db';
-import { subtasks } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
 
 export async function enhanceSubtaskSchema() {
