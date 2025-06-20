@@ -34,8 +34,8 @@ export function PendingInvitations() {
       try {
         const pendingInvitations = await getUserPendingInvitations();
         setInvitations(pendingInvitations || []);
-      } catch (error) {
-        console.error("Error fetching invitations:", error);
+      } catch (err) {
+        console.error("Error fetching invitations:", err);
         // Silently handle the error - the table might not exist yet
       } finally {
         setLoading(false);
@@ -79,7 +79,7 @@ export function PendingInvitations() {
           description: data.error || "Failed to accept invitation",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: "destructive",
         title: "Error",

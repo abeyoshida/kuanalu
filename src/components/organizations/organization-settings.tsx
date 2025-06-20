@@ -117,7 +117,7 @@ export function OrganizationSettings({ organization }: OrganizationSettingsProps
             <CardHeader>
               <CardTitle>General Settings</CardTitle>
               <CardDescription>
-                Update your organization's basic information
+                Update your organization&apos;s basic information
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleUpdateOrganization}>
@@ -152,7 +152,7 @@ export function OrganizationSettings({ organization }: OrganizationSettingsProps
                     rows={4}
                   />
                   <p className="text-sm text-muted-foreground">
-                    Brief description of your organization's purpose and goals.
+                    Brief description of your organization&apos;s purpose and goals.
                   </p>
                 </div>
               </CardContent>
@@ -250,7 +250,7 @@ export function OrganizationSettings({ organization }: OrganizationSettingsProps
                   <div className="space-y-0.5">
                     <Label htmlFor="task-updates">Task Updates</Label>
                     <p className="text-sm text-muted-foreground">
-                      When tasks you're assigned to are updated
+                      When tasks you&apos;re assigned to are updated
                     </p>
                   </div>
                   <Switch
@@ -331,7 +331,7 @@ export function OrganizationSettings({ organization }: OrganizationSettingsProps
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Choose a primary color for your organization's branding.
+                  Choose a primary color for your organization&apos;s branding.
                 </p>
               </div>
               

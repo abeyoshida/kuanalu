@@ -50,6 +50,9 @@ export function LoginForm({ callbackUrl = "/dashboard", registered = false }: Lo
         return;
       }
 
+      // Set success message before redirecting
+      setSuccess("Login successful! Redirecting...");
+
       if (result?.url) {
         console.log("Login successful, redirecting to:", result.url);
         // On success, redirect to the URL returned by NextAuth

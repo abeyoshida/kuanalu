@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, CheckCircle, BarChart3, Users, Calendar, Layers } from "lucide-react"
+import { ArrowRight, CheckCircle, Users, Layers } from "lucide-react"
 import { auth } from "@/lib/auth/auth"
 import { redirect } from "next/navigation"
 

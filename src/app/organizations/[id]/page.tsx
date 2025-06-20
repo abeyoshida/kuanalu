@@ -37,6 +37,13 @@ export default async function OrganizationPage({ params, searchParams }: Organiz
     const canViewMembers = await userHasPermission(organizationId, 'read', 'organization');
     const canUpdateOrg = await userHasPermission(organizationId, 'update', 'organization');
     
+    // Create a compatible organization object for the settings component
+    const orgSettings = {
+      id: organization.id,
+      name: organization.name,
+      description: organization.description || undefined
+    };
+    
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -66,7 +73,7 @@ export default async function OrganizationPage({ params, searchParams }: Organiz
           
           {canUpdateOrg && (
             <TabsContent value="settings" className="space-y-4">
-              <OrganizationSettings organization={organization} />
+              <OrganizationSettings organization={orgSettings} />
             </TabsContent>
           )}
         </Tabs>
