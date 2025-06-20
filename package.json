@@ -14,6 +14,8 @@
     "db:migrate:org": "tsx src/lib/db/run-organization-migration.ts",
     "db:migrate:user": "tsx src/lib/db/run-user-migration.ts",
     "db:migrate:project": "tsx src/lib/db/run-project-migration.ts",
+    "db:migrate:task": "tsx src/lib/db/run-task-migration.ts",
+    "db:migrate:subtask": "tsx src/lib/db/run-subtask-migration.ts",
     "clean-dev": "rm -rf .next && next dev"
   },
   "dependencies": {

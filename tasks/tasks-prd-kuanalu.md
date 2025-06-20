@@ -53,6 +53,13 @@
 - `lib/db/migrations/enhance-user-schema.ts` - Migration script for enhancing user schema
 - `types/user.ts` - TypeScript types for user schema
 - `lib/actions/user-actions.ts` - Server actions for user management
+- `lib/db/migrations/enhance-project-schema.ts` - Migration script for enhancing project schema
+- `types/project.ts` - TypeScript types for project schema
+- `lib/actions/project-actions.ts` - Server actions for project management
+- `lib/db/migrations/enhance-task-schema.ts` - Migration script for enhancing task schema
+- `types/task.ts` - TypeScript types for task schema
+- `src/lib/db/migrations/enhance-subtask-schema.ts` - Migration script for enhancing subtask schema
+- `src/types/subtask.ts` - TypeScript types for subtask schema
 
 ### Notes
 
@@ -89,8 +96,8 @@
   - [x] 3.1 Define organization schema
   - [x] 3.2 Define user schema with role information
   - [x] 3.3 Define project schema
-  - [ ] 3.4 Define task schema with status, priority fields
-  - [ ] 3.5 Define subtask schema
+  - [x] 3.4 Define task schema with status, priority fields
+  - [x] 3.5 Define subtask schema
   - [ ] 3.6 Define comment schema
   - [ ] 3.7 Create relationships between schemas
   - [ ] 3.8 Implement organization API endpoints

@@ -28,6 +28,16 @@ export const priorityEnum = pgEnum('priority', [
   'urgent'
 ]);
 
+// Task type enum
+export const taskTypeEnum = pgEnum('task_type', [
+  'feature',
+  'bug',
+  'improvement',
+  'documentation',
+  'task',
+  'epic'
+]);
+
 // Role enum for organization members
 export const roleEnum = pgEnum('role', [
   'owner',
@@ -217,20 +227,42 @@ export const tasks = pgTable('tasks', {
   description: text('description'),
   status: taskStatusEnum('status').notNull().default('todo'),
   priority: priorityEnum('priority').notNull().default('medium'),
+  type: taskTypeEnum('type').notNull().default('task'),
   projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   assigneeId: integer('assignee_id').references(() => users.id),
+  reporterId: integer('reporter_id').references(() => users.id), // Person who reported/created the task
+  parentTaskId: integer('parent_task_id').references((): any => tasks.id), // For hierarchical tasks (epics, subtasks)
   dueDate: timestamp('due_date'),
+  startDate: timestamp('start_date'),
+  estimatedHours: integer('estimated_hours'), // Time estimation
+  actualHours: integer('actual_hours'), // Actual time spent
+  points: integer('points'), // Story points for agile methodologies
+  position: integer('position'), // For ordering tasks within a status column
+  labels: jsonb('labels'), // Array of labels/tags
+  metadata: jsonb('metadata'), // Additional custom fields
+  completedAt: timestamp('completed_at'), // When the task was marked as done
   createdBy: integer('created_by').notNull().references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull()
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  archivedAt: timestamp('archived_at') // For soft deletion
 });
 
 // Subtasks table
 export const subtasks = pgTable('subtasks', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
+  description: text('description'),
   completed: boolean('completed').notNull().default(false),
+  priority: text('priority'),
   taskId: integer('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  assigneeId: integer('assignee_id').references(() => users.id),
+  estimatedHours: integer('estimated_hours'),
+  actualHours: integer('actual_hours'),
+  dueDate: timestamp('due_date'),
+  position: integer('position'),
+  metadata: jsonb('metadata'),
+  completedAt: timestamp('completed_at'),
+  createdBy: integer('created_by').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
@@ -345,11 +377,22 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [users.id],
     relationName: 'assignee'
   }),
+  reporter: one(users, {
+    fields: [tasks.reporterId],
+    references: [users.id],
+    relationName: 'reporter'
+  }),
   creator: one(users, {
     fields: [tasks.createdBy],
     references: [users.id],
     relationName: 'creator'
   }),
+  parentTask: one(tasks, {
+    fields: [tasks.parentTaskId],
+    references: [tasks.id],
+    relationName: 'parentTask'
+  }),
+  childTasks: many(tasks, { relationName: 'parentTask' }),
   subtasks: many(subtasks),
   comments: many(comments)
 }));
@@ -358,6 +401,14 @@ export const subtasksRelations = relations(subtasks, ({ one }) => ({
   task: one(tasks, {
     fields: [subtasks.taskId],
     references: [tasks.id]
+  }),
+  assignee: one(users, {
+    fields: [subtasks.assigneeId],
+    references: [users.id]
+  }),
+  creator: one(users, {
+    fields: [subtasks.createdBy],
+    references: [users.id]
   })
 }));
 
