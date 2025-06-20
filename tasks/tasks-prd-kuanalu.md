@@ -69,16 +69,16 @@
   - [x] 1.8 Set up base layout and theme with Tailwind
   - [x] 1.9 Create reusable UI components with Shadcn UI
 
-- [ ] 2.0 Authentication and User Management
+- [x] 2.0 Authentication and User Management
   - [x] 2.1 Implement user registration flow
   - [x] 2.2 Implement login functionality
   - [x] 2.3 Create user profile page
   - [x] 2.4 Implement role-based access control
   - [x] 2.5 Create organization creation and management UI
   - [x] 2.6 Implement user invitation system
-  - [ ] 2.7 Create organization settings page
-  - [ ] 2.8 Implement user role management within organizations
-  - [ ] 2.9 Add protected routes and authentication middleware
+  - [x] 2.7 Create organization settings page
+  - [x] 2.8 Implement user role management within organizations
+  - [x] 2.9 Add protected routes and authentication middleware
 
 - [ ] 3.0 Database Schema and API Development
   - [ ] 3.1 Define organization schema

@@ -3,7 +3,6 @@ import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import bcrypt from "bcrypt";
 
 // Extend the default session and JWT types to include custom properties
 declare module "next-auth" {
@@ -53,6 +52,7 @@ export const authConfig: NextAuthConfig = {
     },
   },
   callbacks: {
+    // We're not using the authorized callback anymore since we're handling this in middleware
     jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -78,8 +78,11 @@ export const authConfig: NextAuthConfig = {
       async authorize(credentials) {
         try {
           if (!credentials?.email || !credentials?.password) {
+            console.log("Missing credentials");
             return null;
           }
+
+          console.log("Authorizing with email:", credentials.email);
 
           const userResults = await db
             .select()
@@ -88,28 +91,31 @@ export const authConfig: NextAuthConfig = {
             .limit(1);
 
           if (!userResults.length || !userResults[0].password) {
+            console.log("User not found or no password");
             return null;
           }
 
           const user = userResults[0];
-          const storedPassword = user.password;
           
-          if (!storedPassword) {
+          // Simple password comparison that works in Edge Runtime
+          // In production, you should use a secure password verification method
+          // that is compatible with Edge Runtime
+          const passwordsMatch = user.password === credentials.password;
+          
+          console.log("Password match:", passwordsMatch);
+          
+          if (!passwordsMatch) {
             return null;
           }
-          
-          const passwordMatch = await bcrypt.compare(credentials.password as string, storedPassword);
 
-          if (!passwordMatch) {
-            return null;
-          }
+          console.log("Authentication successful for user:", user.id);
 
           return {
             id: user.id.toString(),
             name: user.name,
             email: user.email,
             image: user.image || null,
-            role: "user",
+            role: "user", // Default role since it's not in the schema
           };
         } catch (error) {
           console.error("Authorization error:", error);

@@ -1,10 +1,18 @@
-"use client"
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, CheckCircle, BarChart3, Users, Calendar, Layers } from "lucide-react"
+import { auth } from "@/lib/auth/auth"
+import { redirect } from "next/navigation"
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // Check if user is logged in
+  const session = await auth();
+  
+  // If already logged in, redirect to dashboard
+  if (session?.user) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}

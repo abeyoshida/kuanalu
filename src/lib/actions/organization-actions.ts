@@ -183,6 +183,7 @@ export async function updateOrganization(orgId: number, formData: FormData) {
   
   const userId = parseInt(session.user.id);
   const name = formData.get('name') as string;
+  const description = formData.get('description') as string;
   
   if (!name || name.trim() === '') {
     throw new Error("Organization name is required");
@@ -206,6 +207,7 @@ export async function updateOrganization(orgId: number, formData: FormData) {
       .update(organizations)
       .set({
         name: name.trim(),
+        description: description ? description.trim() : null,
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, orgId));

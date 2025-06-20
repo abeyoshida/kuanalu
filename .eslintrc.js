@@ -12,4 +12,4 @@ module.exports = {
     // Disable require imports warning
     '@typescript-eslint/no-require-imports': 'off'
   }
-} 
+}

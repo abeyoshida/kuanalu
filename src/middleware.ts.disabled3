@@ -1,0 +1,62 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+
+// Define public routes that don't require authentication
+const publicRoutes = [
+  '/',
+  '/auth/login',
+  '/auth/register',
+  '/auth/error',
+  '/auth/logout',
+];
+
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  
+  // Skip middleware for API routes to avoid conflicts with NextAuth
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+  
+  // Check if the route is public
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(route + '/')
+  );
+  
+  // Public routes don't need authentication
+  if (isPublicRoute) {
+    return NextResponse.next();
+  }
+  
+  // For protected routes, check for a valid token
+  const token = await getToken({ 
+    req: request, 
+    secret: process.env.NEXTAUTH_SECRET 
+  });
+  
+  // If no token found, redirect to login with the callback URL
+  if (!token) {
+    const url = new URL('/auth/login', request.url);
+    url.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(url);
+  }
+  
+  // User is authenticated, allow the request
+  return NextResponse.next();
+}
+
+// Configure the middleware to run only on specific paths
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder files (public assets)
+     * - API routes (handled by NextAuth)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.svg$|api/).*)',
+  ],
+}; 

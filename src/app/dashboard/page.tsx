@@ -3,9 +3,17 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { LogOut, User, Building } from "lucide-react";
 import { PendingInvitations } from "@/components/organizations/pending-invitations";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
+  // Get the session
   const session = await auth();
+  
+  // If no session, redirect to login
+  if (!session?.user) {
+    console.log("No session found, redirecting to login");
+    redirect("/auth/login?callbackUrl=/dashboard");
+  }
   
   return (
     <div className="container mx-auto px-4 py-8">
