@@ -83,7 +83,7 @@ export function OrganizationMembers({ organizationId, currentUserId }: Organizat
             </CardDescription>
           </div>
           {canInviteUsers && (
-            <InviteUserDialog>
+            <InviteUserDialog organizationId={organizationId}>
               <Button size="sm" className="flex items-center gap-2">
                 <UserPlus className="h-4 w-4" />
                 Invite User

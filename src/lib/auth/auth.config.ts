@@ -1,5 +1,9 @@
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 // Extend the default session and JWT types to include custom properties
 declare module "next-auth" {
@@ -29,8 +33,6 @@ export const authConfig: NextAuthConfig = {
     signIn: "/auth/login",
     signOut: "/auth/logout",
     error: "/auth/error",
-    verifyRequest: "/auth/verify-request",
-    newUser: "/auth/register",
   },
   secret: process.env.NEXTAUTH_SECRET || "fallback_secret_do_not_use_in_production",
   session: {
@@ -51,20 +53,6 @@ export const authConfig: NextAuthConfig = {
     },
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
-      const isOnProject = nextUrl.pathname.startsWith("/projects");
-      const isOnTask = nextUrl.pathname.startsWith("/task");
-      
-      if (isOnDashboard || isOnProject || isOnTask) {
-        if (isLoggedIn) return true;
-        return false; // Redirect unauthenticated users to login page
-      } else if (isLoggedIn) {
-        return true;
-      }
-      return true;
-    },
     jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -87,21 +75,46 @@ export const authConfig: NextAuthConfig = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      // @ts-expect-error - NextAuth types are not compatible with Next.js App Router
       async authorize(credentials) {
-        // This is a simplified version for debugging
-        if (!credentials?.email || !credentials?.password) {
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            return null;
+          }
+
+          const userResults = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, credentials.email as string))
+            .limit(1);
+
+          if (!userResults.length || !userResults[0].password) {
+            return null;
+          }
+
+          const user = userResults[0];
+          const storedPassword = user.password;
+          
+          if (!storedPassword) {
+            return null;
+          }
+          
+          const passwordMatch = await bcrypt.compare(credentials.password as string, storedPassword);
+
+          if (!passwordMatch) {
+            return null;
+          }
+
+          return {
+            id: user.id.toString(),
+            name: user.name,
+            email: user.email,
+            image: user.image || null,
+            role: "user",
+          };
+        } catch (error) {
+          console.error("Authorization error:", error);
           return null;
         }
-
-        // For testing purposes, allow any login
-        // In production, replace this with proper authentication
-        return {
-          id: "1",
-          name: "Test User",
-          email: credentials.email,
-          role: "admin"
-        };
       },
     }),
   ],

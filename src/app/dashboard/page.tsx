@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth/auth";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { LogOut, User, Building } from "lucide-react";
+import { PendingInvitations } from "@/components/organizations/pending-invitations";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -27,6 +28,11 @@ export default async function DashboardPage() {
             </Button>
           </Link>
         </div>
+      </div>
+      
+      {/* Pending Invitations */}
+      <div className="mb-8">
+        <PendingInvitations />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

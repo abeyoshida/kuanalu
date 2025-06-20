@@ -22,16 +22,19 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { inviteUserToOrganization } from "@/lib/actions/invitation-actions";
+import { Role } from "@/lib/auth/permissions";
 
 interface InviteUserDialogProps {
   children: React.ReactNode;
+  organizationId: number;
 }
 
-export function InviteUserDialog({ children }: InviteUserDialogProps) {
+export function InviteUserDialog({ children, organizationId }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("member");
+  const [role, setRole] = useState<Role>("member");
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -39,18 +42,24 @@ export function InviteUserDialog({ children }: InviteUserDialogProps) {
     setIsSubmitting(true);
 
     try {
-      // This is a placeholder for the actual invite functionality
-      // You'll need to implement the server action for inviting users
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await inviteUserToOrganization(organizationId, email, role);
       
-      toast({
-        title: "Invitation sent",
-        description: `An invitation has been sent to ${email}`,
-      });
-      
-      setOpen(false);
-      setEmail("");
-      setRole("member");
+      if (result.success) {
+        toast({
+          title: "Invitation sent",
+          description: `An invitation has been sent to ${email}`,
+        });
+        
+        setOpen(false);
+        setEmail("");
+        setRole("member");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.message,
+        });
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -90,7 +99,7 @@ export function InviteUserDialog({ children }: InviteUserDialogProps) {
               <Label htmlFor="role">Role</Label>
               <Select
                 value={role}
-                onValueChange={setRole}
+                onValueChange={(value) => setRole(value as Role)}
                 disabled={isSubmitting}
               >
                 <SelectTrigger id="role">

@@ -3,6 +3,7 @@ import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { migrate } from 'drizzle-orm/neon-http/migrator';
 import { sql } from 'drizzle-orm';
+import { addInvitationsTable } from './migrations/add-invitations-table';
 
 // This script runs migrations on your database
 async function main() {
@@ -28,6 +29,9 @@ async function main() {
       ALTER TABLE users 
       ADD COLUMN IF NOT EXISTS bio TEXT;
     `);
+    
+    // Add invitations table
+    await addInvitationsTable();
     
     console.log('✅ Migrations completed successfully');
   } catch (error) {

@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { signIn } from "@/lib/auth/client";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,12 +56,15 @@ export default function LoginPage() {
     setSuccessMessage(null);
 
     try {
-      const result = await signIn({
+      // Use NextAuth's signIn function directly
+      const result = await signIn("credentials", {
         email,
-        password
+        password,
+        redirect: false,
+        callbackUrl,
       });
 
-      if (!result.success) {
+      if (result?.error) {
         setError("Invalid email or password");
         setIsLoading(false);
         return;
@@ -69,8 +72,6 @@ export default function LoginPage() {
 
       // On success, redirect to callback URL
       router.push(callbackUrl);
-      
-      // Force a refresh to ensure session is loaded
       router.refresh();
     } catch (error) {
       console.error("Login error:", error);

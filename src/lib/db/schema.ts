@@ -6,7 +6,8 @@ import {
   integer, 
   boolean, 
   pgEnum,
-  primaryKey
+  primaryKey,
+  uuid
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -111,17 +112,32 @@ export const comments = pgTable('comments', {
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
 
+// Invitations table
+export const invitations = pgTable('invitations', {
+  id: serial('id').primaryKey(),
+  token: uuid('token').notNull().unique(), // Unique token for invitation link
+  email: text('email').notNull(),
+  organizationId: integer('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  role: roleEnum('role').notNull().default('member'),
+  invitedBy: integer('invited_by').notNull().references(() => users.id),
+  status: text('status').notNull().default('pending'), // pending, accepted, expired
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
 // Define relations
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   members: many(organizationMembers),
-  projects: many(projects)
+  projects: many(projects),
+  invitations: many(invitations)
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
   organizations: many(organizationMembers),
   assignedTasks: many(tasks, { relationName: 'assignee' }),
   createdTasks: many(tasks, { relationName: 'creator' }),
-  comments: many(comments)
+  comments: many(comments),
+  sentInvitations: many(invitations, { relationName: 'inviter' })
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -166,5 +182,18 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   user: one(users, {
     fields: [comments.userId],
     references: [users.id]
+  })
+}));
+
+// Invitations relations
+export const invitationsRelations = relations(invitations, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [invitations.organizationId],
+    references: [organizations.id]
+  }),
+  inviter: one(users, {
+    fields: [invitations.invitedBy],
+    references: [users.id],
+    relationName: 'inviter'
   })
 })); 

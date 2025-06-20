@@ -1,0 +1,40 @@
+// DISABLED MIDDLEWARE - Rename this file back to middleware.ts after fixing the issues
+// import { NextResponse } from 'next/server';
+// import type { NextRequest } from 'next/server';
+// import { auth } from '@/lib/auth/auth';
+
+// export async function middleware(request: NextRequest) {
+//   const session = await auth();
+//   const pathname = request.nextUrl.pathname;
+  
+//   // Protected routes that require authentication
+//   const protectedRoutes = [
+//     '/dashboard',
+//     '/organizations',
+//     '/projects',
+//     '/task',
+//     '/profile',
+//   ];
+  
+//   // Check if the route is protected
+//   const isProtectedRoute = protectedRoutes.some(route => 
+//     pathname === route || pathname.startsWith(route + '/')
+//   );
+  
+//   // If trying to access protected route without authentication, redirect to login
+//   if (isProtectedRoute && !session?.user) {
+//     const url = new URL('/auth/login', request.url);
+//     url.searchParams.set('callbackUrl', pathname);
+//     return NextResponse.redirect(url);
+//   }
+  
+//   return NextResponse.next();
+// }
+
+// // Configure the middleware to run on specific paths
+// export const config = {
+//   matcher: [
+//     // Match all routes except static files and API routes
+//     '/((?!_next/static|_next/image|favicon.ico|api/auth|.*\\.png$|.*\\.svg$).*)',
+//   ],
+// }; 

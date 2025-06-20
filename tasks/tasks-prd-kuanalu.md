@@ -44,6 +44,10 @@
 - `components/organizations/invite-user-dialog.tsx` - Dialog for inviting users
 - `app/api/projects/route.ts` - API endpoint for projects
 - `app/api/organizations/[id]/projects/route.ts` - API endpoint for organization projects
+- `lib/actions/invitation-actions.ts` - Server actions for invitation management
+- `components/organizations/pending-invitations.tsx` - Component for displaying pending invitations
+- `app/api/invitations/accept/route.ts` - API endpoint for accepting invitations
+- `lib/db/migrations/add-invitations-table.ts` - Migration script for invitations table
 
 ### Notes
 
@@ -71,7 +75,7 @@
   - [x] 2.3 Create user profile page
   - [x] 2.4 Implement role-based access control
   - [x] 2.5 Create organization creation and management UI
-  - [ ] 2.6 Implement user invitation system
+  - [x] 2.6 Implement user invitation system
   - [ ] 2.7 Create organization settings page
   - [ ] 2.8 Implement user role management within organizations
   - [ ] 2.9 Add protected routes and authentication middleware
