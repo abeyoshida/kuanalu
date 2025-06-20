@@ -38,6 +38,15 @@ export const taskTypeEnum = pgEnum('task_type', [
   'epic'
 ]);
 
+// Comment type enum
+export const commentTypeEnum = pgEnum('comment_type', [
+  'text',
+  'code',
+  'attachment',
+  'system',
+  'mention'
+]);
+
 // Role enum for organization members
 export const roleEnum = pgEnum('role', [
   'owner',
@@ -271,8 +280,18 @@ export const subtasks = pgTable('subtasks', {
 export const comments = pgTable('comments', {
   id: serial('id').primaryKey(),
   content: text('content').notNull(),
+  type: commentTypeEnum('type').default('text'),
   taskId: integer('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
   userId: integer('user_id').notNull().references(() => users.id),
+  parentId: integer('parent_id'), // Self-reference will be handled in relations
+  edited: boolean('edited').default(false),
+  editedAt: timestamp('edited_at'),
+  editedBy: integer('edited_by').references(() => users.id),
+  isResolved: boolean('is_resolved').default(false),
+  resolvedAt: timestamp('resolved_at'),
+  resolvedBy: integer('resolved_by').references(() => users.id),
+  metadata: jsonb('metadata'),
+  mentions: jsonb('mentions'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
@@ -412,13 +431,26 @@ export const subtasksRelations = relations(subtasks, ({ one }) => ({
   })
 }));
 
-export const commentsRelations = relations(comments, ({ one }) => ({
+export const commentsRelations = relations(comments, ({ one, many }) => ({
   task: one(tasks, {
     fields: [comments.taskId],
     references: [tasks.id]
   }),
   user: one(users, {
     fields: [comments.userId],
+    references: [users.id]
+  }),
+  parent: one(comments, {
+    fields: [comments.parentId],
+    references: [comments.id]
+  }),
+  replies: many(comments, { relationName: 'replies' }),
+  editor: one(users, {
+    fields: [comments.editedBy],
+    references: [users.id]
+  }),
+  resolver: one(users, {
+    fields: [comments.resolvedBy],
     references: [users.id]
   })
 }));

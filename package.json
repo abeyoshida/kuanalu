@@ -16,6 +16,7 @@
     "db:migrate:project": "tsx src/lib/db/run-project-migration.ts",
     "db:migrate:task": "tsx src/lib/db/run-task-migration.ts",
     "db:migrate:subtask": "tsx src/lib/db/run-subtask-migration.ts",
+    "db:migrate:comment": "tsx src/lib/db/run-comment-migration.ts",
     "clean-dev": "rm -rf .next && next dev"
   },
   "dependencies": {

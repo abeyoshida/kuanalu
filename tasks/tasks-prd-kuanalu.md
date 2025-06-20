@@ -60,6 +60,8 @@
 - `types/task.ts` - TypeScript types for task schema
 - `src/lib/db/migrations/enhance-subtask-schema.ts` - Migration script for enhancing subtask schema
 - `src/types/subtask.ts` - TypeScript types for subtask schema
+- `src/lib/db/migrations/enhance-comment-schema.ts` - Migration script for enhancing comment schema
+- `src/types/comment.ts` - TypeScript types for comment schema
 
 ### Notes
 
@@ -98,7 +100,7 @@
   - [x] 3.3 Define project schema
   - [x] 3.4 Define task schema with status, priority fields
   - [x] 3.5 Define subtask schema
-  - [ ] 3.6 Define comment schema
+  - [x] 3.6 Define comment schema
   - [ ] 3.7 Create relationships between schemas
   - [ ] 3.8 Implement organization API endpoints
   - [ ] 3.9 Implement project API endpoints
