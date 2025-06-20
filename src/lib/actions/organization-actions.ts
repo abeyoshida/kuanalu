@@ -8,10 +8,9 @@ import { revalidatePath } from "next/cache";
 import { hasPermission } from "@/lib/auth/permissions";
 import { redirect } from "next/navigation";
 import { 
-  CreateOrganizationInput, 
-  UpdateOrganizationInput, 
   Organization,
-  OrganizationWithMeta 
+  OrganizationWithMeta,
+  OrganizationSettings
 } from "@/types/organization";
 
 export interface OrganizationWithMemberCount {
@@ -260,7 +259,7 @@ export async function updateOrganization(orgId: number, formData: FormData) {
 /**
  * Update organization settings
  */
-export async function updateOrganizationSettings(orgId: number, settings: any) {
+export async function updateOrganizationSettings(orgId: number, settings: OrganizationSettings) {
   const session = await auth();
   
   if (!session?.user) {

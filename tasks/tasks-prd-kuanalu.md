@@ -50,6 +50,9 @@
 - `lib/db/migrations/add-invitations-table.ts` - Migration script for invitations table
 - `lib/db/migrations/enhance-organization-schema.ts` - Migration script for enhancing organization schema
 - `types/organization.ts` - TypeScript types for organization schema
+- `lib/db/migrations/enhance-user-schema.ts` - Migration script for enhancing user schema
+- `types/user.ts` - TypeScript types for user schema
+- `lib/actions/user-actions.ts` - Server actions for user management
 
 ### Notes
 
@@ -84,8 +87,8 @@
 
 - [ ] 3.0 Database Schema and API Development
   - [x] 3.1 Define organization schema
-  - [ ] 3.2 Define user schema with role information
-  - [ ] 3.3 Define project schema
+  - [x] 3.2 Define user schema with role information
+  - [x] 3.3 Define project schema
   - [ ] 3.4 Define task schema with status, priority fields
   - [ ] 3.5 Define subtask schema
   - [ ] 3.6 Define comment schema

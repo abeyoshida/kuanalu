@@ -12,6 +12,8 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx src/lib/db/migrate.ts",
     "db:migrate:org": "tsx src/lib/db/run-organization-migration.ts",
+    "db:migrate:user": "tsx src/lib/db/run-user-migration.ts",
+    "db:migrate:project": "tsx src/lib/db/run-project-migration.ts",
     "clean-dev": "rm -rf .next && next dev"
   },
   "dependencies": {
