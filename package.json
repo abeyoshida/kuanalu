@@ -18,6 +18,8 @@
     "db:migrate:subtask": "tsx src/lib/db/run-subtask-migration.ts",
     "db:migrate:comment": "tsx src/lib/db/run-comment-migration.ts",
     "db:migrate:relationships": "tsx src/lib/db/run-relationships-migration.ts",
+    "db:seed": "tsx src/scripts/seed.ts",
+    "db:clear": "tsx src/scripts/clear-db.ts",
     "clean-dev": "rm -rf .next && next dev"
   },
   "dependencies": {
@@ -35,7 +37,9 @@
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-toast": "^1.2.14",
+    "@types/bcryptjs": "^2.4.6",
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

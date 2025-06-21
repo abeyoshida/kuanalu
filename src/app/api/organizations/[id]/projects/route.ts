@@ -10,8 +10,12 @@ interface RouteParams {
   };
 }
 
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(request: Request, context: RouteParams) {
   try {
+    // In Next.js 15, we need to await dynamic parameters
+    const { params } = context;
+    const { id } = await Promise.resolve(params);
+    
     const session = await auth();
     
     if (!session?.user) {
@@ -21,8 +25,16 @@ export async function GET(request: Request, { params }: RouteParams) {
       );
     }
     
+    // Make sure id is defined
+    if (!id) {
+      return NextResponse.json(
+        { error: "Missing organization ID" },
+        { status: 400 }
+      );
+    }
+    
     const userId = parseInt(session.user.id);
-    const organizationId = parseInt(params.id);
+    const organizationId = parseInt(id);
     
     // Check if user is a member of the organization
     const membership = await db

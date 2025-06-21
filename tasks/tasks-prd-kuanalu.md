@@ -114,7 +114,7 @@
   - [x] 3.11 Implement subtask API endpoints
   - [x] 3.12 Implement comment API endpoints
   - [x] 3.13 Add validation to all API endpoints
-  - [ ] 3.14 Create database seed script for development
+  - [x] 3.14 Create database seed script for development
 
 - [ ] 4.0 Kanban Board Implementation
   - [ ] 4.1 Create kanban board layout with 5 columns

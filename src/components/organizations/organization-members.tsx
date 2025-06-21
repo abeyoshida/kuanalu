@@ -9,9 +9,7 @@ import { getUserRole } from "@/lib/auth/permissions";
 import { RoleManager } from "@/components/auth/role-manager";
 import { UserPlus } from "lucide-react";
 import { InviteUserDialog } from "@/components/organizations/invite-user-dialog";
-
-// Define the Role type
-type Role = 'owner' | 'admin' | 'member' | 'guest';
+import { Role } from "@/lib/auth/client-permissions";
 
 interface OrganizationMembersProps {
   organizationId: number;

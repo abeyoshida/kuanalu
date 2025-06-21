@@ -1,5 +1,9 @@
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env files
+dotenv.config();
 
 // Check if we have a database URL
 if (!process.env.DATABASE_URL) {

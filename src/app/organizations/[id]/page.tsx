@@ -18,15 +18,26 @@ interface OrganizationPageProps {
   };
 }
 
-export default async function OrganizationPage({ params, searchParams }: OrganizationPageProps) {
+export default async function OrganizationPage({ 
+  params,
+  searchParams
+}: OrganizationPageProps) {
+  // In Next.js 15, we need to await dynamic parameters
+  const { id } = await Promise.resolve(params);
+  const { tab = "projects" } = await Promise.resolve(searchParams);
+  
   const session = await auth();
   
   if (!session?.user) {
     redirect("/auth/login?callbackUrl=/organizations");
   }
   
-  const organizationId = parseInt(params.id);
-  const activeTab = searchParams.tab || "projects";
+  if (!id) {
+    redirect("/organizations");
+  }
+  
+  const organizationId = parseInt(id);
+  const activeTab = tab;
   
   try {
     // Get organization details
@@ -79,7 +90,8 @@ export default async function OrganizationPage({ params, searchParams }: Organiz
         </Tabs>
       </div>
     );
-  } catch (_error) {
+  } catch (error) {
+    console.error('Organization page error:', error);
     // If the user doesn't have access or organization doesn't exist
     redirect("/organizations");
   }

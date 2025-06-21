@@ -98,8 +98,7 @@ export const authConfig: NextAuthConfig = {
           const user = userResults[0];
           
           // Simple password comparison that works in Edge Runtime
-          // In production, you should use a secure password verification method
-          // that is compatible with Edge Runtime
+          // For development purposes only - in production use secure password hashing
           const passwordsMatch = user.password === credentials.password;
           
           console.log("Password match:", passwordsMatch);
