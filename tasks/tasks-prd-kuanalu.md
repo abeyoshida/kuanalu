@@ -64,6 +64,10 @@
 - `src/types/comment.ts` - TypeScript types for comment schema
 - `src/lib/db/migrations/enhance-relationships.ts` - Migration script for enhancing schema relationships
 - `docs/schema-relationships.md` - Documentation of database schema relationships
+- `src/app/api/organizations/route.ts` - API endpoint for listing and creating organizations
+- `src/app/api/organizations/[id]/route.ts` - API endpoint for getting, updating, and deleting organizations
+- `src/app/api/organizations/[id]/members/route.ts` - API endpoint for managing organization members
+- `src/app/api/organizations/[id]/members/[userId]/route.ts` - API endpoint for managing individual organization members
 
 ### Notes
 
@@ -104,8 +108,8 @@
   - [x] 3.5 Define subtask schema
   - [x] 3.6 Define comment schema
   - [x] 3.7 Create relationships between schemas
-  - [ ] 3.8 Implement organization API endpoints
-  - [ ] 3.9 Implement project API endpoints
+  - [x] 3.8 Implement organization API endpoints
+  - [x] 3.9 Implement project API endpoints
   - [ ] 3.10 Implement task API endpoints
   - [ ] 3.11 Implement subtask API endpoints
   - [ ] 3.12 Implement comment API endpoints

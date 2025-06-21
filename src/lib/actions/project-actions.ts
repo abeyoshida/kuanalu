@@ -8,7 +8,8 @@ import {
   projectCategories, 
   projectCategoryAssignments,
   users,
-  tasks
+  tasks,
+  organizationMembers
 } from "@/lib/db/schema";
 import { and, eq, count, isNull, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -837,6 +838,79 @@ export async function removeCategoryFromProject(projectId: number, categoryId: n
     revalidatePath(`/projects/${projectId}`);
   } catch (error) {
     console.error('Failed to remove category from project:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a project
+ */
+export async function deleteProject(projectId: number) {
+  const session = await auth();
+  
+  if (!session?.user) {
+    throw new Error("You must be logged in to delete a project");
+  }
+  
+  const userId = parseInt(session.user.id);
+  
+  try {
+    // Check if user has permission to delete this project
+    const project = await getProjectById(projectId);
+    
+    if (!project) {
+      throw new Error("Project not found");
+    }
+    
+    // Check if user is the project owner or organization owner/admin
+    const projectMembership = await db
+      .select({ role: projectMembers.role })
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, projectId)
+        )
+      )
+      .limit(1);
+    
+    const isProjectOwner = projectMembership.length > 0 && projectMembership[0].role === 'owner';
+    
+    // Check organization role if not project owner
+    if (!isProjectOwner) {
+      const orgMembership = await db
+        .select({ role: organizationMembers.role })
+        .from(organizationMembers)
+        .where(
+          and(
+            eq(organizationMembers.userId, userId),
+            eq(organizationMembers.organizationId, project.organizationId)
+          )
+        )
+        .limit(1);
+      
+      const isOrgOwnerOrAdmin = orgMembership.length > 0 && 
+        (orgMembership[0].role === 'owner' || orgMembership[0].role === 'admin');
+      
+      if (!isOrgOwnerOrAdmin) {
+        throw new Error("You don't have permission to delete this project");
+      }
+    }
+    
+    // Soft delete the project by setting archivedAt
+    await db
+      .update(projects)
+      .set({
+        archivedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(projects.id, projectId));
+    
+    revalidatePath(`/organizations/${project.organizationId}/projects`);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete project:', error);
     throw error;
   }
 } 
