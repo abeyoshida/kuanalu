@@ -1,55 +1,56 @@
-import { InferSelectModel } from 'drizzle-orm';
-import { comments } from '@/lib/db/schema';
-import { User } from '@/types/user';
-import { Task } from '@/types/task';
+import { z } from "zod";
 
-// Comment type based on the schema
-export type Comment = InferSelectModel<typeof comments>;
-
-// Comment with related data
-export interface CommentWithMeta extends Comment {
-  user?: User;
-  task?: Task;
-  parent?: Comment;
-  replies?: Comment[];
-  editor?: User;
-  resolver?: User;
-}
-
-// Comment type enum
-export type CommentType = 'text' | 'code' | 'attachment' | 'system' | 'mention';
-
-// Input type for creating a new comment
-export interface CreateCommentInput {
+// Base comment type
+export type Comment = {
+  id: number;
   content: string;
-  type?: CommentType;
+  type: 'text' | 'code' | 'attachment' | 'system' | 'mention';
   taskId: number;
   userId: number;
-  parentId?: number | null;
-  mentions?: CommentMention[];
-  metadata?: Record<string, unknown>;
-}
+  parentId: number | null;
+  edited: boolean;
+  editedAt: Date | null;
+  editedBy: number | null;
+  isResolved: boolean;
+  resolvedAt: Date | null;
+  resolvedBy: number | null;
+  metadata: Record<string, unknown> | null;
+  mentions: string[] | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
-// Input type for updating an existing comment
-export interface UpdateCommentInput {
-  id: number;
-  content?: string;
-  edited?: boolean;
-  editedAt?: Date;
-  editedBy?: number;
-  isResolved?: boolean;
-  resolvedAt?: Date | null;
-  resolvedBy?: number | null;
-  mentions?: CommentMention[];
-  metadata?: Record<string, unknown>;
-}
-
-// Type for comment mention
-export interface CommentMention {
-  userId: number;
+// Comment with additional metadata
+export type CommentWithMeta = Comment & {
   userName: string;
-  position: number; // Position in the content text
-}
+  userImage: string | null;
+  editorName?: string;
+  resolverName?: string;
+};
+
+// Schema for creating a comment
+export const createCommentSchema = z.object({
+  content: z.string().min(1, "Comment content is required"),
+  type: z.enum(['text', 'code', 'attachment', 'system', 'mention']).optional(),
+  taskId: z.number().int().positive("Task ID is required"),
+  parentId: z.number().int().positive().optional(),
+  metadata: z.record(z.unknown()).optional(),
+  mentions: z.array(z.string()).optional()
+});
+
+// Type for creating a comment
+export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+
+// Schema for updating a comment
+export const updateCommentSchema = z.object({
+  content: z.string().min(1, "Comment content is required").optional(),
+  isResolved: z.boolean().optional(),
+  metadata: z.record(z.unknown()).optional(),
+  mentions: z.array(z.string()).optional()
+});
+
+// Type for updating a comment
+export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
 
 // Type for comment filtering
 export interface CommentFilters {
@@ -57,8 +58,7 @@ export interface CommentFilters {
   userId?: number;
   parentId?: number | null;
   isResolved?: boolean;
-  type?: CommentType;
-  search?: string;
+  type?: string;
 }
 
 // Type for comment sorting

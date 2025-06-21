@@ -111,8 +111,8 @@
   - [x] 3.8 Implement organization API endpoints
   - [x] 3.9 Implement project API endpoints
   - [x] 3.10 Implement task API endpoints
-  - [ ] 3.11 Implement subtask API endpoints
-  - [ ] 3.12 Implement comment API endpoints
+  - [x] 3.11 Implement subtask API endpoints
+  - [x] 3.12 Implement comment API endpoints
   - [ ] 3.13 Add validation to all API endpoints
   - [ ] 3.14 Create database seed script for development
 
