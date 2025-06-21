@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { getTaskComments, createComment } from "@/lib/actions/comment-actions";
-import { z } from "zod";
+import { 
+  validateAuthentication, 
+  validateNumericParam,
+  validateRequestBody,
+  handleApiError
+} from "@/lib/validation/api-validation";
+import { createCommentSchema } from "@/types/comment";
 
-// Schema for comment creation
-const createCommentSchema = z.object({
-  content: z.string().min(1, "Comment content is required"),
-  type: z.enum(['text', 'code', 'attachment', 'system', 'mention']).optional(),
-  parentId: z.number().int().positive().optional(),
-  metadata: z.record(z.unknown()).optional(),
-  mentions: z.array(z.string()).optional()
-});
-
-// GET /api/tasks/[id]/comments - Get comments for a task
+// GET /api/tasks/[id]/comments - Get all comments for a task
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -20,52 +17,22 @@ export async function GET(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Validate authentication
+    const authError = validateAuthentication(session);
+    if (authError) return authError;
+    
+    // Validate task ID
+    const taskIdResult = validateNumericParam(params.id, "task ID");
+    if (typeof taskIdResult !== 'number') {
+      return taskIdResult;
     }
     
-    const taskId = parseInt(params.id);
-    if (isNaN(taskId)) {
-      return NextResponse.json(
-        { error: "Invalid task ID" },
-        { status: 400 }
-      );
-    }
-    
-    const comments = await getTaskComments(taskId);
+    // Get comments for the task
+    const comments = await getTaskComments(taskIdResult);
     
     return NextResponse.json(comments);
   } catch (error) {
-    console.error(`Error fetching comments for task ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("must be logged in")) {
-      return NextResponse.json(
-        { error: "You must be logged in to view comments" },
-        { status: 401 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("don't have permission")) {
-      return NextResponse.json(
-        { error: "You don't have permission to view comments for this task" },
-        { status: 403 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("not found")) {
-      return NextResponse.json(
-        { error: "Task not found" },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(
-      { error: "Failed to fetch comments" },
-      { status: 500 }
-    );
+    return handleApiError(error, "comments");
   }
 }
 
@@ -77,59 +44,38 @@ export async function POST(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Validate authentication
+    const authError = validateAuthentication(session);
+    if (authError) return authError;
+    
+    // Validate task ID
+    const taskIdResult = validateNumericParam(params.id, "task ID");
+    if (typeof taskIdResult !== 'number') {
+      return taskIdResult;
     }
     
-    const taskId = parseInt(params.id);
-    if (isNaN(taskId)) {
+    // Validate request body
+    const validation = await validateRequestBody(request, createCommentSchema);
+    if ('error' in validation) return validation.error;
+    
+    // Ensure taskId matches the URL parameter
+    if (validation.data.taskId !== taskIdResult) {
       return NextResponse.json(
-        { error: "Invalid task ID" },
+        { error: "Task ID in body must match task ID in URL" },
         { status: 400 }
       );
     }
     
-    const body = await request.json();
+    // Create the comment with properly typed parentId
+    const commentData = {
+      ...validation.data,
+      parentId: validation.data.parentId || undefined
+    };
     
-    // Validate input
-    const result = createCommentSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: result.error.format() },
-        { status: 400 }
-      );
-    }
-    
-    // Create the comment
-    const comment = await createComment({
-      ...result.data,
-      taskId
-    });
+    const comment = await createComment(commentData);
     
     return NextResponse.json(comment, { status: 201 });
   } catch (error) {
-    console.error(`Error creating comment for task ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("don't have permission")) {
-      return NextResponse.json(
-        { error: "You don't have permission to comment on this task" },
-        { status: 403 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("not found")) {
-      return NextResponse.json(
-        { error: "Task or parent comment not found" },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(
-      { error: "Failed to create comment" },
-      { status: 500 }
-    );
+    return handleApiError(error, "comment");
   }
 } 

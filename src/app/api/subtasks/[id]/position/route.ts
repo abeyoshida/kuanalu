@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { updateSubtaskPositions } from "@/lib/actions/subtask-actions";
-import { z } from "zod";
-
-// Schema for position updates
-const updatePositionSchema = z.object({
-  position: z.number().int().min(0, "Position must be a non-negative integer")
-});
+import { 
+  validateAuthentication, 
+  validateNumericParam,
+  validateRequestBody,
+  handleApiError
+} from "@/lib/validation/api-validation";
+import { updateSubtaskPositionSchema } from "@/types/subtask";
 
 // PATCH /api/subtasks/[id]/position - Update subtask position
 export async function PATCH(
@@ -16,66 +17,30 @@ export async function PATCH(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Validate authentication
+    const authError = validateAuthentication(session);
+    if (authError) return authError;
+    
+    // Validate subtask ID
+    const subtaskIdResult = validateNumericParam(params.id, "subtask ID");
+    if (typeof subtaskIdResult !== 'number') {
+      return subtaskIdResult;
     }
     
-    const subtaskId = parseInt(params.id);
-    if (isNaN(subtaskId)) {
-      return NextResponse.json(
-        { error: "Invalid subtask ID" },
-        { status: 400 }
-      );
-    }
+    // Validate request body
+    const validation = await validateRequestBody(request, updateSubtaskPositionSchema);
+    if ('error' in validation) return validation.error;
     
-    const body = await request.json();
+    const { newPosition } = validation.data;
     
-    // Validate input
-    const result = updatePositionSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: result.error.format() },
-        { status: 400 }
-      );
-    }
-    
-    // Update the subtask position
-    await updateSubtaskPositions(subtaskId, result.data.position);
+    // Update subtask position
+    await updateSubtaskPositions(subtaskIdResult, newPosition);
     
     return NextResponse.json(
       { message: "Subtask position updated successfully" },
       { status: 200 }
     );
   } catch (error) {
-    console.error(`Error updating position for subtask ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("must be logged in")) {
-      return NextResponse.json(
-        { error: "You must be logged in to update subtask positions" },
-        { status: 401 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("don't have permission")) {
-      return NextResponse.json(
-        { error: "You don't have permission to update this subtask's position" },
-        { status: 403 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("not found")) {
-      return NextResponse.json(
-        { error: "Subtask not found" },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(
-      { error: "Failed to update subtask position" },
-      { status: 500 }
-    );
+    return handleApiError(error, "subtask position");
   }
 } 

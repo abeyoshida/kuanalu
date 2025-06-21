@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { getCommentById, updateComment, deleteComment } from "@/lib/actions/comment-actions";
-import { z } from "zod";
-
-// Schema for comment updates
-const updateCommentSchema = z.object({
-  content: z.string().min(1, "Comment content is required").optional(),
-  isResolved: z.boolean().optional(),
-  metadata: z.record(z.unknown()).optional(),
-  mentions: z.array(z.string()).optional()
-});
+import { 
+  validateAuthentication, 
+  validateNumericParam,
+  validateRequestBody,
+  handleApiError
+} from "@/lib/validation/api-validation";
+import { updateCommentSchema } from "@/types/comment";
 
 // GET /api/comments/[id] - Get a specific comment
 export async function GET(
@@ -19,22 +17,18 @@ export async function GET(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Validate authentication
+    const authError = validateAuthentication(session);
+    if (authError) return authError;
+    
+    // Validate comment ID
+    const commentIdResult = validateNumericParam(params.id, "comment ID");
+    if (typeof commentIdResult !== 'number') {
+      return commentIdResult;
     }
     
-    const commentId = parseInt(params.id);
-    if (isNaN(commentId)) {
-      return NextResponse.json(
-        { error: "Invalid comment ID" },
-        { status: 400 }
-      );
-    }
-    
-    const comment = await getCommentById(commentId);
+    // Get the comment
+    const comment = await getCommentById(commentIdResult);
     
     if (!comment) {
       return NextResponse.json(
@@ -45,33 +39,7 @@ export async function GET(
     
     return NextResponse.json(comment);
   } catch (error) {
-    console.error(`Error fetching comment ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("must be logged in")) {
-      return NextResponse.json(
-        { error: "You must be logged in to view comment details" },
-        { status: 401 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("don't have permission")) {
-      return NextResponse.json(
-        { error: "You don't have permission to view this comment" },
-        { status: 403 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("not found")) {
-      return NextResponse.json(
-        { error: "Comment not found" },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(
-      { error: "Failed to fetch comment" },
-      { status: 500 }
-    );
+    return handleApiError(error, "comment");
   }
 }
 
@@ -83,71 +51,26 @@ export async function PATCH(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Validate authentication
+    const authError = validateAuthentication(session);
+    if (authError) return authError;
+    
+    // Validate comment ID
+    const commentIdResult = validateNumericParam(params.id, "comment ID");
+    if (typeof commentIdResult !== 'number') {
+      return commentIdResult;
     }
     
-    const commentId = parseInt(params.id);
-    if (isNaN(commentId)) {
-      return NextResponse.json(
-        { error: "Invalid comment ID" },
-        { status: 400 }
-      );
-    }
-    
-    const body = await request.json();
-    
-    // Validate input
-    const result = updateCommentSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: result.error.format() },
-        { status: 400 }
-      );
-    }
+    // Validate request body
+    const validation = await validateRequestBody(request, updateCommentSchema);
+    if ('error' in validation) return validation.error;
     
     // Update the comment
-    const updatedComment = await updateComment(commentId, result.data);
+    const updatedComment = await updateComment(commentIdResult, validation.data);
     
     return NextResponse.json(updatedComment);
   } catch (error) {
-    console.error(`Error updating comment ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("must be logged in")) {
-      return NextResponse.json(
-        { error: "You must be logged in to update a comment" },
-        { status: 401 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("don't have permission")) {
-      return NextResponse.json(
-        { error: "You don't have permission to update this comment" },
-        { status: 403 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("only the comment author")) {
-      return NextResponse.json(
-        { error: "Only the comment author can edit the content" },
-        { status: 403 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("not found")) {
-      return NextResponse.json(
-        { error: "Comment not found" },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(
-      { error: "Failed to update comment" },
-      { status: 500 }
-    );
+    return handleApiError(error, "comment");
   }
 }
 
@@ -159,54 +82,24 @@ export async function DELETE(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Validate authentication
+    const authError = validateAuthentication(session);
+    if (authError) return authError;
+    
+    // Validate comment ID
+    const commentIdResult = validateNumericParam(params.id, "comment ID");
+    if (typeof commentIdResult !== 'number') {
+      return commentIdResult;
     }
     
-    const commentId = parseInt(params.id);
-    if (isNaN(commentId)) {
-      return NextResponse.json(
-        { error: "Invalid comment ID" },
-        { status: 400 }
-      );
-    }
-    
-    await deleteComment(commentId);
+    // Delete the comment
+    await deleteComment(commentIdResult);
     
     return NextResponse.json(
       { message: "Comment deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
-    console.error(`Error deleting comment ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("must be logged in")) {
-      return NextResponse.json(
-        { error: "You must be logged in to delete a comment" },
-        { status: 401 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("don't have permission")) {
-      return NextResponse.json(
-        { error: "You don't have permission to delete this comment" },
-        { status: 403 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("not found")) {
-      return NextResponse.json(
-        { error: "Comment not found" },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(
-      { error: "Failed to delete comment" },
-      { status: 500 }
-    );
+    return handleApiError(error, "comment");
   }
 } 

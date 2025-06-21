@@ -113,7 +113,7 @@
   - [x] 3.10 Implement task API endpoints
   - [x] 3.11 Implement subtask API endpoints
   - [x] 3.12 Implement comment API endpoints
-  - [ ] 3.13 Add validation to all API endpoints
+  - [x] 3.13 Add validation to all API endpoints
   - [ ] 3.14 Create database seed script for development
 
 - [ ] 4.0 Kanban Board Implementation
