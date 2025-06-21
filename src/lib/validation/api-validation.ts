@@ -53,7 +53,8 @@ export async function validateRequestBody<T>(
     }
     
     return { data: result.data };
-  } catch (_error) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
     return {
       error: NextResponse.json(
         { error: "Invalid JSON in request body" },
@@ -93,7 +94,8 @@ export function validateQueryParams<T>(
     }
     
     return { data: result.data };
-  } catch (_error) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error) {
     return {
       error: NextResponse.json(
         { error: "Error processing query parameters" },

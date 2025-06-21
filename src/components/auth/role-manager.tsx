@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Role } from '@/lib/auth/permissions';
+import { Role } from '@/lib/auth/permissions-data';
 import { updateUserRole, removeUserFromOrganization } from '@/lib/actions/role-actions';
 import { Loader2, ChevronDown, Shield, ShieldAlert, ShieldCheck, User, UserX } from 'lucide-react';
 import {
@@ -92,7 +92,8 @@ export function RoleManager({
           description: result.message,
         });
       }
-    } catch (_error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -121,7 +122,8 @@ export function RoleManager({
           description: result.message,
         });
       }
-    } catch (_error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',

@@ -79,7 +79,8 @@ export function PendingInvitations() {
           description: data.error || "Failed to accept invitation",
         });
       }
-    } catch (_error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",

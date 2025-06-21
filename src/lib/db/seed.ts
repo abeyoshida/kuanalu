@@ -7,14 +7,7 @@ import {
   projectMembers, 
   tasks, 
   subtasks, 
-  comments,
-  roleEnum,
-  taskStatusEnum,
-  priorityEnum,
-  taskTypeEnum,
-  commentTypeEnum,
-  projectStatusEnum,
-  projectVisibilityEnum
+  comments
 } from "@/lib/db/schema";
 
 /**
@@ -291,7 +284,7 @@ export async function seedDatabase() {
       updatedAt: new Date()
     }).returning();
     
-    const [task4] = await db.insert(tasks).values({
+    await db.insert(tasks).values({
       title: "Content migration",
       description: "Migrate content from old website to new website",
       status: "backlog",
@@ -307,7 +300,7 @@ export async function seedDatabase() {
       updatedAt: new Date()
     }).returning();
     
-    const [task5] = await db.insert(tasks).values({
+    await db.insert(tasks).values({
       title: "SEO optimization",
       description: "Optimize the website for search engines",
       status: "backlog",
@@ -439,7 +432,7 @@ export async function seedDatabase() {
     
     // Create comments
     console.log("Creating comments...");
-    const [comment1] = await db.insert(comments).values({
+    await db.insert(comments).values({
       content: "I've started working on the wireframes. Will share the first draft by tomorrow.",
       type: "text",
       taskId: task1.id,

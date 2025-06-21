@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { organizationMembers } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
-import { Role, Permission, rolePermissions } from "./permissions-data";
+import { Role, rolePermissions } from "./permissions-data";
 
 /**
  * Check if a user has permission to perform an action on a subject
