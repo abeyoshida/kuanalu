@@ -110,7 +110,7 @@
   - [x] 3.7 Create relationships between schemas
   - [x] 3.8 Implement organization API endpoints
   - [x] 3.9 Implement project API endpoints
-  - [ ] 3.10 Implement task API endpoints
+  - [x] 3.10 Implement task API endpoints
   - [ ] 3.11 Implement subtask API endpoints
   - [ ] 3.12 Implement comment API endpoints
   - [ ] 3.13 Add validation to all API endpoints
