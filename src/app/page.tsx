@@ -48,7 +48,7 @@ export default async function LandingPage() {
                 Manage projects simply
               </h1>
               <p className="text-xl text-gray-600 mb-8">
-                FlowBoard helps to get it done.
+                FlowBoard helps to get it done all at once.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/auth/register">
@@ -206,7 +206,7 @@ export default async function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-6">Ready to get started?</h2>
           <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-            Join thousands of teams using FlowBoard to streamline their workflows and boost productivity.
+            Start using FlowBoard to streamline your workflows and boost productivity.
           </p>
           <Link href="/auth/register">
             <Button size="lg" variant="secondary" className="text-blue-600">
@@ -223,7 +223,7 @@ export default async function LandingPage() {
             <div className="mb-8 md:mb-0">
               <span className="text-xl font-bold text-gray-900">FlowBoard</span>
               <p className="mt-2 text-gray-600 max-w-xs">
-                Simple task management for your team.
+                Get it all done all at once.
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-8">

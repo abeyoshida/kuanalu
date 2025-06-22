@@ -1,6 +1,8 @@
 import { RegisterForm } from "@/components/auth/register-form";
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 interface RegisterPageProps {
   searchParams: {
@@ -21,16 +23,42 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   }
   
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Create an account</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign up to get started with Kuanalu
-          </p>
+    <div className="min-h-screen bg-white">
+      {/* Navigation */}
+      <header className="bg-white border-b border-gray-100">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex-shrink-0 flex items-center">
+              <Link href="/">
+                <span className="text-xl font-bold text-primary">FlowBoard</span>
+              </Link>
+            </div>
+            <nav className="hidden md:flex space-x-8">
+              {/* Navigation items */}
+            </nav>
+            <div className="flex items-center space-x-4">
+              <Link href="/auth/login">
+                <Button variant="outline">Sign in</Button>
+              </Link>
+              <Link href="/auth/register">
+                <Button>Sign up</Button>
+              </Link>
+            </div>
+          </div>
         </div>
-        
-        <RegisterForm callbackUrl={callbackUrl} />
+      </header>
+
+      <div className="flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold">Create an account</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Sign up to get started with Kuanalu
+            </p>
+          </div>
+          
+          <RegisterForm callbackUrl={callbackUrl} />
+        </div>
       </div>
     </div>
   );
