@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ interface RegisterFormProps {
 
 export function RegisterForm({ callbackUrl = "/dashboard" }: RegisterFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,6 +25,9 @@ export function RegisterForm({ callbackUrl = "/dashboard" }: RegisterFormProps) 
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Get values from URL search params
+  const urlCallbackUrl = searchParams.get("callbackUrl") || callbackUrl;
 
   // Password strength calculation
   const calculatePasswordStrength = (password: string): { score: number; message: string; color: string } => {
@@ -95,7 +99,7 @@ export function RegisterForm({ callbackUrl = "/dashboard" }: RegisterFormProps) 
       }
 
       // Redirect to login page with callback URL
-      router.push(`/auth/login?registered=true&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      router.push(`/auth/login?registered=true&callbackUrl=${encodeURIComponent(urlCallbackUrl)}`);
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);

@@ -76,7 +76,6 @@ interface ProjectSidebarProps {
 export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     projects: true,
-    recent: true,
   })
 
   const toggleSection = (section: string) => {
@@ -87,7 +86,6 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
   }
 
   //const activeProjects = mockProjects.filter((p) => p.status === "active")
-  const recentProjects = mockProjects.slice(0, 3)
 
   return (
     <div
@@ -101,10 +99,10 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-              <span className="text-white font-bold text-sm">TF</span>
+              <span className="text-white font-bold text-sm">FB</span>
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">TaskFlow</h2>
+              <h2 className="font-semibold text-gray-900">FlowBoard</h2>
               <p className="text-xs text-gray-500">Workspace</p>
             </div>
           </div>
@@ -136,36 +134,7 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
             </Link>
           </nav>
 
-          {/* Recent Projects */}
-          <div className="px-4 py-2">
-            <button
-              onClick={() => toggleSection("recent")}
-              className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
-            >
-              <span>Recent Projects</span>
-              {expandedSections.recent ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-            </button>
 
-            {expandedSections.recent && (
-              <div className="mt-2 space-y-1">
-                {recentProjects.map((project) => (
-                  <Link
-                    key={project.id}
-                    href={`/project/${project.id}`}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md group"
-                  >
-                    <div className={`w-3 h-3 rounded-full ${project.color}`}></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">{project.name}</span>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{project.key}</span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* All Projects */}
           <div className="px-4 py-2">
@@ -181,42 +150,26 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
 
             {expandedSections.projects && (
               <div className="space-y-1">
-                {mockProjects.map((project) => {
-                  const completionRate =
-                    project.tasksCount > 0 ? (project.completedTasks / project.tasksCount) * 100 : 0
-
-                  return (
-                    <Link
-                      key={project.id}
-                      href={`/project/${project.id}`}
-                      className="block px-3 py-2 text-sm hover:bg-gray-100 rounded-md group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${project.color}`}></div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-gray-900 truncate">{project.name}</span>
-                            <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                              {project.key}
-                            </span>
-                            {project.status === "archived" && <span className="text-xs text-gray-400">Archived</span>}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-200 rounded-full h-1.5">
-                              <div
-                                className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-                                style={{ width: `${completionRate}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs text-gray-500">
-                              {project.completedTasks}/{project.tasksCount}
-                            </span>
-                          </div>
+                {mockProjects.map((project) => (
+                  <Link
+                    key={project.id}
+                    href={`/project/${project.id}`}
+                    className="block px-3 py-2 text-sm hover:bg-gray-100 rounded-md group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${project.color}`}></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900 truncate">{project.name}</span>
+                          <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                            {project.key}
+                          </span>
+                          {project.status === "archived" && <span className="text-xs text-gray-400">Archived</span>}
                         </div>
                       </div>
-                    </Link>
-                  )
-                })}
+                    </div>
+                  </Link>
+                ))}
 
                 {/* Create New Project */}
                 <button className="flex items-center gap-3 w-full px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors">

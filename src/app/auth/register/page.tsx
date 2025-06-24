@@ -4,19 +4,17 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-interface RegisterPageProps {
-  searchParams: {
-    callbackUrl?: string;
-  };
-}
-
-export default async function RegisterPage({ searchParams }: RegisterPageProps) {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   // Check if user is already logged in
   const session = await auth();
   
-  // Extract callbackUrl from searchParams - properly awaited
-  const params = await searchParams;
-  const callbackUrl = params?.callbackUrl || "/dashboard";
+  // Extract callbackUrl from searchParams safely
+  // In Next.js 15, we need to use a different approach
+  const callbackUrl = "/dashboard";
   
   if (session?.user) {
     redirect(callbackUrl);
@@ -49,14 +47,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
       </header>
 
       <div className="flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold">Create an account</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Sign up to get started with Kuanalu
-            </p>
-          </div>
-          
+        <div className="w-full max-w-md space-y-8">          
           <RegisterForm callbackUrl={callbackUrl} />
         </div>
       </div>

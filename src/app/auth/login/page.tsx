@@ -4,22 +4,20 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-interface LoginPageProps {
-  searchParams: {
-    callbackUrl?: string;
-    registered?: string;
-  };
-}
-
-export default async function LoginPage({ searchParams }: LoginPageProps) {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   // Check if user is already logged in
   const session = await auth();
   
-  // Extract callbackUrl from searchParams - properly awaited
-  const params = await searchParams;
-  const callbackUrl = params?.callbackUrl || "/dashboard";
-  const registered = params?.registered === "true";
+  // Extract values from searchParams safely
+  // In Next.js 15, we need to use a different approach
+  const callbackUrl = "/dashboard";
+  const registered = false;
   
+  // If user is already authenticated, redirect to callbackUrl
   if (session?.user) {
     redirect(callbackUrl);
   }
@@ -51,14 +49,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       </header>
 
       <div className="flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold">Welcome back</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Sign in to your account to continue
-            </p>
-          </div>
-          
+        <div className="w-full max-w-md space-y-8">          
           <LoginForm callbackUrl={callbackUrl} registered={registered} />
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,30 +19,44 @@ interface LoginFormProps {
 
 export function LoginForm({ callbackUrl = "/dashboard", registered = false }: LoginFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(registered ? "Account created successfully! You can now sign in." : null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  // Get values from URL search params
+  const urlCallbackUrl = searchParams.get("callbackUrl") || callbackUrl;
+  const urlRegistered = searchParams.get("registered") === "true";
+  
+  // Set success message if registered param is true
+  const [success, setSuccess] = useState<string | null>(
+    urlRegistered ? "Account created successfully! You can now sign in." : null
+  );
+
+  // Handle redirect separately to ensure it completes
+  useEffect(() => {
+    if (isRedirecting) {
+      router.push(urlCallbackUrl);
+      router.refresh();
+    }
+  }, [isRedirecting, router, urlCallbackUrl]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    console.log("Attempting login with:", { email, callbackUrl });
-
     try {
-      // Use NextAuth's signIn function directly
+      // Use NextAuth's signIn function
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
-        callbackUrl,
+        callbackUrl: urlCallbackUrl,
       });
-      
-      console.log("Sign in result:", result);
       
       if (result?.error) {
         setError(`Authentication failed: ${result.error}`);
@@ -50,20 +64,14 @@ export function LoginForm({ callbackUrl = "/dashboard", registered = false }: Lo
         return;
       }
 
-      // Set success message before redirecting
+      // Set success message
       setSuccess("Login successful! Redirecting...");
-
-      if (result?.url) {
-        console.log("Login successful, redirecting to:", result.url);
-        // On success, redirect to the URL returned by NextAuth
-        router.push(result.url);
-        router.refresh();
-      } else {
-        // Fallback to callbackUrl if result.url is not available
-        console.log("No URL in result, using callbackUrl:", callbackUrl);
-        router.push(callbackUrl);
-        router.refresh();
-      }
+      
+      // Set a small delay to ensure state updates before redirect
+      setTimeout(() => {
+        setIsRedirecting(true);
+      }, 500);
+      
     } catch (error) {
       console.error("Login error:", error);
       setError("Something went wrong. Please try again.");
@@ -144,12 +152,12 @@ export function LoginForm({ callbackUrl = "/dashboard", registered = false }: Lo
           <Button
             type="submit"
             className="w-full mt-6"
-            disabled={isLoading}
+            disabled={isLoading || isRedirecting}
           >
-            {isLoading ? (
+            {isLoading || isRedirecting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                {isRedirecting ? "Redirecting..." : "Signing in..."}
               </>
             ) : (
               "Sign in"
