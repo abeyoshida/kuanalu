@@ -2,11 +2,7 @@
 
 import KanbanBoard from "@/components/kanban-board";
 
-interface ClientDashboardProps {
-  userName: string;
-}
-
-export default function ClientDashboard({ userName }: ClientDashboardProps) {
+export default function ClientDashboard() {
   return (
     <div className="space-y-6">
       {/* Header for the kanban board */}
