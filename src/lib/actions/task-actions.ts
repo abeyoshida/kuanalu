@@ -613,10 +613,25 @@ export async function updateTaskPositions(
     const oldStatus = task[0].status;
     const oldPosition = task[0].position || 0;
     
-    // Check if user has permission to update tasks in this project
+    // Get the organization ID from the project
+    const project = await db
+      .select({
+        organizationId: projects.organizationId
+      })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
+    // Check if user has permission to update tasks in this project's organization
     const hasUpdatePermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'update',
       'task'
     );
@@ -632,12 +647,54 @@ export async function updateTaskPositions(
     
     const typedNewStatus = newStatus as "backlog" | "todo" | "in_progress" | "in_review" | "done";
     
-    // Start a transaction for position updates
-    await db.transaction(async (tx) => {
-      // If status changed, we need to update positions in both columns
-      if (oldStatus !== typedNewStatus) {
-        // 1. Update positions in the old status column (shift up)
-        await tx
+    // Instead of using a transaction, perform updates sequentially
+    // If status changed, we need to update positions in both columns
+    if (oldStatus !== typedNewStatus) {
+      // 1. Update positions in the old status column (shift up)
+      await db
+        .update(tasks)
+        .set({
+          position: sql`${tasks.position} - 1`,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(tasks.projectId, projectId),
+            eq(tasks.status, oldStatus),
+            sql`${tasks.position} > ${oldPosition}`
+          )
+        );
+      
+      // 2. Make space in the new status column (shift down)
+      await db
+        .update(tasks)
+        .set({
+          position: sql`${tasks.position} + 1`,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(tasks.projectId, projectId),
+            eq(tasks.status, typedNewStatus),
+            sql`${tasks.position} >= ${newPosition}`
+          )
+        );
+      
+      // 3. Update the task with new status and position
+      await db
+        .update(tasks)
+        .set({
+          status: typedNewStatus,
+          position: newPosition,
+          updatedAt: new Date(),
+          completedAt: typedNewStatus === 'done' ? new Date() : (oldStatus === 'done' ? null : undefined)
+        })
+        .where(eq(tasks.id, taskId));
+    } else {
+      // Same status, just reordering
+      if (newPosition > oldPosition) {
+        // Moving down, shift tasks in between up
+        await db
           .update(tasks)
           .set({
             position: sql`${tasks.position} - 1`,
@@ -646,13 +703,14 @@ export async function updateTaskPositions(
           .where(
             and(
               eq(tasks.projectId, projectId),
-              eq(tasks.status, oldStatus),
-              sql`${tasks.position} > ${oldPosition}`
+              eq(tasks.status, typedNewStatus),
+              sql`${tasks.position} > ${oldPosition}`,
+              sql`${tasks.position} <= ${newPosition}`
             )
           );
-        
-        // 2. Make space in the new status column (shift down)
-        await tx
+      } else if (newPosition < oldPosition) {
+        // Moving up, shift tasks in between down
+        await db
           .update(tasks)
           .set({
             position: sql`${tasks.position} + 1`,
@@ -662,69 +720,24 @@ export async function updateTaskPositions(
             and(
               eq(tasks.projectId, projectId),
               eq(tasks.status, typedNewStatus),
-              sql`${tasks.position} >= ${newPosition}`
+              sql`${tasks.position} >= ${newPosition}`,
+              sql`${tasks.position} < ${oldPosition}`
             )
           );
-        
-        // 3. Update the task with new status and position
-        await tx
-          .update(tasks)
-          .set({
-            status: typedNewStatus,
-            position: newPosition,
-            updatedAt: new Date(),
-            completedAt: typedNewStatus === 'done' ? new Date() : (oldStatus === 'done' ? null : undefined)
-          })
-          .where(eq(tasks.id, taskId));
       } else {
-        // Same status, just reordering
-        if (newPosition > oldPosition) {
-          // Moving down, shift tasks in between up
-          await tx
-            .update(tasks)
-            .set({
-              position: sql`${tasks.position} - 1`,
-              updatedAt: new Date()
-            })
-            .where(
-              and(
-                eq(tasks.projectId, projectId),
-                eq(tasks.status, typedNewStatus),
-                sql`${tasks.position} > ${oldPosition}`,
-                sql`${tasks.position} <= ${newPosition}`
-              )
-            );
-        } else if (newPosition < oldPosition) {
-          // Moving up, shift tasks in between down
-          await tx
-            .update(tasks)
-            .set({
-              position: sql`${tasks.position} + 1`,
-              updatedAt: new Date()
-            })
-            .where(
-              and(
-                eq(tasks.projectId, projectId),
-                eq(tasks.status, typedNewStatus),
-                sql`${tasks.position} >= ${newPosition}`,
-                sql`${tasks.position} < ${oldPosition}`
-              )
-            );
-        } else {
-          // No position change
-          return;
-        }
-        
-        // Update the task with new position
-        await tx
-          .update(tasks)
-          .set({
-            position: newPosition,
-            updatedAt: new Date()
-          })
-          .where(eq(tasks.id, taskId));
+        // No position change
+        return;
       }
-    });
+      
+      // Update the task with new position
+      await db
+        .update(tasks)
+        .set({
+          position: newPosition,
+          updatedAt: new Date()
+        })
+        .where(eq(tasks.id, taskId));
+    }
     
     revalidatePath(`/projects/${projectId}`);
   } catch (error) {

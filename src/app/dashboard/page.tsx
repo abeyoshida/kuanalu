@@ -14,10 +14,8 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Suspense fallback={null}>
-        <ClientDashboard userName={session?.user?.name || "User"} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div>Loading...</div>}>
+      <ClientDashboard userName={session?.user?.name || "User"} />
+    </Suspense>
   );
 } 

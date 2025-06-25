@@ -57,11 +57,11 @@ export default async function LandingPage() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link href="/demo">
+                {/*<Link href="/demo">
                   <Button size="lg" variant="outline">
                     View demo
                   </Button>
-                </Link>
+                </Link>*/}
               </div>
             </div>
             <div className="md:w-1/2">

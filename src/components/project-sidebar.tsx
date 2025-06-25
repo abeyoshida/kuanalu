@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useEffect } from "react"
-import { Settings, BarChart3, Plus, ChevronRight, ChevronDown, Building } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Settings, BarChart3, Plus, Building } from "lucide-react"
 import Image from "next/image"
 import { getUserOrganizations } from "@/lib/actions/organization-actions"
 import { getOrganizationProjects } from "@/lib/actions/project-actions"
@@ -10,6 +10,9 @@ import { getCurrentUser } from "@/lib/actions/user-actions"
 import type { OrganizationWithMeta } from "@/types/organization"
 import type { ProjectWithMeta } from "@/types/project"
 import type { SafeUser } from "@/types/user"
+import { usePathname } from "next/navigation"
+import { CreateProjectDialog } from "@/components/organizations/create-project-dialog"
+import { Button } from "@/components/ui/button"
 
 // Define project colors based on status
 const projectStatusColors: Record<string, string> = {
@@ -25,55 +28,59 @@ interface ProjectSidebarProps {
 }
 
 export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    organizations: true,
-  })
   const [user, setUser] = useState<SafeUser | null>(null)
   const [organizations, setOrganizations] = useState<OrganizationWithMeta[]>([])
   const [organizationProjects, setOrganizationProjects] = useState<Record<number, ProjectWithMeta[]>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const pathname = usePathname()
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true)
-        
-        // Fetch current user
-        const userData = await getCurrentUser()
-        setUser(userData)
-        
-        // Fetch user's organizations
-        const orgs = await getUserOrganizations()
-        setOrganizations(orgs)
-        
-        // Fetch projects for each organization
-        const projectsMap: Record<number, ProjectWithMeta[]> = {}
-        
-        for (const org of orgs) {
-          const projects = await getOrganizationProjects(org.id)
-          projectsMap[org.id] = projects
-        }
-        
-        setOrganizationProjects(projectsMap)
-        setError(null)
-      } catch (err) {
-        console.error("Error fetching sidebar data:", err)
-        setError("Failed to load data")
-      } finally {
-        setLoading(false)
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true)
+      
+      // Fetch current user
+      const userData = await getCurrentUser()
+      setUser(userData)
+      
+      // Fetch user's organizations
+      const orgs = await getUserOrganizations()
+      setOrganizations(orgs)
+      
+      // Fetch projects for each organization
+      const projectsMap: Record<number, ProjectWithMeta[]> = {}
+      
+      for (const org of orgs) {
+        const projects = await getOrganizationProjects(org.id)
+        projectsMap[org.id] = projects
       }
+      
+      setOrganizationProjects(projectsMap)
+      setError(null)
+    } catch (err) {
+      console.error("Error fetching sidebar data:", err)
+      setError("Failed to load data")
+    } finally {
+      setLoading(false)
     }
-    
-    fetchData()
   }, [])
 
-  const toggleOrganization = (orgId: number) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [`org_${orgId}`]: !prev[`org_${orgId}`],
-    }))
-  }
+  // Function to refresh projects for a specific organization
+  const refreshProjects = useCallback(async (organizationId: number) => {
+    try {
+      const projects = await getOrganizationProjects(organizationId)
+      setOrganizationProjects(prev => ({
+        ...prev,
+        [organizationId]: projects
+      }))
+    } catch (err) {
+      console.error(`Error refreshing projects for organization ${organizationId}:`, err)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   return (
     <div
@@ -101,7 +108,7 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
           <nav className="p-4 space-y-1">
             <Link
               href="/dashboard"
-              className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md"
+              className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
             >
               <BarChart3 className="w-4 h-4" />
               Dashboard
@@ -135,38 +142,30 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
             ) : error ? (
               <div className="text-sm text-red-500 p-2">{error}</div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {organizations.map((org) => (
-                  <div key={org.id} className="space-y-1">
-                    <button
-                      onClick={() => toggleOrganization(org.id)}
-                      className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Building className="w-4 h-4" />
-                        <span>{org.name}</span>
+                  <div key={org.id}>
+                    <div className="px-2 py-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Building className="w-4 h-4 text-gray-600" />
+                        <span className="font-medium text-gray-800">{org.name}</span>
                         <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">
                           {org.userRole}
                         </span>
                       </div>
-                      {expandedSections[`org_${org.id}`] ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </button>
-
-                    {expandedSections[`org_${org.id}`] && (
-                      <div className="ml-6 space-y-1">
+                      
+                      <div className="ml-2 space-y-0.5 mt-1">
                         {organizationProjects[org.id]?.length > 0 ? (
                           organizationProjects[org.id].map((project) => (
                             <Link
                               key={project.id}
                               href={`/projects/${project.id}`}
-                              className="block px-3 py-2 text-sm hover:bg-gray-100 rounded-md group"
+                              className={`block px-2 py-1 text-sm hover:bg-gray-100 rounded-md group ${
+                                pathname === `/projects/${project.id}` ? "bg-gray-50" : ""
+                              }`}
                             >
-                              <div className="flex items-center gap-3">
-                                <div className={`w-3 h-3 rounded-full ${projectStatusColors[project.status] || "bg-gray-400"}`}></div>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${projectStatusColors[project.status] || "bg-gray-400"}`}></div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
                                     <span className="font-medium text-gray-900 truncate">{project.name}</span>
@@ -179,19 +178,24 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
                             </Link>
                           ))
                         ) : (
-                          <div className="text-xs text-gray-500 px-3 py-2">No projects</div>
+                          <div className="text-xs text-gray-500 px-2 py-1">No projects</div>
                         )}
 
                         {/* Create New Project */}
-                        <Link
-                          href={`/organizations/${org.id}`}
-                          className="flex items-center gap-3 w-full px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors"
+                        <CreateProjectDialog 
+                          organizationId={org.id}
+                          onProjectCreated={() => refreshProjects(org.id)}
                         >
-                          <Plus className="w-4 h-4" />
-                          <span>Create project</span>
-                        </Link>
+                          <Button 
+                            variant="ghost" 
+                            className="flex items-center gap-2 w-full px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-md border border-dashed border-gray-300 hover:border-gray-400 transition-colors mt-2 h-auto font-normal justify-start"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Create project</span>
+                          </Button>
+                        </CreateProjectDialog>
                       </div>
-                    )}
+                    </div>
                   </div>
                 ))}
 

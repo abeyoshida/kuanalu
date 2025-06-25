@@ -21,9 +21,10 @@ import { useRouter } from "next/navigation";
 interface CreateProjectDialogProps {
   children: React.ReactNode;
   organizationId: number;
+  onProjectCreated?: () => void;
 }
 
-export function CreateProjectDialog({ children, organizationId }: CreateProjectDialogProps) {
+export function CreateProjectDialog({ children, organizationId, onProjectCreated }: CreateProjectDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");
@@ -53,7 +54,7 @@ export function CreateProjectDialog({ children, organizationId }: CreateProjectD
         throw new Error(error.message || "Failed to create project");
       }
 
-      await response.json();
+      const project = await response.json();
       
       toast({
         title: "Project created",
@@ -61,10 +62,19 @@ export function CreateProjectDialog({ children, organizationId }: CreateProjectD
       });
       
       setOpen(false);
+      setName("");
+      setDescription("");
+      
+      // Call the onProjectCreated callback if provided
+      if (onProjectCreated) {
+        onProjectCreated();
+      }
+      
+      // Refresh the page to update the sidebar
       router.refresh();
       
-      // Optional: Navigate to the new project
-      // router.push(`/projects/${project.id}`);
+      // Navigate to the new project
+      router.push(`/projects/${project.id}`);
     } catch (error) {
       toast({
         variant: "destructive",

@@ -3,25 +3,18 @@ import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import ProjectKanbanBoard from "@/components/project-kanban-board";
+import AppLayout from "@/components/dashboard/client-dashboard-layout";
 
-interface ProjectPageProps {
+interface ProjectLayoutProps {
+  children: React.ReactNode;
   params: Promise<{
     id: string;
   }>;
 }
 
-export default async function ProjectPage({ params }: ProjectPageProps) {
+export default async function ProjectLayout({ children, params }: ProjectLayoutProps) {
   const session = await auth();
-  
-  if (!session?.user) {
-    return (
-      <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
-        <p>Please sign in to view this project.</p>
-      </div>
-    );
-  }
+  const userName = session?.user?.name || "User";
   
   // Await the params before using them
   const { id } = await params;
@@ -35,8 +28,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const project = await db
     .select({
       id: projects.id,
-      description: projects.description,
-      status: projects.status
+      name: projects.name,
     })
     .from(projects)
     .where(eq(projects.id, projectId))
@@ -48,14 +40,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   }
   
   return (
-    <div className="p-6">
-      {project.description && (
-        <div className="mb-6">
-          <p className="text-gray-600">{project.description}</p>
-        </div>
-      )}
-      
-      <ProjectKanbanBoard projectId={projectId} />
-    </div>
+    <AppLayout userName={userName} title={project.name}>
+      {children}
+    </AppLayout>
   );
 } 
