@@ -29,7 +29,7 @@ export function LoginForm({ callbackUrl = "/dashboard", registered = false }: Lo
 
   // Get values from URL search params
   const urlCallbackUrl = searchParams.get("callbackUrl") || callbackUrl;
-  const urlRegistered = searchParams.get("registered") === "true";
+  const urlRegistered = searchParams.get("registered") === "true" || registered;
   
   // Set success message if registered param is true
   const [success, setSuccess] = useState<string | null>(

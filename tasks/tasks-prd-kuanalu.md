@@ -117,10 +117,10 @@
   - [x] 3.14 Create database seed script for development
 
 - [ ] 4.0 Kanban Board Implementation
-  - [ ] 4.1 Create kanban board layout with 5 columns
-  - [ ] 4.2 Implement task card component
-  - [ ] 4.3 Add drag and drop functionality between columns
-  - [ ] 4.4 Implement task status updates on drop
+  - [x] 4.1 Create kanban board layout with 5 columns
+  - [x] 4.2 Implement task card component
+  - [x] 4.3 Add drag and drop functionality between columns
+  - [x] 4.4 Implement task status updates on drop
   - [ ] 4.5 Add visual feedback during dragging
   - [ ] 4.6 Create task filtering functionality
   - [ ] 4.7 Implement task sorting options

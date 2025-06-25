@@ -1,7 +1,7 @@
 "use client"
 
 import type { Task } from "@/types/tasks"
-import { Calendar, User, AlertCircle } from "lucide-react"
+import { Calendar, User, AlertCircle, Clock, CheckCircle } from "lucide-react"
 
 interface TaskCardProps {
   task: Task
@@ -13,6 +13,14 @@ const priorityColors = {
   medium: "bg-yellow-100 text-yellow-800",
   high: "bg-red-100 text-red-800",
   urgent: "bg-purple-100 text-purple-800",
+}
+
+const statusIcons = {
+  backlog: <Clock className="w-3 h-3 text-gray-500" />,
+  todo: <AlertCircle className="w-3 h-3 text-blue-500" />,
+  in_progress: <Clock className="w-3 h-3 text-yellow-500" />,
+  in_review: <AlertCircle className="w-3 h-3 text-orange-500" />,
+  done: <CheckCircle className="w-3 h-3 text-green-500" />,
 }
 
 export default function TaskCard({ task, onDragStart }: TaskCardProps) {
@@ -50,12 +58,10 @@ export default function TaskCard({ task, onDragStart }: TaskCardProps) {
         </div>
       </div>
 
-      {task.status === "blocked" && (
-        <div className="flex items-center gap-1 mt-2 text-red-600">
-          <AlertCircle className="w-3 h-3" />
-          <span className="text-xs">Blocked</span>
-        </div>
-      )}
+      <div className="flex items-center gap-1 mt-2 text-xs">
+        {statusIcons[task.status as keyof typeof statusIcons]}
+        <span className="capitalize">{task.status.replace('_', ' ')}</span>
+      </div>
     </div>
   )
 }

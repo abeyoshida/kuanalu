@@ -66,13 +66,20 @@ export function useSession() {
 // Simple sign out function
 export async function signOut() {
   try {
-    await fetch("/api/auth/logout", {
+    const response = await fetch("/api/auth/logout", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
     });
-    window.location.href = "/auth/login";
+    
+    // Check if the response is successful
+    if (response.ok) {
+      // Only redirect after successful logout
+      window.location.href = "/auth/login";
+    } else {
+      console.error("Logout failed:", await response.json());
+    }
   } catch (error) {
     console.error("Sign out error:", error);
   }

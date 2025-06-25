@@ -5,16 +5,23 @@ import type React from "react"
 import TaskCard from "./task-card"
 import type { Task } from "@/types/tasks"
 
-interface KanbanColumnProps {
+interface KanbanColumnProps<T extends Task = Task> {
   title: string
   color: string
-  tasks: Task[]
+  tasks: T[]
   onDragOver: (e: React.DragEvent) => void
   onDrop: (e: React.DragEvent) => void
-  onDragStart: (task: Task) => void
+  onDragStart: (task: T) => void
 }
 
-export default function KanbanColumn({ title, color, tasks, onDragOver, onDrop, onDragStart }: KanbanColumnProps) {
+export default function KanbanColumn<T extends Task = Task>({ 
+  title, 
+  color, 
+  tasks, 
+  onDragOver, 
+  onDrop, 
+  onDragStart 
+}: KanbanColumnProps<T>) {
   return (
     <div className="flex-shrink-0 w-80">
       <div className={`rounded-lg ${color} p-4 mb-4`}>
