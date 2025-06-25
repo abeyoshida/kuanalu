@@ -15,7 +15,7 @@ export default async function DashboardPage() {
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <ClientDashboard userName={session?.user?.name || "User"} />
+      <ClientDashboard />
     </Suspense>
   );
 } 
