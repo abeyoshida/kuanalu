@@ -36,7 +36,7 @@ export async function getProjectTasks(
   const userId = parseInt(session.user.id);
   
   try {
-    // Check if user has access to the project
+    // Check if user is a member of the project
     const membership = await db
       .select()
       .from(projectMembers)
@@ -50,15 +50,32 @@ export async function getProjectTasks(
     
     const isProjectMember = membership.length > 0;
     
+    // If not a project member, check if project is public or if user has organization-level permissions
     if (!isProjectMember) {
-      // Check if project is public
+      // Get the project and its organization
       const project = await db
-        .select({ visibility: projects.visibility })
+        .select({
+          visibility: projects.visibility,
+          organizationId: projects.organizationId
+        })
         .from(projects)
         .where(eq(projects.id, projectId))
         .limit(1);
       
-      if (!project.length || project[0].visibility !== 'public') {
+      if (!project.length) {
+        throw new Error("Project not found");
+      }
+      
+      // Check if user has organization-level permissions
+      const hasViewPermission = await hasPermission(
+        userId,
+        project[0].organizationId,
+        'read',
+        'task'
+      );
+      
+      // If user doesn't have org-level permissions and project is not public, deny access
+      if (!hasViewPermission && project[0].visibility !== 'public') {
         throw new Error("You don't have access to this project's tasks");
       }
     }
@@ -208,7 +225,7 @@ export async function getTaskById(taskId: number): Promise<TaskWithMeta | null> 
   const userId = parseInt(session.user.id);
   
   try {
-    // Get the task with meta information
+    // Get the task with basic details
     const task = await db
       .select({
         id: tasks.id,
@@ -233,32 +250,19 @@ export async function getTaskById(taskId: number): Promise<TaskWithMeta | null> 
         createdBy: tasks.createdBy,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt,
-        archivedAt: tasks.archivedAt,
-        assigneeName: users.name
+        archivedAt: tasks.archivedAt
       })
       .from(tasks)
-      .leftJoin(users, eq(tasks.assigneeId, users.id))
       .where(eq(tasks.id, taskId))
       .limit(1)
-      .then((results) => results[0] || null);
+      .then(results => results[0] || null);
     
     if (!task) {
-      throw new Error("Task not found");
+      return null;
     }
     
-    // Create a result object with reporterName property
-    const taskResult = {
-      ...task,
-      reporterName: undefined as string | undefined,
-      assigneeName: task.assigneeName || undefined,
-      subtaskCount: 0,
-      commentCount: 0,
-      childTaskCount: 0,
-      isOverdue: false
-    } as TaskWithMeta;
-    
-    // Check if user has access to the project
-    const membership = await db
+    // Check if user is a member of the project
+    const projectMembership = await db
       .select()
       .from(projectMembers)
       .where(
@@ -269,45 +273,67 @@ export async function getTaskById(taskId: number): Promise<TaskWithMeta | null> 
       )
       .limit(1);
     
-    const isProjectMember = membership.length > 0;
+    const isProjectMember = projectMembership.length > 0;
     
+    // If not a project member, check if project is public or if user has organization-level permissions
     if (!isProjectMember) {
-      // Check if project is public
+      // Get the project and its organization
       const project = await db
-        .select({ visibility: projects.visibility })
+        .select({
+          visibility: projects.visibility,
+          organizationId: projects.organizationId
+        })
         .from(projects)
         .where(eq(projects.id, task.projectId))
         .limit(1);
       
-      if (!project.length || project[0].visibility !== 'public') {
+      if (!project.length) {
+        throw new Error("Project not found");
+      }
+      
+      // Check if user has organization-level permissions
+      const hasViewPermission = await hasPermission(
+        userId,
+        project[0].organizationId,
+        'read',
+        'task'
+      );
+      
+      // If user doesn't have org-level permissions and project is not public, deny access
+      if (!hasViewPermission && project[0].visibility !== 'public') {
         throw new Error("You don't have access to this task");
       }
     }
     
-    // Get reporter name
-    if (task.reporterId) {
-      const reporter = await db
-        .select({ name: users.name })
-        .from(users)
-        .where(eq(users.id, task.reporterId))
-        .limit(1);
-      
-      if (reporter.length) {
-        taskResult.reporterName = reporter[0].name;
-      }
-    }
+    // Get assignee name
+    const assignee = task.assigneeId ? await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, task.assigneeId))
+      .limit(1)
+      .then(results => results[0] || null) : null;
     
-    // Get subtask, comment, and child task counts
+    // Get reporter name
+    const reporter = task.reporterId ? await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, task.reporterId))
+      .limit(1)
+      .then(results => results[0] || null) : null;
+    
+    // Get subtask count
     const [subtaskResult] = await db
       .select({ count: count() })
       .from(subtasks)
       .where(eq(subtasks.taskId, taskId));
     
+    // Get comment count
     const [commentResult] = await db
       .select({ count: count() })
       .from(comments)
       .where(eq(comments.taskId, taskId));
     
+    // Get child task count
     const [childTaskResult] = await db
       .select({ count: count() })
       .from(tasks)
@@ -323,7 +349,9 @@ export async function getTaskById(taskId: number): Promise<TaskWithMeta | null> 
       new Date(task.dueDate) < new Date() && !task.completedAt;
     
     return {
-      ...taskResult,
+      ...task,
+      assigneeName: assignee?.name,
+      reporterName: reporter?.name,
       subtaskCount: Number(subtaskResult.count),
       commentCount: Number(commentResult.count),
       childTaskCount: Number(childTaskResult.count),
@@ -331,7 +359,7 @@ export async function getTaskById(taskId: number): Promise<TaskWithMeta | null> 
     };
   } catch (error) {
     console.error('Failed to get task details:', error);
-    throw error;
+    return null;
   }
 }
 
@@ -348,21 +376,53 @@ export async function createTask(input: CreateTaskInput): Promise<TaskWithMeta> 
   const userId = parseInt(session.user.id);
   
   try {
-    // Check if user has permission to create tasks in this project
-    const hasCreatePermission = await hasPermission(
-      userId,
-      input.projectId,
-      'create',
-      'task'
-    );
+    // Check if user is a member of the project
+    const projectMembership = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, input.projectId)
+        )
+      )
+      .limit(1);
     
-    if (!hasCreatePermission) {
-      throw new Error("You don't have permission to create tasks in this project");
+    const isProjectMember = projectMembership.length > 0;
+    
+    // If not a project member, check if user has organization-level permissions
+    if (!isProjectMember) {
+      // Get the project and its organization
+      const project = await db
+        .select({
+          organizationId: projects.organizationId
+        })
+        .from(projects)
+        .where(eq(projects.id, input.projectId))
+        .limit(1);
+      
+      if (!project.length) {
+        throw new Error("Project not found");
+      }
+      
+      // Check if user has organization-level permissions
+      const hasCreatePermission = await hasPermission(
+        userId,
+        project[0].organizationId,
+        'create',
+        'task'
+      );
+      
+      if (!hasCreatePermission) {
+        throw new Error("You don't have permission to create tasks in this project");
+      }
     }
     
-    // Get max position for the status column
-    const [maxPositionResult] = await db
-      .select({ maxPosition: sql`MAX(${tasks.position})` })
+    // Get the highest position for the status
+    const [positionResult] = await db
+      .select({
+        maxPosition: sql<number>`COALESCE(MAX(${tasks.position}), -1) + 1`
+      })
       .from(tasks)
       .where(
         and(
@@ -371,34 +431,30 @@ export async function createTask(input: CreateTaskInput): Promise<TaskWithMeta> 
         )
       );
     
-    const position = maxPositionResult.maxPosition ? Number(maxPositionResult.maxPosition) + 1 : 0;
-    
     // Create the task
     const [newTask] = await db
       .insert(tasks)
       .values({
         title: input.title,
-        description: input.description || null,
+        description: input.description,
         status: input.status || 'todo',
         priority: input.priority || 'medium',
         type: input.type || 'task',
         projectId: input.projectId,
         assigneeId: input.assigneeId || null,
-        reporterId: input.reporterId || userId,
+        reporterId: userId,
         parentTaskId: input.parentTaskId || null,
-        dueDate: input.dueDate || null,
-        startDate: input.startDate || null,
+        dueDate: input.dueDate ? new Date(input.dueDate) : null,
+        startDate: input.startDate ? new Date(input.startDate) : null,
         estimatedHours: input.estimatedHours || null,
         points: input.points || null,
-        position: input.position !== undefined ? input.position : position,
-        labels: input.labels ? JSON.stringify(input.labels) : null,
+        position: positionResult.maxPosition,
+        labels: input.labels || [],
         createdBy: userId,
         createdAt: new Date(),
         updatedAt: new Date()
       })
       .returning();
-    
-    revalidatePath(`/projects/${input.projectId}`);
     
     // Get the task with meta information
     const taskWithMeta = await getTaskById(newTask.id);
@@ -406,6 +462,8 @@ export async function createTask(input: CreateTaskInput): Promise<TaskWithMeta> 
     if (!taskWithMeta) {
       throw new Error("Failed to retrieve created task");
     }
+    
+    revalidatePath(`/projects/${input.projectId}`);
     
     return taskWithMeta;
   } catch (error) {
@@ -427,11 +485,12 @@ export async function updateTask(taskId: number, input: UpdateTaskInput): Promis
   const userId = parseInt(session.user.id);
   
   try {
-    // Get the task to check permissions and project ID
+    // Get the task to check permissions and get project ID
     const task = await db
       .select({
         projectId: tasks.projectId,
-        status: tasks.status
+        status: tasks.status,
+        completedAt: tasks.completedAt
       })
       .from(tasks)
       .where(eq(tasks.id, taskId))
@@ -443,69 +502,86 @@ export async function updateTask(taskId: number, input: UpdateTaskInput): Promis
     
     const projectId = task[0].projectId;
     
-    // Check if user has permission to update tasks in this project
-    const hasUpdatePermission = await hasPermission(
-      userId,
-      projectId,
-      'update',
-      'task'
-    );
+    // Check if user is a member of the project
+    const projectMembership = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, projectId)
+        )
+      )
+      .limit(1);
     
-    if (!hasUpdatePermission) {
-      throw new Error("You don't have permission to update tasks in this project");
-    }
+    const isProjectMember = projectMembership.length > 0;
     
-    // If status is changing, update position
-    let position = input.position;
-    if (input.status && input.status !== task[0].status && position === undefined) {
-      // Get max position for the new status column
-      const [maxPositionResult] = await db
-        .select({ maxPosition: sql`MAX(${tasks.position})` })
-        .from(tasks)
-        .where(
-          and(
-            eq(tasks.projectId, projectId),
-            eq(tasks.status, input.status)
-          )
-        );
+    // If not a project member, check if user has organization-level permissions
+    if (!isProjectMember) {
+      // Get the project and its organization
+      const project = await db
+        .select({
+          organizationId: projects.organizationId
+        })
+        .from(projects)
+        .where(eq(projects.id, projectId))
+        .limit(1);
       
-      position = maxPositionResult.maxPosition ? Number(maxPositionResult.maxPosition) + 1 : 0;
+      if (!project.length) {
+        throw new Error("Project not found");
+      }
+      
+      // Check if user has organization-level permissions
+      const hasUpdatePermission = await hasPermission(
+        userId,
+        project[0].organizationId,
+        'update',
+        'task'
+      );
+      
+      if (!hasUpdatePermission) {
+        throw new Error("You don't have permission to update tasks in this project");
+      }
     }
     
-    // Check if status is changing to 'done'
-    const isCompletingTask = input.status === 'done' && task[0].status !== 'done';
+    // Prepare update data
+    const updateData: Record<string, unknown> = {
+      updatedAt: new Date()
+    };
     
-    // Check if status is changing from 'done' to something else
-    const isReopeningTask = input.status && input.status !== 'done' && task[0].status === 'done';
+    // Only include fields that are provided in the input
+    if (input.title !== undefined) updateData.title = input.title;
+    if (input.description !== undefined) updateData.description = input.description;
+    if (input.priority !== undefined) updateData.priority = input.priority;
+    if (input.type !== undefined) updateData.type = input.type;
+    if (input.assigneeId !== undefined) updateData.assigneeId = input.assigneeId;
+    if (input.parentTaskId !== undefined) updateData.parentTaskId = input.parentTaskId;
+    if (input.dueDate !== undefined) updateData.dueDate = input.dueDate ? new Date(input.dueDate) : null;
+    if (input.startDate !== undefined) updateData.startDate = input.startDate ? new Date(input.startDate) : null;
+    if (input.estimatedHours !== undefined) updateData.estimatedHours = input.estimatedHours;
+    if (input.actualHours !== undefined) updateData.actualHours = input.actualHours;
+    if (input.points !== undefined) updateData.points = input.points;
+    if (input.labels !== undefined) updateData.labels = input.labels;
+    
+    // Handle status change specially
+    if (input.status !== undefined && input.status !== task[0].status) {
+      updateData.status = input.status;
+      
+      // Set completedAt when moving to done
+      if (input.status === 'done' && task[0].status !== 'done') {
+        updateData.completedAt = new Date();
+      }
+      // Clear completedAt when moving from done
+      else if (input.status !== 'done' && task[0].status === 'done') {
+        updateData.completedAt = null;
+      }
+    }
     
     // Update the task
     await db
       .update(tasks)
-      .set({
-        title: input.title !== undefined ? input.title : undefined,
-        description: input.description !== undefined ? input.description : undefined,
-        status: input.status !== undefined ? input.status : undefined,
-        priority: input.priority !== undefined ? input.priority : undefined,
-        type: input.type !== undefined ? input.type : undefined,
-        assigneeId: input.assigneeId !== undefined ? input.assigneeId : undefined,
-        reporterId: input.reporterId !== undefined ? input.reporterId : undefined,
-        parentTaskId: input.parentTaskId !== undefined ? input.parentTaskId : undefined,
-        dueDate: input.dueDate !== undefined ? input.dueDate : undefined,
-        startDate: input.startDate !== undefined ? input.startDate : undefined,
-        estimatedHours: input.estimatedHours !== undefined ? input.estimatedHours : undefined,
-        actualHours: input.actualHours !== undefined ? input.actualHours : undefined,
-        points: input.points !== undefined ? input.points : undefined,
-        position: position !== undefined ? position : undefined,
-        labels: input.labels !== undefined ? JSON.stringify(input.labels) : undefined,
-        metadata: input.metadata !== undefined ? JSON.stringify(input.metadata) : undefined,
-        completedAt: isCompletingTask ? new Date() : (isReopeningTask ? null : undefined),
-        archivedAt: input.archived ? new Date() : (input.archived === false ? null : undefined),
-        updatedAt: new Date()
-      })
+      .set(updateData)
       .where(eq(tasks.id, taskId));
-    
-    revalidatePath(`/projects/${projectId}`);
-    revalidatePath(`/task/${taskId}`);
     
     // Get the updated task with meta information
     const updatedTask = await getTaskById(taskId);
@@ -513,6 +589,8 @@ export async function updateTask(taskId: number, input: UpdateTaskInput): Promis
     if (!updatedTask) {
       throw new Error("Failed to retrieve updated task");
     }
+    
+    revalidatePath(`/projects/${projectId}`);
     
     return updatedTask;
   } catch (error) {
@@ -628,16 +706,44 @@ export async function updateTaskPositions(
     
     const organizationId = project[0].organizationId;
     
-    // Check if user has permission to update tasks in this project's organization
-    const hasUpdatePermission = await hasPermission(
-      userId,
-      organizationId,
-      'update',
-      'task'
-    );
+    // First check if user is a member of the project
+    const projectMembership = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, projectId)
+        )
+      )
+      .limit(1);
     
-    if (!hasUpdatePermission) {
-      throw new Error("You don't have permission to update tasks in this project");
+    const isProjectMember = projectMembership.length > 0;
+    
+    // If not a project member, check organization permissions
+    if (!isProjectMember) {
+      // Check if user has permission to update tasks in this project's organization
+      const hasUpdatePermission = await hasPermission(
+        userId,
+        organizationId,
+        'update',
+        'task'
+      );
+      
+      if (!hasUpdatePermission) {
+        throw new Error("You don't have permission to update tasks in this project");
+      }
+      
+      // Check if the project is public
+      const projectVisibility = await db
+        .select({ visibility: projects.visibility })
+        .from(projects)
+        .where(eq(projects.id, projectId))
+        .limit(1);
+      
+      if (!projectVisibility.length || projectVisibility[0].visibility !== 'public') {
+        throw new Error("You don't have access to this project's tasks");
+      }
     }
     
     // Validate newStatus is a valid task status

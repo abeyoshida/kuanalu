@@ -1,9 +1,7 @@
-import { auth } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import AppLayout from "@/components/dashboard/client-dashboard-layout";
 
 interface ProjectLayoutProps {
   children: React.ReactNode;
@@ -13,9 +11,6 @@ interface ProjectLayoutProps {
 }
 
 export default async function ProjectLayout({ children, params }: ProjectLayoutProps) {
-  const session = await auth();
-  const userName = session?.user?.name || "User";
-  
   // Await the params before using them
   const { id } = await params;
   const projectId = parseInt(id);
@@ -39,9 +34,5 @@ export default async function ProjectLayout({ children, params }: ProjectLayoutP
     return notFound();
   }
   
-  return (
-    <AppLayout userName={userName} title={project.name}>
-      {children}
-    </AppLayout>
-  );
+  return children;
 } 

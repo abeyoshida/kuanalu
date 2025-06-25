@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, LogOut, User } from "lucide-react";
 import ProjectSidebar from "@/components/project-sidebar";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -18,6 +19,10 @@ export default function AppLayout({
   title = "Kanban Board"
 }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const pathname = usePathname();
+  
+  // Check if we're on a project detail page
+  const isProjectDetailPage = pathname.match(/^\/projects\/\d+$/);
 
   return (
     <>
@@ -36,7 +41,7 @@ export default function AppLayout({
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              <h1 className="text-3xl font-bold">{title}</h1>
+              {!isProjectDetailPage && <h1 className="text-3xl font-bold">{title}</h1>}
             </div>
             
             <div className="flex items-center gap-4">
