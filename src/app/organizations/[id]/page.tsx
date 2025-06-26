@@ -62,7 +62,6 @@ export default async function OrganizationPage({
             <ChevronLeft className="h-4 w-4 mr-1" />
             Back to Organizations
           </Link>
-          <h1 className="text-3xl font-bold">{organization.name}</h1>
         </div>
         
         <Tabs defaultValue={activeTab} className="w-full">

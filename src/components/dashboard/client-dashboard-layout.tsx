@@ -5,24 +5,43 @@ import { Button } from "@/components/ui/button";
 import { Menu, LogOut, User } from "lucide-react";
 import ProjectSidebar from "@/components/project-sidebar";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 interface AppLayoutProps {
   children: React.ReactNode;
   userName: string;
   title?: string;
+  hideWelcomeMessage?: boolean;
 }
 
 export default function AppLayout({ 
   children,
   userName,
-  title = "Kanban Board"
+  title = "Kanban Board",
+  hideWelcomeMessage = false
 }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
-  
-  // Check if we're on a project detail page
-  const isProjectDetailPage = pathname.match(/^\/projects\/\d+$/);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (response.ok) {
+        router.push("/auth/login");
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <>
@@ -30,9 +49,9 @@ export default function AppLayout({
 
       {/* Main Content */}
       <div className={`transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
-        <div className="p-4">
-          {/* Header */}
-          <div className="mb-4 flex justify-between items-center">
+        {/* Header */}
+        <header className="border-b border-gray-200 bg-white">
+          <div className="flex items-center justify-between px-4 py-2">
             <div className="flex items-center gap-4">
               <Button 
                 variant="ghost" 
@@ -41,7 +60,7 @@ export default function AppLayout({
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              {!isProjectDetailPage && <h1 className="text-3xl font-bold">{title}</h1>}
+              <h1 className="text-2xl font-bold">{title}</h1>
             </div>
             
             <div className="flex items-center gap-4">
@@ -54,16 +73,21 @@ export default function AppLayout({
                   Profile
                 </Button>
               </Link>
-              <Link href="/auth/logout">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
             </div>
           </div>
-          
-          {/* Page Content */}
+        </header>
+        
+        {/* Page Content */}
+        <div className="p-6">
           {children}
         </div>
       </div>

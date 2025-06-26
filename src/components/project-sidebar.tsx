@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useState, useEffect, useCallback } from "react"
-import { Settings, BarChart3, Plus, Building } from "lucide-react"
+import { Settings, BarChart3, Plus, Building, ChevronDown } from "lucide-react"
 import Image from "next/image"
 import { getUserOrganizations } from "@/lib/actions/organization-actions"
 import { getOrganizationProjects } from "@/lib/actions/project-actions"
@@ -13,6 +13,13 @@ import type { SafeUser } from "@/types/user"
 import { usePathname } from "next/navigation"
 import { CreateProjectDialog } from "@/components/organizations/create-project-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 // Define project colors based on status
 const projectStatusColors: Record<string, string> = {
@@ -33,6 +40,7 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
   const [organizationProjects, setOrganizationProjects] = useState<Record<number, ProjectWithMeta[]>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null)
   const pathname = usePathname()
 
   const fetchData = useCallback(async () => {
@@ -46,6 +54,11 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
       // Fetch user's organizations
       const orgs = await getUserOrganizations()
       setOrganizations(orgs)
+      
+      // Set the first organization as selected by default if there is one
+      if (orgs.length > 0 && !selectedOrgId) {
+        setSelectedOrgId(orgs[0].id)
+      }
       
       // Fetch projects for each organization
       const projectsMap: Record<number, ProjectWithMeta[]> = {}
@@ -63,7 +76,7 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [selectedOrgId])
 
   // Function to refresh projects for a specific organization
   const refreshProjects = useCallback(async (organizationId: number) => {
@@ -81,6 +94,12 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // Get the selected organization
+  const selectedOrg = organizations.find(org => org.id === selectedOrgId)
+  
+  // Get projects for the selected organization
+  const selectedOrgProjects = selectedOrgId ? organizationProjects[selectedOrgId] || [] : []
 
   return (
     <div
@@ -103,113 +122,149 @@ export default function ProjectSidebar({ isOpen }: ProjectSidebarProps) {
           </div>
         </div>
 
+        {/* Organization Dropdown */}
+        <div className="p-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-between font-normal"
+                disabled={loading || organizations.length === 0}
+              >
+                <div className="flex items-center gap-2">
+                  <Building className="h-4 w-4" />
+                  <span className="truncate">
+                    {loading 
+                      ? "Loading..." 
+                      : selectedOrg 
+                        ? selectedOrg.name 
+                        : organizations.length === 0 
+                          ? "No Organizations" 
+                          : "Select Organization"}
+                  </span>
+                </div>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[220px]">
+              {organizations.map((org) => (
+                <DropdownMenuItem 
+                  key={org.id} 
+                  onClick={() => setSelectedOrgId(org.id)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="truncate">{org.name}</span>
+                    <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">
+                      {org.userRole}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+              
+              <Link href="/organizations">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span>Create Organization</span>
+                </DropdownMenuItem>
+              </Link>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto">
           <nav className="p-4 space-y-1">
             <Link
               href="/dashboard"
-              className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
+              className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md ${
+                pathname === "/dashboard" ? "text-gray-900" : ""
+              }`}
             >
               <BarChart3 className="w-4 h-4" />
               Dashboard
             </Link>
             <Link
-              href="/organizations"
-              className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
-            >
-              <Building className="w-4 h-4" />
-              Organizations
-            </Link>
-            <Link
               href="/profile"
-              className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
+              className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md ${
+                pathname === "/profile" ? "text-gray-900" : ""
+              }`}
             >
               <Settings className="w-4 h-4" />
               Settings
             </Link>
           </nav>
 
-          {/* Organizations and Projects */}
-          <div className="px-4 py-2">
-            {loading ? (
-              <div className="flex justify-center py-4">
-                <div className="animate-pulse flex space-x-2">
-                  <div className="h-2 w-2 bg-gray-300 rounded-full"></div>
-                  <div className="h-2 w-2 bg-gray-300 rounded-full"></div>
-                  <div className="h-2 w-2 bg-gray-300 rounded-full"></div>
+          {/* Projects Section */}
+          {selectedOrgId && (
+            <div className="px-4 py-2">
+              <div className="flex items-center justify-between px-2 mb-2">
+                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">PROJECTS</h3>
+                <Link href={`/organizations/${selectedOrgId}`}>
+                  <Button variant="ghost" size="sm" className="h-6 px-2">
+                    <span className="sr-only">View all</span>
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </Link>
+              </div>
+              
+              {loading ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-pulse flex space-x-2">
+                    <div className="h-2 w-2 bg-gray-300 rounded-full"></div>
+                    <div className="h-2 w-2 bg-gray-300 rounded-full"></div>
+                    <div className="h-2 w-2 bg-gray-300 rounded-full"></div>
+                  </div>
                 </div>
-              </div>
-            ) : error ? (
-              <div className="text-sm text-red-500 p-2">{error}</div>
-            ) : (
-              <div className="space-y-5">
-                {organizations.map((org) => (
-                  <div key={org.id}>
-                    <div className="px-2 py-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Building className="w-4 h-4 text-gray-600" />
-                        <span className="font-medium text-gray-800">{org.name}</span>
-                        <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">
-                          {org.userRole}
-                        </span>
-                      </div>
-                      
-                      <div className="ml-2 space-y-0.5 mt-1">
-                        {organizationProjects[org.id]?.length > 0 ? (
-                          organizationProjects[org.id].map((project) => (
-                            <Link
-                              key={project.id}
-                              href={`/projects/${project.id}`}
-                              className={`block px-2 py-1 text-sm hover:bg-gray-100 rounded-md group ${
-                                pathname === `/projects/${project.id}` ? "bg-gray-50" : ""
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${projectStatusColors[project.status] || "bg-gray-400"}`}></div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium text-gray-900 truncate">{project.name}</span>
-                                    {project.archivedAt && (
-                                      <span className="text-xs text-gray-400">Archived</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </Link>
-                          ))
-                        ) : (
-                          <div className="text-xs text-gray-500 px-2 py-1">No projects</div>
-                        )}
+              ) : error ? (
+                <div className="text-sm text-red-500 p-2">{error}</div>
+              ) : (
+                <div className="space-y-1">
+                  {selectedOrgProjects.length > 0 ? (
+                    selectedOrgProjects.map((project) => (
+                      <Link
+                        key={project.id}
+                        href={`/projects/${project.id}`}
+                        className={`block px-2 py-1 text-sm hover:bg-gray-100 rounded-md group ${
+                          pathname === `/projects/${project.id}` ? "bg-gray-50" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${projectStatusColors[project.status] || "bg-gray-400"}`}></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-900 truncate">{project.name}</span>
+                              {project.archivedAt && (
+                                <span className="text-xs text-gray-400">Archived</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="text-xs text-gray-500 px-2 py-1">No projects</div>
+                  )}
 
-                        {/* Create New Project */}
-                        <CreateProjectDialog 
-                          organizationId={org.id}
-                          onProjectCreated={() => refreshProjects(org.id)}
-                        >
-                          <Button 
-                            variant="ghost" 
-                            className="flex items-center gap-2 w-full px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-md border border-dashed border-gray-300 hover:border-gray-400 transition-colors mt-2 h-auto font-normal justify-start"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Create project</span>
-                          </Button>
-                        </CreateProjectDialog>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {organizations.length === 0 && (
-                  <div className="text-sm text-gray-500 p-2">
-                    No organizations found. 
-                    <Link href="/organizations" className="text-blue-500 hover:underline ml-1">
-                      Create one
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                  {/* Create New Project */}
+                  {selectedOrgId && (
+                    <CreateProjectDialog 
+                      organizationId={selectedOrgId}
+                      onProjectCreated={() => refreshProjects(selectedOrgId)}
+                    >
+                      <Button 
+                        variant="ghost" 
+                        className="flex items-center gap-2 w-full px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-md border border-dashed border-gray-300 hover:border-gray-400 transition-colors mt-2 h-auto font-normal justify-start"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Create project</span>
+                      </Button>
+                    </CreateProjectDialog>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Sidebar Footer */}

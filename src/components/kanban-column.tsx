@@ -24,7 +24,7 @@ export default function KanbanColumn<T extends Task = Task>({
 }: KanbanColumnProps<T>) {
   return (
     <div className="flex-shrink-0 w-80">
-      <div className={`rounded-lg ${color} px-4 py-2 mb-3`}>
+      <div className={`rounded-lg ${color} px-3 py-1 mb-2`}>
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-gray-800">{title}</h3>
           <span className="text-sm text-gray-600 bg-white px-2 py-0.5 rounded-full">{tasks.length}</span>
