@@ -27,11 +27,11 @@
 
 ## Tasks
 
-- [ ] 1.0 Create Route Group Structure
-  - [ ] 1.1 Create `(auth)` route group folder for authenticated routes
-  - [ ] 1.2 Create `auth` folder for unauthenticated routes
-  - [ ] 1.3 Move existing authenticated pages to the `(auth)` route group
-  - [ ] 1.4 Update imports and paths in moved files
+- [x] 1.0 Create Route Group Structure
+  - [x] 1.1 Create `(auth)` route group folder for authenticated routes
+  - [x] 1.2 Create `auth` folder for unauthenticated routes
+  - [x] 1.3 Move existing authenticated pages to the `(auth)` route group
+  - [x] 1.4 Update imports and paths in moved files
 
 - [ ] 2.0 Create Layout Components
   - [ ] 2.1 Create `components/layout/app-shell.tsx` component
