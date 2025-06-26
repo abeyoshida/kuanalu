@@ -8,6 +8,7 @@ import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useHeader } from "@/components/layout/header-context";
 
 interface OrganizationContentProps {
   organization: {
@@ -29,7 +30,16 @@ export default function OrganizationContent({
 }: OrganizationContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { setEntityName } = useHeader();
   const [activeTab, setActiveTab] = useState<string>("projects");
+  
+  // Set the organization name in the header when the component mounts
+  useEffect(() => {
+    setEntityName(organization.name);
+    
+    // Clean up when unmounting
+    return () => setEntityName(null);
+  }, [organization.name, setEntityName]);
   
   // Get the tab from URL or default to "projects"
   useEffect(() => {
@@ -59,11 +69,6 @@ export default function OrganizationContent({
           <ChevronLeft className="h-4 w-4 mr-1" />
           Back to Organizations
         </Link>
-        
-        <h1 className="text-3xl font-bold">{organization.name}</h1>
-        {organization.description && (
-          <p className="text-gray-600 mt-2">{organization.description}</p>
-        )}
       </div>
       
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">

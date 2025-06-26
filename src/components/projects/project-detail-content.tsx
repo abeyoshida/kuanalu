@@ -1,59 +1,36 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Users, Calendar, Clock, AlertCircle } from "lucide-react";
+import { Calendar, Clock, AlertCircle } from "lucide-react";
 import ProjectKanbanBoard from "@/components/project-kanban-board";
+import { useHeader } from "@/components/layout/header-context";
 
-// Status badge colors
-const statusColors: Record<string, string> = {
-  planning: "bg-blue-100 text-blue-800",
-  active: "bg-green-100 text-green-800",
-  on_hold: "bg-yellow-100 text-yellow-800",
-  completed: "bg-purple-100 text-purple-800",
-  canceled: "bg-gray-100 text-gray-800",
-};
+interface Project {
+  id: number;
+  name: string;
+  description: string | null;
+  status: string;
+}
 
 interface ProjectDetailContentProps {
-  project: {
-    id: number;
-    name: string;
-    description: string | null;
-    status: string;
-  };
+  project: Project;
 }
 
 export default function ProjectDetailContent({ project }: ProjectDetailContentProps) {
-  const formattedStatus = project.status.charAt(0).toUpperCase() + project.status.slice(1).replace('_', ' ');
+  const { setEntityName } = useHeader();
+
+  // Set the project name in the header when the component mounts
+  useEffect(() => {
+    setEntityName(project.name);
+    
+    // Clean up when unmounting
+    return () => setEntityName(null);
+  }, [project.name, setEntityName]);
   
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{project.name}</h1>
-            <Badge className={statusColors[project.status] || "bg-gray-100"}>
-              {formattedStatus}
-            </Badge>
-          </div>
-          {project.description && (
-            <p className="text-gray-600 mt-2">{project.description}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Manage Team
-          </Button>
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
-          </Button>
-        </div>
-      </div>
-      
+    <div>
       <Tabs defaultValue="board" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="board">Kanban Board</TabsTrigger>

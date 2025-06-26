@@ -75,7 +75,7 @@ async function testProtectedRoute(route: string, isAuthenticated: boolean) {
 /**
  * Run all tests
  */
-async function runTests() {
+async function testAuthRoutes() {
   console.log("=== Testing Protected Routes ===");
   
   // Test protected routes without authentication
@@ -96,4 +96,4 @@ async function runTests() {
 }
 
 // Run the tests
-runTests().catch(console.error); 
+testAuthRoutes().catch(console.error); 

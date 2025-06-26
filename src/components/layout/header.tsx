@@ -4,19 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Menu, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useHeader } from "./header-context";
 
 interface HeaderProps {
   userName: string;
-  title: string;
   toggleSidebar: () => void;
 }
 
 export default function Header({ 
   userName,
-  title,
   toggleSidebar
 }: HeaderProps) {
   const router = useRouter();
+  const { title, entityName } = useHeader();
 
   const handleLogout = async () => {
     try {
@@ -48,7 +48,9 @@ export default function Header({
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">{title}</h1>
+          <div>
+            <h1 className="text-2xl font-bold">{entityName || title}</h1>
+          </div>
         </div>
         
         <div className="flex items-center gap-4">

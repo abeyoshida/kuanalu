@@ -1,6 +1,7 @@
 "use client";
 
 import { useSidebar } from "./sidebar-context";
+import { HeaderProvider } from "./header-context";
 import Sidebar from "./sidebar";
 import Header from "./header";
 
@@ -18,26 +19,27 @@ export default function AppShell({
   const { sidebarOpen, toggleSidebar } = useSidebar();
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} />
+    <HeaderProvider initialTitle={title}>
+      <div className="flex min-h-screen">
+        {/* Sidebar */}
+        <Sidebar isOpen={sidebarOpen} />
 
-      {/* Main Content */}
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
-        {/* Header */}
-        <Header 
-          userName={userName} 
-          title={title} 
-          toggleSidebar={toggleSidebar}
-        />
-        
-        {/* Page Content */}
-        <main className="flex-1 bg-gray-50">
-          <div className="p-6">
-            {children}
-          </div>
-        </main>
+        {/* Main Content */}
+        <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
+          {/* Header */}
+          <Header 
+            userName={userName} 
+            toggleSidebar={toggleSidebar}
+          />
+          
+          {/* Page Content */}
+          <main className="flex-1 bg-gray-50">
+            <div className="p-6">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </HeaderProvider>
   );
 } 
