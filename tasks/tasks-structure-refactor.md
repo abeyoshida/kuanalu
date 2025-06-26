@@ -33,24 +33,24 @@
   - [x] 1.3 Move existing authenticated pages to the `(auth)` route group
   - [x] 1.4 Update imports and paths in moved files
 
-- [ ] 2.0 Create Layout Components
-  - [ ] 2.1 Create `components/layout/app-shell.tsx` component
-  - [ ] 2.2 Extract sidebar functionality from `project-sidebar.tsx` to `components/layout/sidebar.tsx`
-  - [ ] 2.3 Extract header functionality from `client-dashboard-layout.tsx` to `components/layout/header.tsx`
-  - [ ] 2.4 Implement context provider for managing sidebar state
+- [x] 2.0 Create Layout Components
+  - [x] 2.1 Create `components/layout/app-shell.tsx` component
+  - [x] 2.2 Extract sidebar functionality from `project-sidebar.tsx` to `components/layout/sidebar.tsx`
+  - [x] 2.3 Extract header functionality from `client-dashboard-layout.tsx` to `components/layout/header.tsx`
+  - [x] 2.4 Implement context provider for managing sidebar state
 
-- [ ] 3.0 Implement Root Layout
-  - [ ] 3.1 Update `app/layout.tsx` to include only HTML structure and authentication provider
-  - [ ] 3.2 Remove any page-specific content from the root layout
+- [x] 3.0 Implement Root Layout
+  - [x] 3.1 Update `app/layout.tsx` to include only HTML structure and authentication provider
+  - [x] 3.2 Remove any page-specific content from the root layout
 
-- [ ] 4.0 Implement Authenticated Layout
-  - [ ] 4.1 Create `app/(auth)/layout.tsx` using the app-shell component
-  - [ ] 4.2 Configure layout to handle authentication check and redirect if needed
-  - [ ] 4.3 Set up title handling through metadata or context
+- [x] 4.0 Implement Authenticated Layout
+  - [x] 4.1 Create `app/(auth)/layout.tsx` using the app-shell component
+  - [x] 4.2 Configure layout to handle authentication check and redirect if needed
+  - [x] 4.3 Set up title handling through metadata or context
 
-- [ ] 5.0 Implement Unauthenticated Layout
-  - [ ] 5.1 Create `app/auth/layout.tsx` for login/register pages
-  - [ ] 5.2 Style the unauthenticated layout appropriately
+- [x] 5.0 Implement Unauthenticated Layout
+  - [x] 5.1 Create `app/auth/layout.tsx` for login/register pages
+  - [x] 5.2 Style the unauthenticated layout appropriately
 
 - [ ] 6.0 Refactor Page Components
   - [ ] 6.1 Update `dashboard/page.tsx` to contain only dashboard-specific content

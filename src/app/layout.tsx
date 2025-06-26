@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FlowBoard - Task Management",
-  description: "A modern task management application",
+  title: "Kuanalu - Project Management",
+  description: "A modern project and task management application",
 };
 
 // Force dynamic rendering to avoid RSC serialization issues
