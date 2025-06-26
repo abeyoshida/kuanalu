@@ -8,14 +8,12 @@ import { useRouter } from "next/navigation";
 interface HeaderProps {
   userName: string;
   title: string;
-  sidebarOpen: boolean;
   toggleSidebar: () => void;
 }
 
 export default function Header({ 
   userName,
   title,
-  sidebarOpen,
   toggleSidebar
 }: HeaderProps) {
   const router = useRouter();

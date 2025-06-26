@@ -5,21 +5,25 @@
  * to ensure the route protection is working correctly.
  */
 
-import { auth } from "@/lib/auth/auth";
-import { redirect } from "next/navigation";
+// Define types
+interface User {
+  id: string;
+  name: string;
+}
 
-// Mock Next.js redirect function
+interface Session {
+  user: User | null;
+}
+
+// Mock functions
 let redirectCalls: { destination: string }[] = [];
-const originalRedirect = redirect;
-(globalThis as any).redirect = (destination: string) => {
+const mockRedirect = (destination: string): never => {
   redirectCalls.push({ destination });
   throw new Error(`Redirect to ${destination}`);
 };
 
-// Mock auth function
-let mockAuthState: { user: any } | null = null;
-const originalAuth = auth;
-(globalThis as any).auth = async () => {
+let mockAuthState: Session | null = null;
+const mockAuth = async (): Promise<Session | null> => {
   return Promise.resolve(mockAuthState);
 };
 
@@ -31,12 +35,6 @@ const protectedRoutes = [
   "/organizations/1",
   "/projects",
   "/projects/1",
-];
-
-const publicRoutes = [
-  "/",
-  "/auth/login",
-  "/auth/register",
 ];
 
 /**
@@ -53,22 +51,23 @@ async function testProtectedRoute(route: string, isAuthenticated: boolean) {
   
   try {
     // Simulate accessing the route
-    const session = await (globalThis as any).auth();
+    const session = await mockAuth();
     
     if (!session?.user) {
-      (globalThis as any).redirect("/auth/login?callbackUrl=" + encodeURIComponent(route));
+      mockRedirect("/auth/login?callbackUrl=" + encodeURIComponent(route));
       return false; // This line won't be reached due to the redirect
     }
     
     // If we reach here, access is granted
     return true;
-  } catch (error: any) {
-    if (error.message?.includes("Redirect")) {
+  } catch (error) {
+    const err = error as Error;
+    if (err.message?.includes("Redirect")) {
       const redirectTo = redirectCalls[redirectCalls.length - 1]?.destination;
       console.log(`  → Redirected to: ${redirectTo}`);
       return false;
     }
-    console.error(`  → Error: ${error.message}`);
+    console.error(`  → Error: ${err.message}`);
     return false;
   }
 }

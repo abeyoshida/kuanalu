@@ -51,15 +51,15 @@ export default function DashboardContent() {
           <CardContent>
             <div className="space-y-4">
               <div className="border-b pb-2">
-                <p className="font-medium">Task "Homepage redesign" was completed</p>
+                <p className="font-medium">Task &quot;Homepage redesign&quot; was completed</p>
                 <p className="text-sm text-gray-500">2 hours ago by John Doe</p>
               </div>
               <div className="border-b pb-2">
-                <p className="font-medium">New task "API Integration" was created</p>
+                <p className="font-medium">New task &quot;API Integration&quot; was created</p>
                 <p className="text-sm text-gray-500">Yesterday by Jane Smith</p>
               </div>
               <div className="border-b pb-2">
-                <p className="font-medium">Project "Mobile App" status changed to "In Progress"</p>
+                <p className="font-medium">Project &quot;Mobile App&quot; status changed to &quot;In Progress&quot;</p>
                 <p className="text-sm text-gray-500">2 days ago by Mike Johnson</p>
               </div>
             </div>

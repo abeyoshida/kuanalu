@@ -18,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import Image from "next/image"
 
 // Define project colors based on status
 const projectStatusColors: Record<string, string> = {
@@ -273,7 +274,13 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             <Link href="/profile" className="flex items-center gap-3 px-2 py-2 hover:bg-gray-100 rounded-md">
               <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                 {user.image ? (
-                  <img src={user.image} alt={user.name || ""} className="w-8 h-8 rounded-full" />
+                  <Image 
+                    src={user.image} 
+                    alt={user.name || ""} 
+                    width={32} 
+                    height={32} 
+                    className="w-8 h-8 rounded-full"
+                  />
                 ) : (
                   <span className="text-gray-500 font-medium text-sm">
                     {user.name ? user.name.charAt(0).toUpperCase() : "U"}

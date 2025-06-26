@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: OrganizationPageProps) {
       title: `${organization.name} | Kuanalu`,
       description: organization.description || `Organization details for ${organization.name}`,
     };
-  } catch (error) {
+  } catch {
     return {
       title: "Organization | Kuanalu",
       description: "Organization details",
@@ -43,7 +43,7 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
   if (!session?.user) {
     redirect("/auth/login?callbackUrl=/organizations");
   }
-  
+
   const { id } = params;
   
   if (!id) {
@@ -60,7 +60,7 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
     const userId = parseInt(session.user.id);
     const canViewMembers = await userHasPermission(organizationId, 'read', 'organization');
     const canUpdateOrg = await userHasPermission(organizationId, 'update', 'organization');
-    
+
     return (
       <Suspense fallback={<div>Loading organization details...</div>}>
         <OrganizationContent
@@ -73,8 +73,8 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
         />
       </Suspense>
     );
-  } catch (error) {
-    console.error('Organization page error:', error);
+  } catch {
+    console.error('Organization page error');
     // If the user doesn't have access or organization doesn't exist
     redirect("/organizations");
   }

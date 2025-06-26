@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
 import { useSidebar } from "./sidebar-context";
 import Sidebar from "./sidebar";
 import Header from "./header";
@@ -17,7 +16,6 @@ export default function AppShell({
   title = "Dashboard"
 }: AppShellProps) {
   const { sidebarOpen, toggleSidebar } = useSidebar();
-  const pathname = usePathname();
 
   return (
     <div className="flex min-h-screen">
@@ -30,7 +28,6 @@ export default function AppShell({
         <Header 
           userName={userName} 
           title={title} 
-          sidebarOpen={sidebarOpen}
           toggleSidebar={toggleSidebar}
         />
         

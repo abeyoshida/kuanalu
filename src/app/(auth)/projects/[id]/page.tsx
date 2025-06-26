@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: ProjectPageProps) {
       title: `${project.name} | Kuanalu`,
       description: `Project details for ${project.name}`,
     };
-  } catch (error) {
+  } catch {
     return {
       title: "Project | Kuanalu",
       description: "Project details",

@@ -135,9 +135,16 @@ interface TaskDetailProps {
 }
 
 export default function TaskDetail({ _taskId }: TaskDetailProps) {
+  // In a real app, we would fetch the task data based on the _taskId
+  // For this demo, we're using mock data
+  console.log(`Loading task details for ID: ${_taskId}`);
+  
   const [task] = useState(mockTask)
   const [newComment, setNewComment] = useState("")
   const [subtasks, setSubtasks] = useState(task.subtasks)
+
+  // Use the _taskId parameter to fetch task data in a real app
+  // console.log("Task ID:", _taskId);
 
   const toggleSubtask = (subtaskId: string) => {
     setSubtasks((prev) =>
