@@ -1,22 +1,18 @@
-import { auth } from "@/lib/auth/auth";
-import { redirect } from "next/navigation";
-import { getUserOrganizations } from "@/lib/actions/organization-actions";
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Users, Building } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { CreateOrganizationDialog } from "@/components/organizations/create-organization-dialog";
+import { OrganizationWithMeta } from "@/types/organization";
 
-export default async function OrganizationsPage() {
-  const session = await auth();
-  
-  if (!session?.user) {
-    redirect("/auth/login?callbackUrl=/organizations");
-  }
-  
-  const organizations = await getUserOrganizations();
-  
+interface OrganizationsListContentProps {
+  organizations: OrganizationWithMeta[];
+}
+
+export default function OrganizationsListContent({ organizations }: OrganizationsListContentProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">

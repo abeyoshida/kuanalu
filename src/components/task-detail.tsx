@@ -16,8 +16,6 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
-  Menu,
-  X,
 } from "lucide-react"
 import type { Task, TaskPriority, TaskStatus } from "@/types/tasks"
 import type { Subtask, Comment } from "@/types/task-details"
@@ -134,12 +132,9 @@ const priorityColors: Record<TaskPriority, string> = {
 
 interface TaskDetailProps {
   _taskId: string
-  toggleSidebar: () => void
-  sidebarOpen: boolean
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function TaskDetail({ _taskId, toggleSidebar, sidebarOpen }: TaskDetailProps) {
+export default function TaskDetail({ _taskId }: TaskDetailProps) {
   const [task] = useState(mockTask)
   const [newComment, setNewComment] = useState("")
   const [subtasks, setSubtasks] = useState(task.subtasks)
@@ -175,7 +170,7 @@ export default function TaskDetail({ _taskId, toggleSidebar, sidebarOpen }: Task
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+              <Link href="/projects" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back to Board</span>
               </Link>
@@ -184,13 +179,6 @@ export default function TaskDetail({ _taskId, toggleSidebar, sidebarOpen }: Task
               <span className="text-gray-400">/</span>
               <span className="text-gray-900 font-medium">TASK-{task.id}</span>
             </div>
-            <button
-              onClick={toggleSidebar}
-              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-              aria-label="Toggle sidebar"
-            >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
           </div>
         </div>
       </header>
@@ -198,124 +186,131 @@ export default function TaskDetail({ _taskId, toggleSidebar, sidebarOpen }: Task
       <main className="px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-8">
             {/* Task Header */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${statusColors[task.status]}`}>
-                      {task.status.toUpperCase()}
-                    </span>
-                    <Flag className={`w-4 h-4 ${priorityColors[task.priority]}`} />
-                    <span className={`text-sm font-medium ${priorityColors[task.priority]}`}>
-                      {task.priority.toUpperCase()} PRIORITY
-                    </span>
-                  </div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">{task.title}</h1>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>TASK-{task.id}</span>
-                    <span>•</span>
-                    <span>Created {formatDate(task.createdAt)}</span>
-                  </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-start justify-between">
+                <h1 className="text-2xl font-bold text-gray-900 mb-3">{task.title}</h1>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <MoreHorizontal className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <Button variant="outline" size="sm">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
               </div>
 
-              {/* Labels */}
-              {task.labels && task.labels.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {task.labels.map((label) => (
-                    <span key={label} className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              )}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[task.status]}`}>
+                  {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                </span>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800`}>
+                  {task.storyPoints} points
+                </span>
+                {task.labels.map((label) => (
+                  <span
+                    key={label}
+                    className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
 
-              {/* Description */}
-              <div className="prose max-w-none">
-                <h3 className="text-lg font-semibold mb-2">Description</h3>
-                <p className="text-gray-700 leading-relaxed">{task.description}</p>
+              <div className="prose max-w-none text-gray-700 mb-6">{task.description}</div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-500">Assignee:</span>
+                  <span className="font-medium">{task.assignee}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-500">Reporter:</span>
+                  <span className="font-medium">{task.reporter}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-500">Created:</span>
+                  <span className="font-medium">{formatDate(task.createdAt)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Flag className={`w-4 h-4 ${priorityColors[task.priority]}`} />
+                  <span className="text-gray-500">Priority:</span>
+                  <span className="font-medium">{task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span>
+                </div>
               </div>
             </div>
 
             {/* Subtasks */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Subtasks</h3>
-                  <p className="text-sm text-gray-600">
-                    {completedSubtasks} of {totalSubtasks} completed
-                  </p>
-                </div>
-                <Button variant="outline" size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Subtask
+                <h2 className="text-lg font-semibold text-gray-900">Subtasks</h2>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Subtask</span>
                 </Button>
               </div>
 
-              {/* Progress Bar */}
-              <div className="mb-6">
-                <div className="flex justify-between text-sm text-gray-600 mb-1">
-                  <span>Progress</span>
+              <div className="mb-4">
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span>
+                    Progress: {completedSubtasks}/{totalSubtasks}
+                  </span>
                   <span>{Math.round(progressPercentage)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-blue-600 h-2 rounded-full"
                     style={{ width: `${progressPercentage}%` }}
                   ></div>
                 </div>
               </div>
 
-              {/* Subtask List */}
               <div className="space-y-3">
                 {subtasks.map((subtask) => (
                   <div
                     key={subtask.id}
-                    className="flex items-start gap-3 p-3 border border-gray-100 rounded-lg hover:bg-gray-50"
+                    className={`p-3 rounded-md border ${
+                      subtask.completed ? "bg-gray-50 border-gray-200" : "bg-white border-gray-200"
+                    }`}
                   >
-                    <button
-                      onClick={() => toggleSubtask(subtask.id)}
-                      className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                        subtask.completed
-                          ? "bg-green-500 border-green-500 text-white"
-                          : "border-gray-300 hover:border-gray-400"
-                      }`}
-                    >
-                      {subtask.completed && <Check className="w-3 h-3" />}
-                    </button>
-                    <div className="flex-1">
-                      <h4
-                        className={`font-medium ${subtask.completed ? "line-through text-gray-500" : "text-gray-900"}`}
+                    <div className="flex items-start gap-3">
+                      <button
+                        onClick={() => toggleSubtask(subtask.id)}
+                        className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center ${
+                          subtask.completed
+                            ? "bg-blue-500 border-blue-500 text-white"
+                            : "border-gray-300 text-transparent"
+                        }`}
                       >
-                        {subtask.title}
-                      </h4>
-                      {subtask.description && (
-                        <p className={`text-sm mt-1 ${subtask.completed ? "text-gray-400" : "text-gray-600"}`}>
-                          {subtask.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          <span>{subtask.assignee}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>{subtask.createdAt.toLocaleDateString()}</span>
+                        {subtask.completed && <Check className="w-3 h-3" />}
+                      </button>
+                      <div className="flex-1">
+                        <h3
+                          className={`text-sm font-medium ${
+                            subtask.completed ? "text-gray-500 line-through" : "text-gray-900"
+                          }`}
+                        >
+                          {subtask.title}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1">{subtask.description}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            <span>{subtask.assignee}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{formatDate(subtask.createdAt)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="w-3 h-3" />
+                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-500">
+                        <MoreHorizontal className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -324,122 +319,128 @@ export default function TaskDetail({ _taskId, toggleSidebar, sidebarOpen }: Task
             </div>
 
             {/* Comments */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                Comments ({task.comments.length})
-              </h3>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Comments</h2>
 
-              {/* Add Comment */}
-              <div className="mb-6">
+              <div className="space-y-6 mb-6">
+                {task.comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
+                        <Image
+                          src={comment.avatar}
+                          alt={comment.author}
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900">{comment.author}</span>
+                          <span className="text-xs text-gray-500">
+                            {comment.createdAt.toLocaleDateString()} at{" "}
+                            {comment.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Edit className="h-4 w-4 text-gray-500" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Trash2 className="h-4 w-4 text-gray-500" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-gray-700">{comment.content}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-4">
                 <Textarea
                   placeholder="Add a comment..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  className="mb-3"
+                  className="min-h-[100px]"
                 />
-                <Button onClick={handleAddComment} disabled={!newComment.trim()}>
-                  Add Comment
-                </Button>
-              </div>
-
-              {/* Comments List */}
-              <div className="space-y-4">
-                {task.comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-3">
-                    <Image
-                      src={comment.avatar || "/placeholder.svg"}
-                      alt={comment.author}
-                      width={32}
-                      height={32}
-                      className="rounded-full"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900">{comment.author}</span>
-                        <span className="text-sm text-gray-500">
-                          {comment.createdAt.toLocaleDateString()} at {comment.createdAt.toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <p className="text-gray-700">{comment.content}</p>
-                    </div>
-                  </div>
-                ))}
+                <div className="flex justify-end">
+                  <Button onClick={handleAddComment} className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Add Comment</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold mb-4">Details</h3>
+            {/* Activity */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Activity</h2>
               <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Assignee</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-900">{task.assignee}</span>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-blue-600" />
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Reporter</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-900">{task.reporter}</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Priority</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Flag className={`w-4 h-4 ${priorityColors[task.priority]}`} />
-                    <span className={`font-medium ${priorityColors[task.priority]}`}>
-                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Status</label>
-                  <div className="mt-1">
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${statusColors[task.status]}`}>
-                      {task.status.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-                {task.storyPoints && (
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Story Points</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-900">{task.storyPoints}</span>
-                    </div>
+                    <p className="text-sm">
+                      <span className="font-medium">John Doe</span> <span className="text-gray-500">changed status to</span>{" "}
+                      <span className="font-medium">Doing</span>
+                    </p>
+                    <p className="text-xs text-gray-500">2 hours ago</p>
                   </div>
-                )}
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Created</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-900">{formatDate(task.createdAt)}</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <Check className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm">
+                      <span className="font-medium">Sarah Wilson</span>{" "}
+                      <span className="text-gray-500">completed subtask</span>{" "}
+                      <span className="font-medium">Research drag and drop libraries</span>
+                    </p>
+                    <p className="text-xs text-gray-500">1 day ago</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <MessageSquare className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm">
+                      <span className="font-medium">Mike Johnson</span>{" "}
+                      <span className="text-gray-500">added a comment</span>
+                    </p>
+                    <p className="text-xs text-gray-500">2 days ago</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold mb-4">Actions</h3>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Task
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Subtask
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Add Comment
-                </Button>
+            {/* Related Tasks */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Related Tasks</h2>
+              <div className="space-y-3">
+                <div className="p-3 border border-gray-200 rounded-md">
+                  <h3 className="text-sm font-medium text-gray-900 mb-1">Design drag and drop interface</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Done</span>
+                    <span className="text-xs text-gray-500">TASK-4</span>
+                  </div>
+                </div>
+                <div className="p-3 border border-gray-200 rounded-md">
+                  <h3 className="text-sm font-medium text-gray-900 mb-1">Write documentation for drag and drop</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Todo</span>
+                    <span className="text-xs text-gray-500">TASK-6</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

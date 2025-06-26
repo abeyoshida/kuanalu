@@ -99,6 +99,14 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   // Get projects for the selected organization
   const selectedOrgProjects = selectedOrgId ? organizationProjects[selectedOrgId] || [] : []
 
+  // Check if path is active (considering the route group structure)
+  const isActivePath = (path: string) => {
+    if (pathname === path) return true
+    // For paths like /projects/123, we need to check if it starts with /projects/
+    if (path !== '/' && pathname.startsWith(`${path}/`)) return true
+    return false
+  }
+
   return (
     <div
       className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-transform duration-300 z-40 ${
@@ -176,7 +184,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             <Link
               href="/dashboard"
               className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md ${
-                pathname === "/dashboard" ? "bg-gray-100 text-gray-900" : ""
+                isActivePath("/dashboard") ? "bg-gray-100 text-gray-900" : ""
               }`}
             >
               <BarChart3 className="w-4 h-4" />
@@ -185,7 +193,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             <Link
               href="/profile"
               className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md ${
-                pathname === "/profile" ? "bg-gray-100 text-gray-900" : ""
+                isActivePath("/profile") ? "bg-gray-100 text-gray-900" : ""
               }`}
             >
               <Settings className="w-4 h-4" />
@@ -224,7 +232,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                         key={project.id}
                         href={`/projects/${project.id}`}
                         className={`block px-2 py-1 text-sm hover:bg-gray-100 rounded-md group ${
-                          pathname === `/projects/${project.id}` ? "bg-gray-50" : ""
+                          isActivePath(`/projects/${project.id}`) ? "bg-gray-50" : ""
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -258,7 +266,28 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             </div>
           )}
         </div>
+
+        {/* User Section */}
+        {user && (
+          <div className="p-4 border-t border-gray-200">
+            <Link href="/profile" className="flex items-center gap-3 px-2 py-2 hover:bg-gray-100 rounded-md">
+              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                {user.image ? (
+                  <img src={user.image} alt={user.name || ""} className="w-8 h-8 rounded-full" />
+                ) : (
+                  <span className="text-gray-500 font-medium text-sm">
+                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm text-gray-900 truncate">{user.name}</p>
+                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              </div>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
-  );
+  )
 } 

@@ -1,15 +1,15 @@
-import { auth } from "@/lib/auth/auth";
+import { Suspense } from "react";
+import ProjectContent from "@/components/projects/project-content";
 
-export default async function ProjectsPage() {
-  await auth();
+export const metadata = {
+  title: "Projects | Kuanalu",
+  description: "Manage your projects",
+};
 
+export default function ProjectsPage() {
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold mb-4">Your Projects</h2>
-      {/* Projects list would go here */}
-      <div className="text-gray-500">
-        Select a project from the sidebar to view its tasks.
-      </div>
-    </div>
+    <Suspense fallback={<div>Loading...</div>}>
+      <ProjectContent />
+    </Suspense>
   );
 } 

@@ -1,17 +1,21 @@
 import { auth } from "@/lib/auth/auth";
-import { UserProfileForm } from "@/components/auth/user-profile-form";
-import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { notFound } from "next/navigation";
+import ProfileContent from "@/components/profile/profile-content";
+
+export const metadata = {
+  title: "Profile | Kuanalu",
+  description: "Manage your profile settings",
+};
 
 export default async function ProfilePage() {
   // Get the session
   const session = await auth();
   
-  // If no session, redirect to login
   if (!session?.user) {
-    redirect("/auth/login?callbackUrl=/profile");
+    return notFound();
   }
   
   // Fetch user details from database
@@ -24,12 +28,8 @@ export default async function ProfilePage() {
     .then(results => results[0]);
   
   if (!userDetails) {
-    return <div>User not found</div>;
+    return notFound();
   }
   
-  return (
-    <>
-      <UserProfileForm user={userDetails} />
-    </>
-  );
+  return <ProfileContent user={userDetails} />;
 } 
