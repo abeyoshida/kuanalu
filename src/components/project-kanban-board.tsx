@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import KanbanColumn from "@/components/kanban-column"
+import KanbanFilter, { FilterOptions } from "@/components/kanban-filter"
 import type { TaskStatus } from "@/types/tasks"
 import { getProjectTasks, updateTaskPositions } from "@/lib/actions/task-actions"
 import { TaskWithMeta } from "@/types/task"
@@ -19,6 +20,7 @@ const mapDbTaskToUiTask = (dbTask: TaskWithMeta) => {
     status: dbTask.status as TaskStatus,
     priority: dbTask.priority,
     assignee: dbTask.assigneeName || "Unassigned",
+    assigneeId: dbTask.assigneeId ? dbTask.assigneeId.toString() : undefined,
     createdAt: dbTask.createdAt,
   }
 }
@@ -32,11 +34,17 @@ const columns: { id: TaskStatus; title: string; color: string }[] = [
 ]
 
 export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProps) {
-  const [tasks, setTasks] = useState<ReturnType<typeof mapDbTaskToUiTask>[]>([])
+  const [allTasks, setAllTasks] = useState<ReturnType<typeof mapDbTaskToUiTask>[]>([])
   const [draggedTask, setDraggedTask] = useState<ReturnType<typeof mapDbTaskToUiTask> | null>(null)
   const [activeDropColumn, setActiveDropColumn] = useState<TaskStatus | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [filters, setFilters] = useState<FilterOptions>({
+    search: "",
+    priority: [],
+    assignee: [],
+    hideCompleted: false,
+  })
 
   // Fetch tasks on component mount
   useEffect(() => {
@@ -44,7 +52,7 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
       try {
         setIsLoading(true)
         const projectTasks = await getProjectTasks(projectId)
-        setTasks(projectTasks.map(mapDbTaskToUiTask))
+        setAllTasks(projectTasks.map(mapDbTaskToUiTask))
         setError(null)
       } catch (err) {
         console.error("Failed to fetch tasks:", err)
@@ -56,6 +64,46 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
 
     fetchTasks()
   }, [projectId])
+
+  // Extract unique assignees from tasks
+  const assignees = useMemo(() => {
+    const assigneeMap = new Map<string, string>()
+    
+    allTasks.forEach(task => {
+      if (task.assigneeId && task.assignee) {
+        assigneeMap.set(task.assigneeId, task.assignee)
+      }
+    })
+    
+    return Array.from(assigneeMap.entries()).map(([id, name]) => ({ id, name }))
+  }, [allTasks])
+
+  // Apply filters to tasks
+  const filteredTasks = useMemo(() => {
+    return allTasks.filter(task => {
+      // Filter by search text
+      if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase())) {
+        return false
+      }
+      
+      // Filter by priority
+      if (filters.priority.length > 0 && !filters.priority.includes(task.priority)) {
+        return false
+      }
+      
+      // Filter by assignee
+      if (filters.assignee.length > 0 && (!task.assigneeId || !filters.assignee.includes(task.assigneeId))) {
+        return false
+      }
+      
+      // Filter completed tasks
+      if (filters.hideCompleted && task.status === "done") {
+        return false
+      }
+      
+      return true
+    })
+  }, [allTasks, filters])
 
   // Add global drag event listeners
   useEffect(() => {
@@ -102,10 +150,10 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
     }
 
     // Optimistically update the UI
-    const updatedTasks = tasks.map((task) => 
+    const updatedTasks = allTasks.map((task) => 
       task.id === draggedTask.id ? { ...task, status: newStatus } : task
     )
-    setTasks(updatedTasks)
+    setAllTasks(updatedTasks)
 
     try {
       // Calculate new position (at the end of the column)
@@ -124,7 +172,7 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
       setError("Failed to update task status. Please try again.")
       // Fetch the tasks again to ensure UI is in sync with the database
       const projectTasks = await getProjectTasks(projectId)
-      setTasks(projectTasks.map(mapDbTaskToUiTask))
+      setAllTasks(projectTasks.map(mapDbTaskToUiTask))
     } finally {
       setDraggedTask(null)
     }
@@ -135,8 +183,12 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
     setActiveDropColumn(null)
   }
 
+  const handleFilterChange = (newFilters: FilterOptions) => {
+    setFilters(newFilters)
+  }
+
   const getTasksByStatus = (status: TaskStatus) => {
-    return tasks.filter((task) => task.status === status)
+    return filteredTasks.filter((task) => task.status === status)
   }
 
   if (isLoading) {
@@ -153,7 +205,7 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
             try {
               setIsLoading(true)
               const projectTasks = await getProjectTasks(projectId)
-              setTasks(projectTasks.map(mapDbTaskToUiTask))
+              setAllTasks(projectTasks.map(mapDbTaskToUiTask))
               setError(null)
             } catch (err) {
               console.error("Failed to fetch tasks:", err)
@@ -170,22 +222,29 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
   }
 
   return (
-    <div className="flex gap-6 overflow-x-auto pb-6">
-      {columns.map((column) => (
-        <KanbanColumn
-          key={column.id}
-          title={column.title}
-          color={column.color}
-          tasks={getTasksByStatus(column.id)}
-          onDragOver={(e) => handleDragOver(e, column.id)}
-          onDragLeave={handleDragLeave}
-          onDrop={(e) => handleDrop(e, column.id)}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          isActiveDropTarget={activeDropColumn === column.id}
-          draggedTaskId={draggedTask?.id}
-        />
-      ))}
+    <div>
+      <KanbanFilter 
+        onFilterChange={handleFilterChange} 
+        assignees={assignees} 
+      />
+      
+      <div className="flex gap-6 overflow-x-auto pb-6">
+        {columns.map((column) => (
+          <KanbanColumn
+            key={column.id}
+            title={column.title}
+            color={column.color}
+            tasks={getTasksByStatus(column.id)}
+            onDragOver={(e) => handleDragOver(e, column.id)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, column.id)}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            isActiveDropTarget={activeDropColumn === column.id}
+            draggedTaskId={draggedTask?.id}
+          />
+        ))}
+      </div>
     </div>
   )
 } 
