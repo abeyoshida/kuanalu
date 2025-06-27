@@ -6,6 +6,8 @@ import { Calendar, User, AlertCircle, Clock, CheckCircle } from "lucide-react"
 interface TaskCardProps {
   task: Task
   onDragStart: () => void
+  onDragEnd: () => void
+  isDragging?: boolean
 }
 
 const priorityColors = {
@@ -23,7 +25,7 @@ const statusIcons = {
   done: <CheckCircle className="w-3 h-3 text-green-500" />,
 }
 
-export default function TaskCard({ task, onDragStart }: TaskCardProps) {
+export default function TaskCard({ task, onDragStart, onDragEnd, isDragging = false }: TaskCardProps) {
   // Format the date safely
   const formatDate = (date: Date | string) => {
     if (date instanceof Date) {
@@ -36,7 +38,12 @@ export default function TaskCard({ task, onDragStart }: TaskCardProps) {
     <div
       draggable
       onDragStart={onDragStart}
-      className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow cursor-move"
+      onDragEnd={onDragEnd}
+      className={`bg-white rounded-lg border p-4 shadow-sm transition-all cursor-move ${
+        isDragging 
+          ? 'opacity-50 border-blue-400 shadow-md scale-105' 
+          : 'border-gray-200 hover:shadow-md'
+      }`}
     >
       <div className="flex items-start justify-between mb-2">
         <h4 className="font-medium text-gray-900 text-sm leading-5">{task.title}</h4>

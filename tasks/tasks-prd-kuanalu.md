@@ -121,7 +121,7 @@
   - [x] 4.2 Implement task card component
   - [x] 4.3 Add drag and drop functionality between columns
   - [x] 4.4 Implement task status updates on drop
-  - [ ] 4.5 Add visual feedback during dragging
+  - [x] 4.5 Add visual feedback during dragging
   - [ ] 4.6 Create task filtering functionality
   - [ ] 4.7 Implement task sorting options
   - [ ] 4.8 Add create task button and modal

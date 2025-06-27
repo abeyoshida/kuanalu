@@ -34,6 +34,7 @@ const columns: { id: TaskStatus; title: string; color: string }[] = [
 export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProps) {
   const [tasks, setTasks] = useState<ReturnType<typeof mapDbTaskToUiTask>[]>([])
   const [draggedTask, setDraggedTask] = useState<ReturnType<typeof mapDbTaskToUiTask> | null>(null)
+  const [activeDropColumn, setActiveDropColumn] = useState<TaskStatus | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -56,18 +57,49 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
     fetchTasks()
   }, [projectId])
 
+  // Add global drag event listeners
+  useEffect(() => {
+    // Reset drag state if the user drops outside a valid drop target
+    const handleGlobalDragEnd = () => {
+      setDraggedTask(null)
+      setActiveDropColumn(null)
+    }
+
+    document.addEventListener('dragend', handleGlobalDragEnd)
+    
+    return () => {
+      document.removeEventListener('dragend', handleGlobalDragEnd)
+    }
+  }, [])
+
   const handleDragStart = (task: ReturnType<typeof mapDbTaskToUiTask>) => {
     setDraggedTask(task)
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, columnId: TaskStatus) => {
     e.preventDefault()
+    setActiveDropColumn(columnId)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear the active column if we're not entering a child element
+    if (e.currentTarget.contains(e.relatedTarget as Node)) {
+      return
+    }
+    setActiveDropColumn(null)
   }
 
   const handleDrop = async (e: React.DragEvent, newStatus: TaskStatus) => {
     e.preventDefault()
+    setActiveDropColumn(null)
 
     if (!draggedTask) return
+
+    // Don't do anything if the status hasn't changed
+    if (draggedTask.status === newStatus) {
+      setDraggedTask(null)
+      return
+    }
 
     // Optimistically update the UI
     const updatedTasks = tasks.map((task) => 
@@ -96,6 +128,11 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
     } finally {
       setDraggedTask(null)
     }
+  }
+
+  const handleDragEnd = () => {
+    setDraggedTask(null)
+    setActiveDropColumn(null)
   }
 
   const getTasksByStatus = (status: TaskStatus) => {
@@ -140,9 +177,13 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
           title={column.title}
           color={column.color}
           tasks={getTasksByStatus(column.id)}
-          onDragOver={handleDragOver}
+          onDragOver={(e) => handleDragOver(e, column.id)}
+          onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, column.id)}
           onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          isActiveDropTarget={activeDropColumn === column.id}
+          draggedTaskId={draggedTask?.id}
         />
       ))}
     </div>

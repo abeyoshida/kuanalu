@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import KanbanColumn from "@/components/kanban-column"
 import type { Task, TaskStatus } from "@/types/tasks"
 
@@ -101,24 +101,61 @@ const columns: { id: TaskStatus; title: string; color: string }[] = [
 export default function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
+  const [activeDropColumn, setActiveDropColumn] = useState<TaskStatus | null>(null)
+
+  // Add global drag event listeners
+  useEffect(() => {
+    // Reset drag state if the user drops outside a valid drop target
+    const handleGlobalDragEnd = () => {
+      setDraggedTask(null)
+      setActiveDropColumn(null)
+    }
+
+    document.addEventListener('dragend', handleGlobalDragEnd)
+    
+    return () => {
+      document.removeEventListener('dragend', handleGlobalDragEnd)
+    }
+  }, [])
 
   const handleDragStart = (task: Task) => {
     setDraggedTask(task)
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, columnId: TaskStatus) => {
     e.preventDefault()
+    setActiveDropColumn(columnId)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear the active column if we're not entering a child element
+    if (e.currentTarget.contains(e.relatedTarget as Node)) {
+      return
+    }
+    setActiveDropColumn(null)
   }
 
   const handleDrop = (e: React.DragEvent, newStatus: TaskStatus) => {
     e.preventDefault()
+    setActiveDropColumn(null)
 
     if (draggedTask) {
+      // Don't do anything if the status hasn't changed
+      if (draggedTask.status === newStatus) {
+        setDraggedTask(null)
+        return
+      }
+      
       setTasks((prevTasks) =>
         prevTasks.map((task) => (task.id === draggedTask.id ? { ...task, status: newStatus } : task)),
       )
       setDraggedTask(null)
     }
+  }
+
+  const handleDragEnd = () => {
+    setDraggedTask(null)
+    setActiveDropColumn(null)
   }
 
   const getTasksByStatus = (status: TaskStatus) => {
@@ -133,9 +170,13 @@ export default function KanbanBoard() {
           title={column.title}
           color={column.color}
           tasks={getTasksByStatus(column.id)}
-          onDragOver={handleDragOver}
+          onDragOver={(e) => handleDragOver(e, column.id)}
+          onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, column.id)}
           onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          isActiveDropTarget={activeDropColumn === column.id}
+          draggedTaskId={draggedTask?.id}
         />
       ))}
     </div>
