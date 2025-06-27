@@ -733,17 +733,6 @@ export async function updateTaskPositions(
       if (!hasUpdatePermission) {
         throw new Error("You don't have permission to update tasks in this project");
       }
-      
-      // Check if the project is public
-      const projectVisibility = await db
-        .select({ visibility: projects.visibility })
-        .from(projects)
-        .where(eq(projects.id, projectId))
-        .limit(1);
-      
-      if (!projectVisibility.length || projectVisibility[0].visibility !== 'public') {
-        throw new Error("You don't have access to this project's tasks");
-      }
     }
     
     // Validate newStatus is a valid task status
