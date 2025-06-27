@@ -6,13 +6,13 @@ import { Suspense } from "react";
 import ProjectDetailContent from "@/components/projects/project-detail-content";
 
 interface ProjectPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: ProjectPageProps) {
-  const { id } = params;
+  const { id } = await params;
   const projectId = parseInt(id);
   
   if (isNaN(projectId)) {
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: ProjectPageProps) {
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
-  const { id } = params;
+  const { id } = await params;
   const projectId = parseInt(id);
   
   if (isNaN(projectId)) {

@@ -2,22 +2,24 @@ import { Suspense } from "react"
 import TaskDetail from "@/components/task-detail"
 
 interface TaskDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: TaskDetailPageProps) {
+  const { id } = await params;
   return {
-    title: `Task #${params.id} | Kuanalu`,
+    title: `Task #${id} | Kuanalu`,
     description: "Task details",
   };
 }
 
-export default function TaskDetailPage({ params }: TaskDetailPageProps) {
+export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
+  const { id } = await params;
   return (
     <Suspense fallback={<div>Loading task details...</div>}>
-      <TaskDetail _taskId={params.id} />
+      <TaskDetail _taskId={id} />
     </Suspense>
   )
 } 

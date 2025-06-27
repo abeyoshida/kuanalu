@@ -6,13 +6,13 @@ import { Suspense } from "react";
 import OrganizationContent from "@/components/organizations/organization-content";
 
 interface OrganizationPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: OrganizationPageProps) {
-  const { id } = params;
+  const { id } = await params;
   const organizationId = parseInt(id);
   
   if (isNaN(organizationId)) {
@@ -44,7 +44,7 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
     redirect("/auth/login?callbackUrl=/organizations");
   }
 
-  const { id } = params;
+  const { id } = await params;
   
   if (!id) {
     redirect("/organizations");
