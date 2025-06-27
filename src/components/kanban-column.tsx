@@ -31,7 +31,7 @@ export default function KanbanColumn<T extends Task = Task>({
   draggedTaskId
 }: KanbanColumnProps<T>) {
   return (
-    <div className="flex-shrink-0 w-80">
+    <div className="flex-shrink-0 w-[280px] md:w-[240px] lg:w-[220px] xl:w-[250px] 2xl:w-[280px]">
       <div className={`rounded-lg ${color} px-3 py-1 mb-2`}>
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-gray-800">{title}</h3>
@@ -39,7 +39,7 @@ export default function KanbanColumn<T extends Task = Task>({
         </div>
       </div>
       <div 
-        className={`min-h-[500px] space-y-3 p-2 rounded-lg transition-colors duration-200 ${
+        className={`min-h-[300px] sm:min-h-[400px] md:min-h-[500px] space-y-3 p-2 rounded-lg transition-colors duration-200 ${
           isActiveDropTarget ? 'bg-blue-50 border-2 border-dashed border-blue-300' : ''
         }`} 
         onDragOver={onDragOver}
@@ -55,6 +55,11 @@ export default function KanbanColumn<T extends Task = Task>({
             isDragging={draggedTaskId === task.id}
           />
         ))}
+        {tasks.length === 0 && (
+          <div className="flex items-center justify-center h-20 border border-dashed border-gray-200 rounded-lg">
+            <p className="text-sm text-gray-400">No tasks</p>
+          </div>
+        )}
       </div>
     </div>
   )

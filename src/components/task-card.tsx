@@ -39,25 +39,25 @@ export default function TaskCard({ task, onDragStart, onDragEnd, isDragging = fa
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className={`bg-white rounded-lg border p-4 shadow-sm transition-all cursor-move ${
+      className={`bg-white rounded-lg border p-3 shadow-sm transition-all cursor-move ${
         isDragging 
           ? 'opacity-50 border-blue-400 shadow-md scale-105' 
           : 'border-gray-200 hover:shadow-md'
       }`}
     >
-      <div className="flex items-start justify-between mb-2">
-        <h4 className="font-medium text-gray-900 text-sm leading-5">{task.title}</h4>
-        <span className={`px-2 py-1 text-xs font-medium rounded-full ${priorityColors[task.priority]}`}>
+      <div className="flex items-start justify-between mb-1.5 sm:mb-2">
+        <h4 className="font-medium text-gray-900 text-xs sm:text-sm leading-5 mr-2">{task.title}</h4>
+        <span className={`px-1.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap ${priorityColors[task.priority]}`}>
           {task.priority}
         </span>
       </div>
 
-      {task.description && <p className="text-sm text-gray-600 mb-3 line-clamp-2">{task.description}</p>}
+      {task.description && <p className="text-xs text-gray-600 mb-2 line-clamp-2">{task.description}</p>}
 
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 gap-y-1">
+        <div className="flex items-center gap-1 min-w-[80px]">
           <User className="w-3 h-3" />
-          <span>{task.assignee}</span>
+          <span className="truncate max-w-[80px]">{task.assignee}</span>
         </div>
         <div className="flex items-center gap-1">
           <Calendar className="w-3 h-3" />
@@ -65,7 +65,7 @@ export default function TaskCard({ task, onDragStart, onDragEnd, isDragging = fa
         </div>
       </div>
 
-      <div className="flex items-center gap-1 mt-2 text-xs">
+      <div className="flex items-center gap-1 mt-1.5 text-xs">
         {statusIcons[task.status as keyof typeof statusIcons]}
         <span className="capitalize">{task.status.replace('_', ' ')}</span>
       </div>

@@ -133,7 +133,7 @@
   - [x] 4.7 Implement task sorting options
   - [x] 4.8 Add create task button and modal
   - [x] 4.9 Create project sidebar component
-  - [ ] 4.10 Implement responsive design for kanban board
+  - [x] 4.10 Implement responsive design for kanban board
 
 - [ ] 5.0 Task Management Features
   - [ ] 5.1 Create task detail page layout (2-column)

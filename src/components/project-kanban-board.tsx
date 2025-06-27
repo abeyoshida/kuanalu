@@ -273,7 +273,7 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
   }
 
   return (
-    <div>
+    <div className="max-w-full">
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start gap-4">
         <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full">
           <KanbanFilter 
@@ -285,7 +285,7 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
             currentSort={sort}
           />
         </div>
-        <div className="mt-4 sm:mt-0">
+        <div className="mt-4 sm:mt-0 w-full sm:w-auto">
           <CreateTaskDialog 
             projectId={projectId} 
             onTaskCreated={async () => {
@@ -305,22 +305,32 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
         </div>
       </div>
       
-      <div className="flex gap-6 overflow-x-auto pb-6">
+      <div className="flex flex-nowrap gap-3 md:gap-4 lg:gap-5 overflow-x-auto pb-6 snap-x snap-mandatory md:justify-between">
         {columns.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            title={column.title}
-            color={column.color}
-            tasks={getTasksByStatus(column.id)}
-            onDragOver={(e) => handleDragOver(e, column.id)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, column.id)}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            isActiveDropTarget={activeDropColumn === column.id}
-            draggedTaskId={draggedTask?.id}
-          />
+          <div key={column.id} className="snap-start snap-always">
+            <KanbanColumn
+              title={column.title}
+              color={column.color}
+              tasks={getTasksByStatus(column.id)}
+              onDragOver={(e) => handleDragOver(e, column.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, column.id)}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              isActiveDropTarget={activeDropColumn === column.id}
+              draggedTaskId={draggedTask?.id}
+            />
+          </div>
         ))}
+      </div>
+      
+      {/* Mobile scroll indicator */}
+      <div className="mt-2 flex justify-center sm:hidden">
+        <div className="flex gap-1">
+          {columns.map((_, index) => (
+            <div key={index} className="h-1 w-8 bg-gray-300 rounded-full"></div>
+          ))}
+        </div>
       </div>
     </div>
   )
