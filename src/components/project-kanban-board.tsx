@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo } from "react"
 import KanbanColumn from "@/components/kanban-column"
 import KanbanFilter, { FilterOptions } from "@/components/kanban-filter"
+import KanbanSort, { SortOptions } from "@/components/kanban-sort"
 import type { TaskStatus } from "@/types/tasks"
 import { getProjectTasks, updateTaskPositions } from "@/lib/actions/task-actions"
-import { TaskWithMeta } from "@/types/task"
+import { TaskWithMeta, TaskSortField, SortDirection } from "@/types/task"
 
 interface ProjectKanbanBoardProps {
   projectId: number
@@ -22,6 +23,8 @@ const mapDbTaskToUiTask = (dbTask: TaskWithMeta) => {
     assignee: dbTask.assigneeName || "Unassigned",
     assigneeId: dbTask.assigneeId ? dbTask.assigneeId.toString() : undefined,
     createdAt: dbTask.createdAt,
+    updatedAt: dbTask.updatedAt,
+    dueDate: dbTask.dueDate
   }
 }
 
@@ -44,6 +47,10 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
     priority: [],
     assignee: [],
     hideCompleted: false,
+  })
+  const [sort, setSort] = useState<SortOptions>({
+    field: TaskSortField.CREATED_AT,
+    direction: SortDirection.DESC,
   })
 
   // Fetch tasks on component mount
@@ -104,6 +111,45 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
       return true
     })
   }, [allTasks, filters])
+
+  // Apply sorting to tasks
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sort.field) {
+        case TaskSortField.TITLE:
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case TaskSortField.PRIORITY:
+          // Map priorities to numeric values for sorting
+          const priorityValues = { urgent: 4, high: 3, medium: 2, low: 1 };
+          comparison = (priorityValues[a.priority] || 0) - (priorityValues[b.priority] || 0);
+          break;
+        case TaskSortField.DUE_DATE:
+          // Handle null/undefined due dates
+          if (!a.dueDate && !b.dueDate) comparison = 0;
+          else if (!a.dueDate) comparison = 1;
+          else if (!b.dueDate) comparison = -1;
+          else comparison = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+          break;
+        case TaskSortField.CREATED_AT:
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case TaskSortField.UPDATED_AT:
+          if (!a.updatedAt && !b.updatedAt) comparison = 0;
+          else if (!a.updatedAt) comparison = 1;
+          else if (!b.updatedAt) comparison = -1;
+          else comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+        default:
+          comparison = 0;
+      }
+      
+      // Reverse comparison if descending order
+      return sort.direction === SortDirection.ASC ? comparison : -comparison;
+    });
+  }, [filteredTasks, sort]);
 
   // Add global drag event listeners
   useEffect(() => {
@@ -187,8 +233,12 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
     setFilters(newFilters)
   }
 
+  const handleSortChange = (newSort: SortOptions) => {
+    setSort(newSort)
+  }
+
   const getTasksByStatus = (status: TaskStatus) => {
-    return filteredTasks.filter((task) => task.status === status)
+    return sortedTasks.filter((task) => task.status === status)
   }
 
   if (isLoading) {
@@ -223,10 +273,16 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
 
   return (
     <div>
-      <KanbanFilter 
-        onFilterChange={handleFilterChange} 
-        assignees={assignees} 
-      />
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start gap-4">
+        <KanbanFilter 
+          onFilterChange={handleFilterChange} 
+          assignees={assignees} 
+        />
+        <KanbanSort
+          onSortChange={handleSortChange}
+          currentSort={sort}
+        />
+      </div>
       
       <div className="flex gap-6 overflow-x-auto pb-6">
         {columns.map((column) => (
