@@ -192,6 +192,20 @@ export default function Sidebar({ isOpen }: SidebarProps) {
               Dashboard
             </Link>
             <Link
+              href={selectedOrgId ? `/organizations/${selectedOrgId}/members` : "/organizations"}
+              className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md ${
+                isActivePath("/organizations") && pathname.includes("/members") ? "bg-gray-100 text-gray-900" : ""
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              Members
+            </Link>
+            <Link
               href="/profile"
               className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md ${
                 isActivePath("/profile") ? "bg-gray-100 text-gray-900" : ""
@@ -207,12 +221,14 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             <div className="px-4 py-2">
               <div className="flex items-center justify-between px-2 mb-2">
                 <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">PROJECTS</h3>
-                <Link href={`/organizations/${selectedOrgId}`}>
-                  <Button variant="ghost" size="sm" className="h-6 px-2">
-                    <span className="sr-only">View all</span>
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </Link>
+                {selectedOrgId && (
+                  <CreateProjectDialog organizationId={selectedOrgId} onProjectCreated={() => refreshProjects(selectedOrgId)}>
+                    <Button variant="ghost" size="sm" className="h-6 px-2">
+                      <span className="sr-only">Create project</span>
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </CreateProjectDialog>
+                )}
               </div>
               
               {loading ? (
@@ -251,16 +267,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                     ))
                   ) : (
                     <div className="text-xs text-gray-500 px-2 py-1">No projects</div>
-                  )}
-
-                  {/* Create New Project */}
-                  {selectedOrgId && (
-                    <CreateProjectDialog organizationId={selectedOrgId} onProjectCreated={() => refreshProjects(selectedOrgId)}>
-                      <button className="w-full text-left px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded-md flex items-center gap-2">
-                        <Plus className="h-3 w-3" />
-                        <span>New Project</span>
-                      </button>
-                    </CreateProjectDialog>
                   )}
                 </div>
               )}

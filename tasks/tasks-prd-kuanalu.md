@@ -7,6 +7,10 @@
 - `components/auth/` - Authentication components
 - `components/ui/` - Reusable UI components
 - `components/kanban-board.tsx` - Kanban board component
+- `components/kanban-column.tsx` - Kanban column component for displaying tasks
+- `components/kanban-filter.tsx` - Filter component for tasks
+- `components/kanban-sort.tsx` - Sort component for tasks
+- `components/create-task-dialog.tsx` - Dialog for creating new tasks
 - `components/task-card.tsx` - Task card component
 - `components/task-detail.tsx` - Task detail page component
 - `app/api/auth/[...nextauth]/route.ts` - Authentication API routes
@@ -68,6 +72,9 @@
 - `src/app/api/organizations/[id]/route.ts` - API endpoint for getting, updating, and deleting organizations
 - `src/app/api/organizations/[id]/members/route.ts` - API endpoint for managing organization members
 - `src/app/api/organizations/[id]/members/[userId]/route.ts` - API endpoint for managing individual organization members
+- `components/layout/app-shell.tsx` - Main layout component for the application
+- `components/layout/header.tsx` - Header component for the application
+- `components/layout/sidebar.tsx` - Sidebar component with navigation and project list
 
 ### Notes
 
@@ -124,8 +131,8 @@
   - [x] 4.5 Add visual feedback during dragging
   - [x] 4.6 Create task filtering functionality
   - [x] 4.7 Implement task sorting options
-  - [ ] 4.8 Add create task button and modal
-  - [ ] 4.9 Create project sidebar component
+  - [x] 4.8 Add create task button and modal
+  - [x] 4.9 Create project sidebar component
   - [ ] 4.10 Implement responsive design for kanban board
 
 - [ ] 5.0 Task Management Features

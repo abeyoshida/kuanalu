@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import KanbanColumn from "@/components/kanban-column"
 import KanbanFilter, { FilterOptions } from "@/components/kanban-filter"
 import KanbanSort, { SortOptions } from "@/components/kanban-sort"
+import CreateTaskDialog from "@/components/create-task-dialog"
 import type { TaskStatus } from "@/types/tasks"
 import { getProjectTasks, updateTaskPositions } from "@/lib/actions/task-actions"
 import { TaskWithMeta, TaskSortField, SortDirection } from "@/types/task"
@@ -274,14 +275,34 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
   return (
     <div>
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start gap-4">
-        <KanbanFilter 
-          onFilterChange={handleFilterChange} 
-          assignees={assignees} 
-        />
-        <KanbanSort
-          onSortChange={handleSortChange}
-          currentSort={sort}
-        />
+        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full">
+          <KanbanFilter 
+            onFilterChange={handleFilterChange} 
+            assignees={assignees} 
+          />
+          <KanbanSort
+            onSortChange={handleSortChange}
+            currentSort={sort}
+          />
+        </div>
+        <div className="mt-4 sm:mt-0">
+          <CreateTaskDialog 
+            projectId={projectId} 
+            onTaskCreated={async () => {
+              try {
+                setIsLoading(true)
+                const projectTasks = await getProjectTasks(projectId)
+                setAllTasks(projectTasks.map(mapDbTaskToUiTask))
+                setError(null)
+              } catch (err) {
+                console.error("Failed to refresh tasks:", err)
+                setError("Failed to refresh tasks. Please try again.")
+              } finally {
+                setIsLoading(false)
+              }
+            }}
+          />
+        </div>
       </div>
       
       <div className="flex gap-6 overflow-x-auto pb-6">
