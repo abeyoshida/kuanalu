@@ -49,7 +49,7 @@ export default function Header({
             <Menu className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-normal tracking-tight">{entityName || title}</h1>
+            <h2 className="text-xl font-semibold tracking-tight">{entityName || title}</h2>
           </div>
         </div>
         
