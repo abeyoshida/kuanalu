@@ -136,7 +136,7 @@
   - [x] 4.10 Implement responsive design for kanban board
 
 - [ ] 5.0 Task Management Features
-  - [ ] 5.1 Create task detail page layout (2-column)
+  - [x] 5.1 Create task detail page layout (2-column)
   - [ ] 5.2 Implement task information section
   - [ ] 5.3 Create subtask management UI
   - [ ] 5.4 Implement subtask creation, editing, and completion

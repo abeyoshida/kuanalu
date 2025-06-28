@@ -1,7 +1,8 @@
 "use client"
 
 import type { Task } from "@/types/tasks"
-import { Calendar, User, AlertCircle, Clock, CheckCircle } from "lucide-react"
+import { Calendar, User, AlertCircle, Clock, CheckCircle, Pencil } from "lucide-react"
+import Link from "next/link"
 
 interface TaskCardProps {
   task: Task
@@ -47,9 +48,9 @@ export default function TaskCard({ task, onDragStart, onDragEnd, isDragging = fa
     >
       <div className="flex items-start justify-between mb-1.5 sm:mb-2">
         <h4 className="font-medium text-gray-900 text-xs sm:text-sm leading-5 mr-2">{task.title}</h4>
-        <span className={`px-1.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap ${priorityColors[task.priority]}`}>
-          {task.priority}
-        </span>
+        <Link href={`/task/${task.id}`} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <Pencil className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {task.description && <p className="text-xs text-gray-600 mb-2 line-clamp-2">{task.description}</p>}
@@ -59,15 +60,20 @@ export default function TaskCard({ task, onDragStart, onDragEnd, isDragging = fa
           <User className="w-3 h-3" />
           <span className="truncate max-w-[80px]">{task.assignee}</span>
         </div>
+        <span className={`px-1.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap ${priorityColors[task.priority]}`}>
+          {task.priority}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between mt-1.5 text-xs">
+        <div className="flex items-center gap-1">
+          {statusIcons[task.status as keyof typeof statusIcons]}
+          <span className="capitalize">{task.status.replace('_', ' ')}</span>
+        </div>
         <div className="flex items-center gap-1">
           <Calendar className="w-3 h-3" />
           <span>{formatDate(task.createdAt)}</span>
         </div>
-      </div>
-
-      <div className="flex items-center gap-1 mt-1.5 text-xs">
-        {statusIcons[task.status as keyof typeof statusIcons]}
-        <span className="capitalize">{task.status.replace('_', ' ')}</span>
       </div>
     </div>
   )

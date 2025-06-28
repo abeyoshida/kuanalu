@@ -51,20 +51,20 @@ export default function KanbanColumn<T extends Task = Task>({
 
   return (
     <div className="flex-shrink-0 w-[280px] md:w-[240px] lg:w-[220px] xl:w-[250px] 2xl:w-[280px]">
-      <div className={`rounded-lg ${color} px-3 py-1 mb-2`}>
+      <div className={`rounded-lg ${color} px-2.5 py-0.5 mb-1.5`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <h3 className="font-semibold text-gray-800">{title}</h3>
+          <div className="flex items-center gap-1">
+            <h3 className="text-[13px] font-medium text-gray-800">{title}</h3>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-gray-600 bg-white/90 px-1.5 py-0.5 rounded-full">{tasks.length}</span>
             <CreateTaskDialog 
               projectId={projectId}
               defaultStatus={getStatusFromTitle()}
               onTaskCreated={onTaskCreated}
             >
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                <Plus className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                <Plus className="h-3 w-3" />
                 <span className="sr-only">Add task</span>
               </Button>
             </CreateTaskDialog>

@@ -80,9 +80,9 @@ export function LoginForm({ callbackUrl = "/dashboard", registered = false }: Lo
   };
 
   return (
-    <Card>
+    <Card className="shadow-md">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Sign in</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">Sign in to FlowBoard</CardTitle>
         <CardDescription className="text-center">
           Enter your credentials to access your account
         </CardDescription>
