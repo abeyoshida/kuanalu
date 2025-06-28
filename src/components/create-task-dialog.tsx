@@ -35,12 +35,14 @@ interface CreateTaskDialogProps {
   projectId: number
   defaultStatus?: TaskStatus
   onTaskCreated?: () => void
+  children?: React.ReactNode
 }
 
 export default function CreateTaskDialog({ 
   projectId, 
   defaultStatus = "todo",
-  onTaskCreated 
+  onTaskCreated,
+  children
 }: CreateTaskDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -112,13 +114,13 @@ export default function CreateTaskDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Create Task</Button>
+        {children || <Button>Create Task</Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
-            Add a new task to this project. Click save when you&apos;re done.
+            Add a new task to this project. Click &quot;Create Task&quot; when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

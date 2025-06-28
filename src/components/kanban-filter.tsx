@@ -101,8 +101,8 @@ export default function KanbanFilter({ onFilterChange, assignees }: KanbanFilter
   }
   
   return (
-    <div className="mb-6 flex flex-col sm:flex-row gap-2">
-      <div className="relative w-full sm:w-[90%] md:w-[80%] lg:w-[70%]">
+    <div className="flex items-center gap-2">
+      <div className="relative w-60 md:w-64 lg:w-72">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
         <Input
           placeholder="Search tasks..."

@@ -274,8 +274,8 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
 
   return (
     <div className="max-w-full">
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start gap-4">
-        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full">
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 flex-grow">
           <KanbanFilter 
             onFilterChange={handleFilterChange} 
             assignees={assignees} 
@@ -285,7 +285,7 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
             currentSort={sort}
           />
         </div>
-        <div className="mt-4 sm:mt-0 w-full sm:w-auto">
+        <div className="flex-shrink-0">
           <CreateTaskDialog 
             projectId={projectId} 
             onTaskCreated={async () => {
@@ -312,6 +312,7 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
               title={column.title}
               color={column.color}
               tasks={getTasksByStatus(column.id)}
+              projectId={projectId}
               onDragOver={(e) => handleDragOver(e, column.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, column.id)}
@@ -319,6 +320,19 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
               onDragEnd={handleDragEnd}
               isActiveDropTarget={activeDropColumn === column.id}
               draggedTaskId={draggedTask?.id}
+              onTaskCreated={async () => {
+                try {
+                  setIsLoading(true)
+                  const projectTasks = await getProjectTasks(projectId)
+                  setAllTasks(projectTasks.map(mapDbTaskToUiTask))
+                  setError(null)
+                } catch (err) {
+                  console.error("Failed to refresh tasks:", err)
+                  setError("Failed to refresh tasks. Please try again.")
+                } finally {
+                  setIsLoading(false)
+                }
+              }}
             />
           </div>
         ))}

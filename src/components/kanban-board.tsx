@@ -170,6 +170,7 @@ export default function KanbanBoard() {
           title={column.title}
           color={column.color}
           tasks={getTasksByStatus(column.id)}
+          projectId={1}
           onDragOver={(e) => handleDragOver(e, column.id)}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, column.id)}
@@ -177,6 +178,7 @@ export default function KanbanBoard() {
           onDragEnd={handleDragEnd}
           isActiveDropTarget={activeDropColumn === column.id}
           draggedTaskId={draggedTask?.id}
+          onTaskCreated={() => {}}
         />
       ))}
     </div>

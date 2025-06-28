@@ -107,7 +107,7 @@
   - [x] 2.8 Implement user role management within organizations
   - [x] 2.9 Add protected routes and authentication middleware
 
-- [ ] 3.0 Database Schema and API Development
+- [x] 3.0 Database Schema and API Development
   - [x] 3.1 Define organization schema
   - [x] 3.2 Define user schema with role information
   - [x] 3.3 Define project schema
@@ -123,7 +123,7 @@
   - [x] 3.13 Add validation to all API endpoints
   - [x] 3.14 Create database seed script for development
 
-- [ ] 4.0 Kanban Board Implementation
+- [x] 4.0 Kanban Board Implementation
   - [x] 4.1 Create kanban board layout with 5 columns
   - [x] 4.2 Implement task card component
   - [x] 4.3 Add drag and drop functionality between columns
