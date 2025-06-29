@@ -39,7 +39,7 @@ export async function getTaskSubtasks(taskId: number): Promise<SubtaskWithMeta[]
       userId,
       projectId,
       'read',
-      'task'
+      'subtask'
     );
     
     if (!hasViewPermission) {
@@ -166,7 +166,7 @@ export async function getSubtaskById(subtaskId: number): Promise<SubtaskWithMeta
       userId,
       projectId,
       'read',
-      'task'
+      'subtask'
     );
     
     if (!hasViewPermission) {
@@ -239,7 +239,7 @@ export async function createSubtask(data: {
       userId,
       projectId,
       'create',
-      'task'
+      'subtask'
     );
     
     if (!hasCreatePermission) {
@@ -351,7 +351,7 @@ export async function updateSubtask(
       userId,
       projectId,
       'update',
-      'task'
+      'subtask'
     );
     
     if (!hasUpdatePermission) {
@@ -440,7 +440,7 @@ export async function deleteSubtask(subtaskId: number): Promise<void> {
       userId,
       projectId,
       'delete',
-      'task'
+      'subtask'
     );
     
     if (!hasDeletePermission) {
@@ -510,7 +510,7 @@ export async function updateSubtaskPositions(
       userId,
       projectId,
       'update',
-      'task'
+      'subtask'
     );
     
     if (!hasUpdatePermission) {

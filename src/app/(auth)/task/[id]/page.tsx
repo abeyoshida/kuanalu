@@ -1,27 +1,34 @@
 import { Suspense } from "react"
-import TaskDetail from "@/components/task-detail"
-import { getTaskById } from "@/lib/actions/task-actions"
+import TaskDetailClient from "./task-detail-client"
+import { auth } from "@/lib/auth/auth"
+import { redirect } from "next/navigation"
+import { Metadata } from "next"
 
-interface TaskDetailPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export async function generateMetadata({ params }: TaskDetailPageProps) {
-  const { id } = params;
+// This function is used to extract and validate the ID parameter
+export async function generateMetadata(
+  { params }: { params: { id: string } }
+): Promise<Metadata> {
+  // Use a generic title that doesn't access params.id
   return {
-    title: `Task #${id} | Kuanalu`,
-    description: "Task details",
+    title: "Task Details | FlowBoard",
+    description: "View and manage task details",
   };
 }
 
-export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
-  const { id } = params;
+// Define the page component without accessing params.id directly
+export default async function TaskDetailPage() {
+  // Check if the user is authenticated
+  const session = await auth();
   
+  // If not authenticated, redirect to login
+  if (!session?.user) {
+    redirect("/auth/login");
+  }
+  
+  // We'll get the ID from the URL in the client component
   return (
     <Suspense fallback={<div className="flex justify-center p-8">Loading task details...</div>}>
-      <TaskDetail _taskId={id} />
+      <TaskDetailClient />
     </Suspense>
-  )
+  );
 } 

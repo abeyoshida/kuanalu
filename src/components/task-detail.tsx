@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -19,113 +19,22 @@ import {
   Tag,
   Clipboard,
   AlertCircle,
+  Loader2,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Card } from "@/components/ui/card"
-import type { Task, TaskPriority, TaskStatus } from "@/types/tasks"
-import type { Subtask, Comment } from "@/types/task-details"
+import type { TaskWithMeta } from "@/types/task"
+import type { SubtaskWithMeta } from "@/types/subtask"
+import type { CommentWithMeta } from "@/types/comment"
 import { getTaskById } from "@/lib/actions/task-actions"
+import { getTaskSubtasks } from "@/lib/actions/subtask-actions"
+import { getTaskComments, createComment } from "@/lib/actions/comment-actions"
 import { useRouter } from "next/navigation"
+import { toast } from "@/hooks/use-toast"
 
-// Mock data - in a real app this would come from an API
-const mockTask: Task & {
-  subtasks: Subtask[]
-  comments: Comment[]
-  reporter: string
-  labels: string[]
-  storyPoints?: number
-  projectId: number
-} = {
-  id: "5",
-  title: "Implement drag and drop functionality",
-  description:
-    "Add comprehensive drag and drop functionality to the kanban board. This includes visual feedback during dragging, proper drop zones, and state management for task movement between columns. The implementation should be smooth and intuitive for users.",
-  status: "in_progress",
-  priority: "high",
-  assignee: "John Doe",
-  reporter: "Sarah Wilson",
-  createdAt: new Date("2024-01-19"),
-  labels: ["frontend", "enhancement", "user-experience"],
-  storyPoints: 8,
-  projectId: 1,
-  subtasks: [
-    {
-      id: "5-1",
-      title: "Research drag and drop libraries",
-      description: "Evaluate different drag and drop libraries for React",
-      completed: true,
-      assignee: "John Doe",
-      createdAt: new Date("2024-01-19"),
-    },
-    {
-      id: "5-2",
-      title: "Implement basic drag functionality",
-      description: "Add draggable attribute and drag event handlers",
-      completed: true,
-      assignee: "John Doe",
-      createdAt: new Date("2024-01-20"),
-    },
-    {
-      id: "5-3",
-      title: "Add visual feedback during drag",
-      description: "Show visual indicators when dragging tasks",
-      completed: false,
-      assignee: "John Doe",
-      createdAt: new Date("2024-01-21"),
-    },
-    {
-      id: "5-4",
-      title: "Implement drop zones",
-      description: "Create proper drop zones for each column",
-      completed: false,
-      assignee: "John Doe",
-      createdAt: new Date("2024-01-21"),
-    },
-    {
-      id: "5-5",
-      title: "Add state management for task movement",
-      description: "Update task status when moved between columns",
-      completed: false,
-      assignee: "John Doe",
-      createdAt: new Date("2024-01-22"),
-    },
-    {
-      id: "5-6",
-      title: "Write tests for drag and drop",
-      description: "Create comprehensive test suite for drag and drop functionality",
-      completed: false,
-      assignee: "Jane Smith",
-      createdAt: new Date("2024-01-22"),
-    },
-  ],
-  comments: [
-    {
-      id: "c1",
-      author: "Sarah Wilson",
-      content: "This is a critical feature for user experience. Please prioritize the visual feedback implementation.",
-      createdAt: new Date("2024-01-20T10:30:00"),
-      avatar: "/placeholder.svg",
-    },
-    {
-      id: "c2",
-      author: "John Doe",
-      content: "I've completed the research phase. React DnD looks like the best option for our use case.",
-      createdAt: new Date("2024-01-21T14:15:00"),
-      avatar: "/placeholder.svg",
-    },
-    {
-      id: "c3",
-      author: "Mike Johnson",
-      content: "Make sure to test on mobile devices as well. Touch interactions can be tricky.",
-      createdAt: new Date("2024-01-22T09:45:00"),
-      avatar: "/placeholder.svg",
-    },
-  ],
-}
-
-const statusColors: Record<TaskStatus, string> = {
+const statusColors: Record<string, string> = {
   backlog: "bg-gray-100 text-gray-800",
   todo: "bg-blue-100 text-blue-800",
   in_progress: "bg-yellow-100 text-yellow-800",
@@ -133,7 +42,7 @@ const statusColors: Record<TaskStatus, string> = {
   done: "bg-green-100 text-green-800",
 }
 
-const priorityColors: Record<TaskPriority, string> = {
+const priorityColors: Record<string, string> = {
   low: "text-green-600",
   medium: "text-yellow-600",
   high: "text-red-600",
@@ -146,63 +55,270 @@ interface TaskDetailProps {
 
 export default function TaskDetail({ _taskId }: TaskDetailProps) {
   const router = useRouter()
-  const [task] = useState(mockTask)
+  const [task, setTask] = useState<TaskWithMeta | null>(null)
+  const [subtasks, setSubtasks] = useState<SubtaskWithMeta[]>([])
+  const [comments, setComments] = useState<CommentWithMeta[]>([])
   const [newComment, setNewComment] = useState("")
-  const [subtasks, setSubtasks] = useState(task.subtasks)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [subtasksPermissionError, setSubtasksPermissionError] = useState(false)
+  const [commentsPermissionError, setCommentsPermissionError] = useState(false)
 
-  // In a real app, we would fetch the task data based on the _taskId
-  // const fetchTaskData = async () => {
-  //   try {
-  //     setIsLoading(true)
-  //     const taskData = await getTaskById(parseInt(_taskId))
-  //     if (taskData) {
-  //       // Set task data
-  //     } else {
-  //       // Handle not found
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching task:", error)
-  //   } finally {
-  //     setIsLoading(false)
-  //   }
-  // }
+  // Fetch task data when component mounts
+  useEffect(() => {
+    const fetchTaskData = async () => {
+      try {
+        setIsLoading(true)
+        
+        // Reset permission errors
+        setSubtasksPermissionError(false)
+        setCommentsPermissionError(false)
+        
+        // Parse the task ID safely, handling potential NaN
+        let taskId: number;
+        try {
+          taskId = parseInt(_taskId);
+          if (isNaN(taskId)) {
+            console.error("Invalid task ID format:", _taskId);
+            setError(`Invalid task ID: ${_taskId}`);
+            setIsLoading(false);
+            return;
+          }
+        } catch (parseError) {
+          console.error("Error parsing task ID:", parseError, "Raw ID:", _taskId);
+          setError(`Error parsing task ID: ${_taskId}`);
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log("Fetching task with ID:", taskId);
+        
+        // Fetch task details
+        try {
+          const taskData = await getTaskById(taskId);
+          
+          if (!taskData) {
+            console.error("Task not found for ID:", taskId);
+            setError(`Task not found with ID: ${taskId}`);
+            setIsLoading(false);
+            return;
+          }
+          
+          console.log("Task data retrieved:", taskData);
+          setTask(taskData);
+          
+          // Fetch subtasks
+          try {
+            const subtasksData = await getTaskSubtasks(taskId);
+            setSubtasks(subtasksData);
+          } catch (subtaskError: any) {
+            console.error("Error fetching subtasks:", subtaskError);
+            // Check if it's a permission error
+            if (subtaskError.message?.includes("permission")) {
+              setSubtasksPermissionError(true);
+            }
+            // Don't set an error state for subtasks, just show an empty state with a message
+            setSubtasks([]);
+          }
+          
+          // Fetch comments
+          try {
+            const commentsData = await getTaskComments(taskId);
+            setComments(commentsData);
+          } catch (commentError: any) {
+            console.error("Error fetching comments:", commentError);
+            // Check if it's a permission error
+            if (commentError.message?.includes("permission")) {
+              setCommentsPermissionError(true);
+            }
+            // Don't set an error state for comments, just show an empty state with a message
+            setComments([]);
+          }
+        } catch (taskError: any) {
+          console.error("Error fetching task:", taskError);
+          // Check if the error is related to authentication
+          if (taskError.message?.includes("logged in")) {
+            setError("You must be logged in to view task details");
+            // Redirect to login page after a short delay
+            setTimeout(() => {
+              router.push("/auth/login");
+            }, 2000);
+          } else {
+            setError(taskError.message || "Failed to load task details");
+          }
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  // useEffect(() => {
-  //   fetchTaskData()
-  // }, [_taskId])
+    fetchTaskData();
+  }, [_taskId, router]);
 
-  // For demo purposes, we'll use a mock project ID
-  const projectId = task.projectId || 1;
+  const toggleSubtask = async (subtaskId: number) => {
+    try {
+      // Find the subtask to toggle
+      const subtask = subtasks.find(st => st.id === subtaskId);
+      if (!subtask) return;
 
-  const toggleSubtask = (subtaskId: string) => {
-    setSubtasks((prev) =>
-      prev.map((subtask) => (subtask.id === subtaskId ? { ...subtask, completed: !subtask.completed } : subtask)),
-    )
+      // Optimistically update UI
+      setSubtasks(prev =>
+        prev.map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st)
+      );
+
+      // In a real app, make API call to update the subtask
+      try {
+        // Call the API to update the subtask
+        const response = await fetch(`/api/subtasks/${subtaskId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed: !subtask.completed })
+        });
+        
+        if (!response.ok) {
+          // Check if it's a permission error
+          const errorData = await response.json();
+          
+          if (errorData.error?.includes("permission")) {
+            setSubtasksPermissionError(true);
+            // Revert the optimistic update
+            setSubtasks(prev =>
+              prev.map(st => st.id === subtaskId ? { ...st, completed: subtask.completed } : st)
+            );
+            
+            toast({
+              title: "Permission denied",
+              description: "You don't have permission to update this subtask",
+              variant: "destructive"
+            });
+            return;
+          }
+          
+          throw new Error('Failed to update subtask');
+        }
+      } catch (error: any) {
+        console.error("Error updating subtask:", error);
+        
+        // Revert the optimistic update
+        setSubtasks(prev =>
+          prev.map(st => st.id === subtaskId ? { ...st, completed: subtask.completed } : st)
+        );
+        
+        // Check if it's a permission error
+        if (error.message?.includes("permission")) {
+          setSubtasksPermissionError(true);
+          toast({
+            title: "Permission denied",
+            description: "You don't have permission to update subtasks",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to update subtask",
+            variant: "destructive"
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error updating subtask:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update subtask",
+        variant: "destructive"
+      });
+    }
   }
 
-  const completedSubtasks = subtasks.filter((st) => st.completed).length
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !task) return;
+
+    try {
+      // In a real app, make API call to add the comment
+      try {
+        const response = await createComment({
+          content: newComment,
+          taskId: task.id,
+        });
+        
+        // Optimistically update UI
+        setComments(prev => [...prev, response]);
+        setNewComment("");
+        
+        toast({
+          title: "Comment added",
+          description: "Your comment has been added successfully",
+        });
+      } catch (error: any) {
+        console.error("Error adding comment:", error);
+        
+        // Check if it's a permission error
+        if (error.message?.includes("permission")) {
+          setCommentsPermissionError(true);
+          toast({
+            title: "Permission denied",
+            description: "You don't have permission to add comments to this task",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to add comment",
+            variant: "destructive"
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive"
+      });
+    }
+  }
+
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return "Not set"
+    
+    if (date instanceof Date) {
+      return date.toLocaleDateString()
+    }
+    
+    try {
+      return new Date(date).toLocaleDateString()
+    } catch (e) {
+      return String(date)
+    }
+  }
+
+  // Calculate progress for subtasks
+  const completedSubtasks = subtasks.filter(st => st.completed).length
   const totalSubtasks = subtasks.length
   const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
 
-  const handleAddComment = () => {
-    if (newComment.trim()) {
-      // In a real app, this would make an API call
-      console.log("Adding comment:", newComment)
-      setNewComment("")
-    }
-  }
-
-  const formatDate = (date: Date | string) => {
-    if (date instanceof Date) {
-      return date.toLocaleDateString();
-    }
-    return String(date);
-  };
-
   if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading task details...</div>
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-lg">Loading task details...</span>
+      </div>
+    )
   }
+
+  if (error || !task) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-2xl font-semibold mb-2">Error</h2>
+        <p className="text-gray-600 mb-6">{error || "Task not found"}</p>
+        <Button onClick={() => router.back()}>Go Back</Button>
+      </div>
+    )
+  }
+
+  // Get project ID from task or default to 1
+  const projectId = task.projectId || 1
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">
@@ -238,18 +354,15 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
             </div>
 
             <div className="flex flex-wrap gap-2 mb-4">
-              <Badge variant="secondary" className={statusColors[task.status]}>
-                {task.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              <Badge variant="secondary" className={getStatusColor(task.status)}>
+                {formatStatus(task.status)}
               </Badge>
-              {task.labels.map((label) => (
-                <Badge key={label} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  {label}
-                </Badge>
-              ))}
+              {task.labels && Array.isArray(task.labels) ? renderLabels(task.labels) : null}
             </div>
 
             <div className="prose max-w-none text-gray-700 mb-6">
-              {task.description}
+              {typeof task.description === 'string' ? task.description : 
+                <span className="text-gray-400 italic">No description provided</span>}
             </div>
           </div>
 
@@ -257,67 +370,88 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-medium text-gray-900">Subtasks</h2>
-              <Button variant="outline" size="sm" className="flex items-center gap-1">
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Subtask</span>
-              </Button>
+              {!subtasksPermissionError && (
+                <Button variant="outline" size="sm" className="flex items-center gap-1">
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Subtask</span>
+                </Button>
+              )}
             </div>
 
-            {/* Progress bar */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-600">
-                  Progress: {completedSubtasks}/{totalSubtasks}
-                </span>
-                <span className="text-sm font-medium text-gray-900">{Math.round(progressPercentage)}%</span>
+            {/* Progress bar - only show if we have subtasks */}
+            {subtasks.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-gray-600">
+                    Progress: {completedSubtasks}/{totalSubtasks}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900">{Math.round(progressPercentage)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full"
+                    style={{ width: `${progressPercentage}%` }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-            </div>
+            )}
 
             {/* Subtasks list */}
             <div className="space-y-2">
-              {subtasks.map((subtask) => (
-                <div
-                  key={subtask.id}
-                  className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
-                >
-                  <div className="pt-0.5">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`p-0 w-5 h-5 rounded-sm ${
-                        subtask.completed ? "bg-blue-600 text-white border-blue-600" : ""
-                      }`}
-                      onClick={() => toggleSubtask(subtask.id)}
-                    >
-                      {subtask.completed && <Check className="w-3 h-3" />}
-                    </Button>
-                  </div>
-                  <div className="flex-1">
-                    <p className={`font-medium ${subtask.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
-                      {subtask.title}
-                    </p>
-                    {subtask.description && (
-                      <p className="text-sm text-gray-600 mt-1">{subtask.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        <span>{subtask.assignee}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        <span>{formatDate(subtask.createdAt)}</span>
+              {subtasks.length > 0 ? (
+                subtasks.map((subtask) => (
+                  <div
+                    key={subtask.id}
+                    className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
+                  >
+                    <div className="pt-0.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`p-0 w-5 h-5 rounded-sm ${
+                          subtask.completed ? "bg-blue-600 text-white border-blue-600" : ""
+                        }`}
+                        onClick={() => toggleSubtask(subtask.id)}
+                      >
+                        {subtask.completed && <Check className="w-3 h-3" />}
+                      </Button>
+                    </div>
+                    <div className="flex-1">
+                      <p className={`font-medium ${subtask.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+                        {subtask.title}
+                      </p>
+                      {subtask.description && (
+                        <p className="text-sm text-gray-600 mt-1">{subtask.description}</p>
+                      )}
+                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          <span>{subtask.assigneeName || "Unassigned"}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>{formatDate(subtask.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Clipboard className="h-10 w-10 text-gray-300 mb-2" />
+                  <p className="text-gray-500 mb-2">
+                    {subtasksPermissionError 
+                      ? "You don't have permission to view subtasks" 
+                      : "No subtasks yet"}
+                  </p>
+                  {!subtasksPermissionError && (
+                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add your first subtask</span>
+                    </Button>
+                  )}
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -327,42 +461,55 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
 
             {/* Comment list */}
             <div className="space-y-6 mb-6">
-              {task.comments.map((comment) => (
-                <div key={comment.id} className="flex gap-4">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={comment.avatar} alt={comment.author} />
-                    <AvatarFallback>{comment.author.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium text-gray-900">{comment.author}</div>
-                      <div className="text-xs text-gray-500">
-                        {comment.createdAt.toLocaleString()}
+              {comments.length > 0 ? (
+                comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-4">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={comment.userImage || ""} alt={comment.userName || ""} />
+                      <AvatarFallback>{getInitials(comment.userName || "")}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-gray-900">{comment.userName || "Unknown User"}</div>
+                        <div className="text-xs text-gray-500">
+                          {formatDate(comment.createdAt)}
+                        </div>
                       </div>
+                      <div className="mt-1 text-gray-700">{comment.content}</div>
                     </div>
-                    <div className="mt-1 text-gray-700">{comment.content}</div>
                   </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <MessageSquare className="h-10 w-10 text-gray-300 mb-2" />
+                  <p className="text-gray-500">
+                    {commentsPermissionError 
+                      ? "You don't have permission to view comments" 
+                      : "No comments yet"}
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
 
-            {/* Add comment */}
-            <div className="flex gap-4">
-              <Avatar className="w-8 h-8">
-                <AvatarFallback>U</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <Textarea
-                  placeholder="Add a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="min-h-[100px] mb-2"
-                />
-                <Button onClick={handleAddComment} disabled={!newComment.trim()}>
-                  Add Comment
-                </Button>
+            {/* Add comment - only show if we have permission */}
+            {!commentsPermissionError && (
+              <div className="flex gap-4">
+                <Avatar className="w-8 h-8">
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <Textarea
+                    placeholder="Add a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="min-h-[100px] mb-2"
+                  />
+                  <Button onClick={handleAddComment} disabled={!newComment.trim()}>
+                    Add Comment
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -375,8 +522,8 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
               {/* Status */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Current Status</span>
-                <Badge variant="secondary" className={statusColors[task.status]}>
-                  {task.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                <Badge variant="secondary" className={getStatusColor(task.status)}>
+                  {formatStatus(task.status)}
                 </Badge>
               </div>
               
@@ -384,9 +531,9 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Priority</span>
                 <div className="flex items-center gap-1">
-                  <Flag className={`w-4 h-4 ${priorityColors[task.priority]}`} />
+                  <Flag className={`w-4 h-4 ${getPriorityColor(task.priority)}`} />
                   <span className="text-sm font-medium">
-                    {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                    {formatPriority(task.priority)}
                   </span>
                 </div>
               </div>
@@ -395,7 +542,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Story Points</span>
                 <Badge variant="outline" className="font-medium">
-                  {task.storyPoints}
+                  {task.points || "Not set"}
                 </Badge>
               </div>
             </div>
@@ -410,9 +557,9 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                 <span className="text-sm text-gray-700">Assignee</span>
                 <div className="flex items-center gap-2">
                   <Avatar className="w-6 h-6">
-                    <AvatarFallback>{task.assignee.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{getInitials(task.assigneeName || "Unassigned")}</AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium">{task.assignee}</span>
+                  <span className="text-sm font-medium">{task.assigneeName || "Unassigned"}</span>
                 </div>
               </div>
               
@@ -421,9 +568,9 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                 <span className="text-sm text-gray-700">Reporter</span>
                 <div className="flex items-center gap-2">
                   <Avatar className="w-6 h-6">
-                    <AvatarFallback>{task.reporter.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{getInitials(task.reporterName || "Unknown")}</AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium">{task.reporter}</span>
+                  <span className="text-sm font-medium">{task.reporterName || "Unknown"}</span>
                 </div>
               </div>
             </div>
@@ -439,10 +586,16 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                 <span className="text-sm">{formatDate(task.createdAt)}</span>
               </div>
               
-              {/* Due date - mocked */}
+              {/* Due date */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Due Date</span>
-                <span className="text-sm">Not set</span>
+                <span className="text-sm">{formatDate(task.dueDate)}</span>
+              </div>
+              
+              {/* Updated */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">Last Updated</span>
+                <span className="text-sm">{formatDate(task.updatedAt)}</span>
               </div>
             </div>
           </Card>
@@ -451,11 +604,9 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           <Card className="p-5">
             <h3 className="text-sm font-medium text-gray-500 mb-4">Labels</h3>
             <div className="flex flex-wrap gap-2">
-              {task.labels.map((label) => (
-                <Badge key={label} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  {label}
-                </Badge>
-              ))}
+              {task.labels && Array.isArray(task.labels) ? 
+                task.labels.length > 0 ? renderLabels(task.labels) : <span className="text-sm text-gray-500">No labels</span>
+              : <span className="text-sm text-gray-500">No labels</span>}
               <Button variant="outline" size="sm" className="h-6 px-2">
                 <Plus className="w-3 h-3 mr-1" />
                 <span className="text-xs">Add Label</span>
@@ -466,4 +617,77 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
       </div>
     </div>
   )
+}
+
+// Helper functions
+function getStatusColor(status: string): string {
+  const statusColors: Record<string, string> = {
+    backlog: "bg-gray-100 text-gray-800",
+    todo: "bg-blue-100 text-blue-800",
+    in_progress: "bg-yellow-100 text-yellow-800",
+    in_review: "bg-orange-100 text-orange-800",
+    done: "bg-green-100 text-green-800",
+  }
+  
+  return statusColors[status] || "bg-gray-100 text-gray-800"
+}
+
+function getPriorityColor(priority: string): string {
+  const priorityColors: Record<string, string> = {
+    low: "text-green-600",
+    medium: "text-yellow-600",
+    high: "text-red-600",
+    urgent: "text-purple-600",
+  }
+  
+  return priorityColors[priority] || "text-gray-600"
+}
+
+function formatStatus(status: string): string {
+  if (!status) return "Unknown"
+  return status.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+}
+
+function formatPriority(priority: string): string {
+  if (!priority) return "None"
+  return priority.charAt(0).toUpperCase() + priority.slice(1)
+}
+
+function getInitials(name: string): string {
+  if (!name) return "?"
+  return name
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+function getLabelText(label: unknown): string {
+  if (typeof label === 'string') {
+    return label
+  }
+  
+  if (typeof label === 'object' && label !== null) {
+    if ('name' in label && typeof label.name === 'string') {
+      return label.name
+    }
+  }
+  
+  return String(label || '')
+}
+
+function renderLabels(labels: unknown[] | undefined) {
+  if (!labels || !Array.isArray(labels) || labels.length === 0) {
+    return null;
+  }
+  
+  return labels.map((label, index) => {
+    const labelText = getLabelText(label);
+    return (
+      <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+        {labelText}
+      </Badge>
+    );
+  });
 }

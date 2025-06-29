@@ -60,11 +60,19 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
       try {
         setIsLoading(true)
         const projectTasks = await getProjectTasks(projectId)
-        setAllTasks(projectTasks.map(mapDbTaskToUiTask))
-        setError(null)
+        
+        if (projectTasks && Array.isArray(projectTasks)) {
+          setAllTasks(projectTasks.map(mapDbTaskToUiTask))
+          setError(null)
+        } else {
+          console.error("Invalid project tasks data:", projectTasks)
+          setAllTasks([])
+          setError("Failed to load tasks. Invalid data received.")
+        }
       } catch (err) {
         console.error("Failed to fetch tasks:", err)
         setError("Failed to load tasks. Please try again.")
+        setAllTasks([])
       } finally {
         setIsLoading(false)
       }
@@ -219,7 +227,11 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
       setError("Failed to update task status. Please try again.")
       // Fetch the tasks again to ensure UI is in sync with the database
       const projectTasks = await getProjectTasks(projectId)
-      setAllTasks(projectTasks.map(mapDbTaskToUiTask))
+      if (projectTasks && Array.isArray(projectTasks)) {
+        setAllTasks(projectTasks.map(mapDbTaskToUiTask))
+      } else {
+        setAllTasks([])
+      }
     } finally {
       setDraggedTask(null)
     }
@@ -256,11 +268,18 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
             try {
               setIsLoading(true)
               const projectTasks = await getProjectTasks(projectId)
-              setAllTasks(projectTasks.map(mapDbTaskToUiTask))
-              setError(null)
+              if (projectTasks && Array.isArray(projectTasks)) {
+                setAllTasks(projectTasks.map(mapDbTaskToUiTask))
+                setError(null)
+              } else {
+                console.error("Invalid project tasks data:", projectTasks)
+                setAllTasks([])
+                setError("Failed to load tasks. Invalid data received.")
+              }
             } catch (err) {
               console.error("Failed to fetch tasks:", err)
               setError("Failed to load tasks. Please try again.")
+              setAllTasks([])
             } finally {
               setIsLoading(false)
             }

@@ -39,7 +39,7 @@ export async function getTaskComments(taskId: number): Promise<CommentWithMeta[]
       userId,
       projectId,
       'read',
-      'task'
+      'comment'
     );
     
     if (!hasViewPermission) {
@@ -181,7 +181,7 @@ export async function getCommentById(commentId: number): Promise<CommentWithMeta
       userId,
       projectId,
       'read',
-      'task'
+      'comment'
     );
     
     if (!hasViewPermission) {
@@ -558,7 +558,7 @@ export async function getCommentReplies(commentId: number): Promise<CommentWithM
       userId,
       projectId,
       'read',
-      'task'
+      'comment'
     );
     
     if (!hasViewPermission) {
