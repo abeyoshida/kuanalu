@@ -143,10 +143,10 @@
   - [x] 5.5 Create comments section
   - [x] 5.6 Implement comment creation and display
   - [x] 5.7 Add task details sidebar with metadata
-  - [ ] 5.8 Implement task editing functionality
-  - [ ] 5.9 Create task assignment dropdown
-  - [ ] 5.10 Add priority selection UI
-  - [ ] 5.11 Implement due date picker
+  - [x] 5.8 Implement task editing functionality
+  - [x] 5.9 Create task assignment dropdown
+  - [x] 5.10 Add priority selection UI
+  - [x] 5.11 Implement due date picker
   - [ ] 5.12 Create task history/activity log
 
 - [ ] 6.0 Additional Views (List and Calendar)

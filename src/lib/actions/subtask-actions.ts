@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
-import { subtasks, tasks, users } from "@/lib/db/schema";
+import { subtasks, tasks, users, projects } from "@/lib/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { SubtaskWithMeta } from "@/types/subtask";
@@ -34,10 +34,23 @@ export async function getTaskSubtasks(taskId: number): Promise<SubtaskWithMeta[]
     
     const projectId = task[0].projectId;
     
+    // Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
     // Check if user has permission to view this task's subtasks
     const hasViewPermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'read',
       'subtask'
     );

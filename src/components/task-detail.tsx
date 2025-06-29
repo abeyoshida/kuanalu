@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import {
   ArrowLeft,
   User,
-  Calendar,
+  Calendar as CalendarIcon,
   Flag,
   MessageSquare,
   Plus,
@@ -18,6 +18,8 @@ import {
   Clipboard,
   AlertCircle,
   Loader2,
+  UserPlus,
+  X,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -31,19 +33,40 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { Label } from "@/components/ui/label"
-import type { TaskWithMeta } from "@/types/task"
+import { cn } from "@/lib/utils"
+import type { TaskWithMeta, TaskStatus, TaskPriority } from "@/types/task"
 import type { SubtaskWithMeta } from "@/types/subtask"
 import type { CommentWithMeta } from "@/types/comment"
-import { getTaskById } from "@/lib/actions/task-actions"
+import { getTaskById, updateTask } from "@/lib/actions/task-actions"
 import { getTaskSubtasks, createSubtask, updateSubtask } from "@/lib/actions/subtask-actions"
 import { getTaskComments, createComment } from "@/lib/actions/comment-actions"
+import { getProjectMembers } from "@/lib/actions/project-actions"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 
 interface TaskDetailProps {
   _taskId: string
 }
+
+// First, let's create a helper function to format the description with line breaks
+const formatDescriptionWithLineBreaks = (description: string): React.ReactNode => {
+  return description.split('\n').map((line, index) => (
+    <React.Fragment key={index}>
+      {line}
+      {index < description.split('\n').length - 1 && <br />}
+    </React.Fragment>
+  ));
+};
 
 export default function TaskDetail({ _taskId }: TaskDetailProps) {
   const router = useRouter()
@@ -68,6 +91,25 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
   const [editSubtaskDescription, setEditSubtaskDescription] = useState("")
   const [isEditSubtaskDialogOpen, setIsEditSubtaskDialogOpen] = useState(false)
   const [isSubmittingEditSubtask, setIsSubmittingEditSubtask] = useState(false)
+
+  // Add state for task editing
+  const [isEditTaskDialogOpen, setIsEditTaskDialogOpen] = useState(false)
+  const [editTaskTitle, setEditTaskTitle] = useState("")
+  const [editTaskDescription, setEditTaskDescription] = useState("")
+  const [editTaskStatus, setEditTaskStatus] = useState<TaskStatus>("todo")
+  const [editTaskPriority, setEditTaskPriority] = useState<TaskPriority>("medium")
+  const [isSubmittingEditTask, setIsSubmittingEditTask] = useState(false)
+
+  // Add state for project members and assignment
+  const [projectMembers, setProjectMembers] = useState<{ id: number; name: string; email: string }[]>([])
+  const [isAssigningUser, setIsAssigningUser] = useState(false)
+  
+  // Add state for priority selection
+  const [isUpdatingPriority, setIsUpdatingPriority] = useState(false)
+  
+  // Add state for due date picker
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false)
 
   // Fetch task data when component mounts
   useEffect(() => {
@@ -161,6 +203,24 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
 
     fetchTaskData();
   }, [_taskId, router]);
+
+  // Add function to fetch project members
+  useEffect(() => {
+    const fetchProjectMembers = async () => {
+      if (!task) return;
+      
+      try {
+        const members = await getProjectMembers(task.projectId);
+        setProjectMembers(members);
+      } catch (error) {
+        console.error("Error fetching project members:", error);
+      }
+    };
+    
+    if (task) {
+      fetchProjectMembers();
+    }
+  }, [task]);
 
   const toggleSubtask = async (subtaskId: number) => {
     try {
@@ -408,6 +468,184 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
     }
   };
 
+  // Add function to open the edit task dialog
+  const openEditTaskDialog = () => {
+    if (!task) return;
+    
+    setEditTaskTitle(task.title);
+    setEditTaskDescription(task.description || "");
+    setEditTaskStatus(task.status as TaskStatus);
+    setEditTaskPriority(task.priority as TaskPriority);
+    setIsEditTaskDialogOpen(true);
+  };
+
+  // Add function to handle task update
+  const handleUpdateTask = async () => {
+    if (!task || !editTaskTitle.trim()) return;
+    
+    try {
+      setIsSubmittingEditTask(true);
+      
+      const response = await updateTask(task.id, {
+        title: editTaskTitle,
+        description: editTaskDescription || null,
+        status: editTaskStatus,
+        priority: editTaskPriority
+      });
+      
+      // Update the task in state
+      setTask(response);
+      
+      // Reset form and close dialog
+      setIsEditTaskDialogOpen(false);
+      
+      toast({
+        title: "Task updated",
+        description: "Your task has been updated successfully",
+      });
+    } catch (error: unknown) {
+      console.error("Error updating task:", error);
+      
+      if (error instanceof Error && error.message?.includes("permission")) {
+        toast({
+          title: "Permission denied",
+          description: "You don't have permission to update this task",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update task",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsSubmittingEditTask(false);
+    }
+  };
+
+  // Add function to handle assignee change
+  const handleAssigneeChange = async (userId: number | null) => {
+    if (!task) return;
+    
+    try {
+      setIsAssigningUser(true);
+      
+      const response = await updateTask(task.id, {
+        assigneeId: userId
+      });
+      
+      // Update the task in state
+      setTask(response);
+      
+      toast({
+        title: "Task assigned",
+        description: userId 
+          ? `Task assigned to ${projectMembers.find(m => m.id === userId)?.name || 'user'}`
+          : "Task unassigned",
+      });
+    } catch (error: unknown) {
+      console.error("Error assigning task:", error);
+      
+      if (error instanceof Error && error.message?.includes("permission")) {
+        toast({
+          title: "Permission denied",
+          description: "You don't have permission to assign this task",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to assign task",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsAssigningUser(false);
+    }
+  };
+
+  // Add function to handle priority change
+  const handlePriorityChange = async (priority: TaskPriority) => {
+    if (!task) return;
+    
+    try {
+      setIsUpdatingPriority(true);
+      
+      const response = await updateTask(task.id, {
+        priority: priority
+      });
+      
+      // Update the task in state
+      setTask(response);
+      
+      toast({
+        title: "Priority updated",
+        description: `Task priority set to ${formatPriority(priority)}`,
+      });
+    } catch (error: unknown) {
+      console.error("Error updating priority:", error);
+      
+      if (error instanceof Error && error.message?.includes("permission")) {
+        toast({
+          title: "Permission denied",
+          description: "You don't have permission to update this task's priority",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update priority",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsUpdatingPriority(false);
+    }
+  };
+
+  // Add function to handle due date change
+  const handleDueDateChange = async (date: Date | undefined) => {
+    if (!task) return;
+    
+    try {
+      setIsUpdatingDueDate(true);
+      
+      const response = await updateTask(task.id, {
+        dueDate: date || null
+      });
+      
+      // Update the task in state
+      setTask(response);
+      
+      toast({
+        title: "Due date updated",
+        description: date 
+          ? `Due date set to ${formatDate(date)}`
+          : "Due date removed",
+      });
+    } catch (error: unknown) {
+      console.error("Error updating due date:", error);
+      
+      if (error instanceof Error && error.message?.includes("permission")) {
+        toast({
+          title: "Permission denied",
+          description: "You don't have permission to update this task's due date",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update due date",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsUpdatingDueDate(false);
+      setIsDatePickerOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -454,10 +692,109 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
             <div className="flex items-start justify-between mb-4">
               <h1 className="text-2xl font-semibold text-gray-900">{task.title}</h1>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="flex items-center gap-1">
-                  <Edit className="w-3.5 h-3.5" />
-                  <span>Edit</span>
-                </Button>
+                <Dialog open={isEditTaskDialogOpen} onOpenChange={setIsEditTaskDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-1"
+                      onClick={openEditTaskDialog}
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>Edit Task</DialogTitle>
+                      <DialogDescription>
+                        Make changes to the task. Click save when you&apos;re done.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-task-title" className="text-right">
+                          Title
+                        </Label>
+                        <Input
+                          id="edit-task-title"
+                          value={editTaskTitle}
+                          onChange={(e) => setEditTaskTitle(e.target.value)}
+                          className="col-span-3"
+                          placeholder="Enter task title"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-task-status" className="text-right">
+                          Status
+                        </Label>
+                        <Select
+                          value={editTaskStatus}
+                          onValueChange={(value) => setEditTaskStatus(value as TaskStatus)}
+                        >
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="backlog">Backlog</SelectItem>
+                            <SelectItem value="todo">To Do</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="in_review">In Review</SelectItem>
+                            <SelectItem value="done">Done</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-task-priority" className="text-right">
+                          Priority
+                        </Label>
+                        <Select
+                          value={editTaskPriority}
+                          onValueChange={(value) => setEditTaskPriority(value as TaskPriority)}
+                        >
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="urgent">Urgent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="edit-task-description" className="text-right">
+                          Description
+                        </Label>
+                        <Textarea
+                          id="edit-task-description"
+                          value={editTaskDescription}
+                          onChange={(e) => setEditTaskDescription(e.target.value)}
+                          className="col-span-3"
+                          placeholder="Enter task description"
+                          rows={5}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button 
+                        type="submit" 
+                        onClick={handleUpdateTask} 
+                        disabled={!editTaskTitle.trim() || isSubmittingEditTask}
+                      >
+                        {isSubmittingEditTask ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Changes"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
                 <Button variant="outline" size="sm" className="p-0 w-8 h-8">
                   <MoreHorizontal className="w-4 h-4" />
                 </Button>
@@ -472,7 +809,8 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
             </div>
 
             <div className="prose max-w-none text-gray-700 mb-6">
-              {typeof task.description === 'string' ? task.description : 
+              {typeof task.description === 'string' && task.description ? 
+                formatDescriptionWithLineBreaks(task.description) : 
                 <span className="text-gray-400 italic">No description provided</span>}
             </div>
           </div>
@@ -493,7 +831,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                     <DialogHeader>
                       <DialogTitle>Add New Subtask</DialogTitle>
                       <DialogDescription>
-                        Create a new subtask for this task. Click save when you're done.
+                        Create a new subtask for this task. Click save when you&apos;re done.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -605,7 +943,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                           <span>{subtask.assigneeName || "Unassigned"}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
+                          <CalendarIcon className="w-3 h-3" />
                           <span>{formatDate(subtask.createdAt)}</span>
                         </div>
                       </div>
@@ -698,7 +1036,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
         <div className="space-y-6">
           {/* Status and actions card */}
           <Card className="p-5">
-            <h3 className="text-sm font-medium text-gray-500 mb-4">Status</h3>
+            <h3 className="text-sm font-bold text-gray-700 mb-4">Status</h3>
             <div className="space-y-4">
               {/* Status */}
               <div className="flex items-center justify-between">
@@ -711,11 +1049,54 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
               {/* Priority */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Priority</span>
-                <div className="flex items-center gap-1">
-                  <Flag className={`w-4 h-4 ${getPriorityColor(task.priority)}`} />
-                  <span className="text-sm font-medium">
-                    {formatPriority(task.priority)}
-                  </span>
+                <div className="w-[140px]">
+                  <Select
+                    value={task.priority}
+                    onValueChange={(value) => handlePriorityChange(value as TaskPriority)}
+                    disabled={isUpdatingPriority}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue>
+                        {isUpdatingPriority ? (
+                          <div className="flex items-center gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>Updating...</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <Flag className={`w-3 h-3 ${getPriorityColor(task.priority)}`} />
+                            <span>{formatPriority(task.priority)}</span>
+                          </div>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low" className="flex items-center gap-1">
+                        <div className="flex items-center gap-1">
+                          <Flag className="w-3 h-3 text-green-600" />
+                          <span>Low</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="medium" className="flex items-center gap-1">
+                        <div className="flex items-center gap-1">
+                          <Flag className="w-3 h-3 text-yellow-600" />
+                          <span>Medium</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="high" className="flex items-center gap-1">
+                        <div className="flex items-center gap-1">
+                          <Flag className="w-3 h-3 text-red-600" />
+                          <span>High</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="urgent" className="flex items-center gap-1">
+                        <div className="flex items-center gap-1">
+                          <Flag className="w-3 h-3 text-purple-600" />
+                          <span>Urgent</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
@@ -731,16 +1112,62 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
 
           {/* People card */}
           <Card className="p-5">
-            <h3 className="text-sm font-medium text-gray-500 mb-4">People</h3>
+            <h3 className="text-sm font-bold text-gray-700 mb-4">People</h3>
             <div className="space-y-4">
               {/* Assignee */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Assignee</span>
-                <div className="flex items-center gap-2">
-                  <Avatar className="w-6 h-6">
-                    <AvatarFallback>{getInitials(task.assigneeName || "Unassigned")}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium">{task.assigneeName || "Unassigned"}</span>
+                <div className="w-[180px]">
+                  <Select
+                    value={task?.assigneeId ? String(task.assigneeId) : "unassigned"}
+                    onValueChange={(value) => {
+                      const assigneeId = value === "unassigned" ? null : parseInt(value);
+                      handleAssigneeChange(assigneeId);
+                    }}
+                    disabled={isAssigningUser}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {isAssigningUser ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Assigning...</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            {task?.assigneeId ? (
+                              <Avatar className="h-5 w-5">
+                                <AvatarFallback>{getInitials(task.assigneeName || "")}</AvatarFallback>
+                              </Avatar>
+                            ) : (
+                              <UserPlus className="h-4 w-4 text-gray-400" />
+                            )}
+                            <span className="truncate">
+                              {task?.assigneeName || "Unassigned"}
+                            </span>
+                          </div>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">
+                        <div className="flex items-center gap-2">
+                          <UserPlus className="h-4 w-4 text-gray-400" />
+                          <span>Unassigned</span>
+                        </div>
+                      </SelectItem>
+                      {projectMembers.map((member) => (
+                        <SelectItem key={member.id} value={String(member.id)}>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-5 w-5">
+                              <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
+                            </Avatar>
+                            <span>{member.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
@@ -759,7 +1186,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
 
           {/* Dates card */}
           <Card className="p-5">
-            <h3 className="text-sm font-medium text-gray-500 mb-4">Dates</h3>
+            <h3 className="text-sm font-bold text-gray-700 mb-4">Dates</h3>
             <div className="space-y-4">
               {/* Created */}
               <div className="flex items-center justify-between">
@@ -770,7 +1197,51 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
               {/* Due date */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Due Date</span>
-                <span className="text-sm">{formatDate(task.dueDate)}</span>
+                <div>
+                  <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className={cn(
+                          "flex items-center gap-1 h-8 px-2 text-xs",
+                          !task.dueDate && "text-gray-500",
+                          isUpdatingDueDate && "opacity-70 cursor-not-allowed"
+                        )}
+                        disabled={isUpdatingDueDate}
+                      >
+                        {isUpdatingDueDate ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <CalendarIcon className="h-3 w-3" />
+                        )}
+                        {task.dueDate ? formatDate(task.dueDate) : "Set due date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={task.dueDate ? new Date(task.dueDate) : undefined}
+                        onSelect={handleDueDateChange}
+                        initialFocus
+                        required={false}
+                      />
+                      {task.dueDate && (
+                        <div className="p-2 border-t flex justify-between items-center">
+                          <span className="text-xs text-gray-500">Clear due date</span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => handleDueDateChange(undefined)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
               
               {/* Updated */}
@@ -783,7 +1254,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
 
           {/* Tags/Labels card */}
           <Card className="p-5">
-            <h3 className="text-sm font-medium text-gray-500 mb-4">Labels</h3>
+            <h3 className="text-sm font-bold text-gray-700 mb-4">Labels</h3>
             <div className="flex flex-wrap gap-2">
               {task.labels && Array.isArray(task.labels) ? 
                 task.labels.length > 0 ? renderLabels(task.labels) : <span className="text-sm text-gray-500">No labels</span>
@@ -803,7 +1274,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           <DialogHeader>
             <DialogTitle>Edit Subtask</DialogTitle>
             <DialogDescription>
-              Make changes to the subtask. Click save when you're done.
+              Make changes to the subtask. Click save when you&apos;re done.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

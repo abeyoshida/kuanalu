@@ -20,6 +20,7 @@
     "db:migrate:relationships": "tsx src/lib/db/run-relationships-migration.ts",
     "db:seed": "tsx src/scripts/seed.ts",
     "db:clear": "tsx src/scripts/clear-db.ts",
+    "db:reset": "tsx src/scripts/reset-db.ts",
     "clean-dev": "rm -rf .next && next dev"
   },
   "dependencies": {
@@ -43,6 +44,7 @@
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.44.2",

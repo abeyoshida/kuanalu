@@ -592,60 +592,25 @@ export async function removeProjectMember(projectId: number, userId: number) {
 /**
  * Get project members
  */
-export async function getProjectMembers(projectId: number) {
+export async function getProjectMembers(projectId: number): Promise<{ id: number; name: string; email: string }[]> {
   const session = await auth();
   
   if (!session?.user) {
     throw new Error("You must be logged in to view project members");
   }
   
-  const userId = parseInt(session.user.id);
-  
   try {
-    // Check if user has access to the project
-    const membership = await db
-      .select()
-      .from(projectMembers)
-      .where(
-        and(
-          eq(projectMembers.userId, userId),
-          eq(projectMembers.projectId, projectId)
-        )
-      )
-      .limit(1);
-    
-    if (!membership.length) {
-      // Check if project is public
-      const project = await db
-        .select({
-          visibility: projects.visibility
-        })
-        .from(projects)
-        .where(eq(projects.id, projectId))
-        .limit(1)
-        .then((results) => results[0]);
-      
-      if (!project || project.visibility !== 'public') {
-        throw new Error("You don't have access to this project");
-      }
-    }
-    
-    // Get all members with their user details
+    // Get all members of the project with their user information
     const members = await db
       .select({
-        userId: users.id,
+        id: users.id,
         name: users.name,
-        email: users.email,
-        image: users.image,
-        role: projectMembers.role,
-        joinedAt: projectMembers.joinedAt
+        email: users.email
       })
       .from(projectMembers)
-      .innerJoin(
-        users,
-        eq(projectMembers.userId, users.id)
-      )
-      .where(eq(projectMembers.projectId, projectId));
+      .innerJoin(users, eq(projectMembers.userId, users.id))
+      .where(eq(projectMembers.projectId, projectId))
+      .orderBy(users.name);
     
     return members;
   } catch (error) {

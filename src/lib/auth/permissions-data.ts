@@ -112,6 +112,12 @@ export const rolePermissions: Record<Role, Permission[]> = {
     
     // Task permissions
     { action: 'read', subject: 'task' },
+    
+    // Subtask permissions
+    { action: 'read', subject: 'subtask' },
+    
+    // Comment permissions
+    { action: 'read', subject: 'comment' },
   ],
 };
 
