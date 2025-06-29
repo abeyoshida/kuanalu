@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import {
   ArrowLeft,
   User,
@@ -21,11 +22,21 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import type { TaskWithMeta } from "@/types/task"
 import type { SubtaskWithMeta } from "@/types/subtask"
 import type { CommentWithMeta } from "@/types/comment"
 import { getTaskById } from "@/lib/actions/task-actions"
-import { getTaskSubtasks } from "@/lib/actions/subtask-actions"
+import { getTaskSubtasks, createSubtask, updateSubtask } from "@/lib/actions/subtask-actions"
 import { getTaskComments, createComment } from "@/lib/actions/comment-actions"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
@@ -44,6 +55,19 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
   const [error, setError] = useState<string | null>(null)
   const [subtasksPermissionError, setSubtasksPermissionError] = useState(false)
   const [commentsPermissionError, setCommentsPermissionError] = useState(false)
+  
+  // Add state for the new subtask dialog
+  const [isSubtaskDialogOpen, setIsSubtaskDialogOpen] = useState(false)
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("")
+  const [newSubtaskDescription, setNewSubtaskDescription] = useState("")
+  const [isSubmittingSubtask, setIsSubmittingSubtask] = useState(false)
+
+  // Add state for editing subtasks
+  const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null)
+  const [editSubtaskTitle, setEditSubtaskTitle] = useState("")
+  const [editSubtaskDescription, setEditSubtaskDescription] = useState("")
+  const [isEditSubtaskDialogOpen, setIsEditSubtaskDialogOpen] = useState(false)
+  const [isSubmittingEditSubtask, setIsSubmittingEditSubtask] = useState(false)
 
   // Fetch task data when component mounts
   useEffect(() => {
@@ -280,6 +304,110 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
   const totalSubtasks = subtasks.length;
   const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
 
+  // Add function to handle subtask creation
+  const handleAddSubtask = async () => {
+    if (!newSubtaskTitle.trim() || !task) return;
+    
+    try {
+      setIsSubmittingSubtask(true);
+      
+      const response = await createSubtask({
+        title: newSubtaskTitle,
+        description: newSubtaskDescription || undefined,
+        taskId: task.id
+      });
+      
+      // Add the new subtask to the list
+      setSubtasks(prev => [...prev, response]);
+      
+      // Reset form and close dialog
+      setNewSubtaskTitle("");
+      setNewSubtaskDescription("");
+      setIsSubtaskDialogOpen(false);
+      
+      toast({
+        title: "Subtask added",
+        description: "Your subtask has been added successfully",
+      });
+    } catch (error: unknown) {
+      console.error("Error adding subtask:", error);
+      
+      if (error instanceof Error && error.message?.includes("permission")) {
+        setSubtasksPermissionError(true);
+        toast({
+          title: "Permission denied",
+          description: "You don't have permission to add subtasks to this task",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add subtask",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsSubmittingSubtask(false);
+    }
+  };
+
+  // Add function to open the edit subtask dialog
+  const openEditSubtaskDialog = (subtask: SubtaskWithMeta) => {
+    setEditingSubtaskId(subtask.id);
+    setEditSubtaskTitle(subtask.title);
+    setEditSubtaskDescription(subtask.description || "");
+    setIsEditSubtaskDialogOpen(true);
+  };
+
+  // Add function to handle subtask update
+  const handleUpdateSubtask = async () => {
+    if (!editingSubtaskId || !editSubtaskTitle.trim()) return;
+    
+    try {
+      setIsSubmittingEditSubtask(true);
+      
+      const response = await updateSubtask(editingSubtaskId, {
+        title: editSubtaskTitle,
+        description: editSubtaskDescription || null
+      });
+      
+      // Update the subtask in the list
+      setSubtasks(prev => 
+        prev.map(st => st.id === editingSubtaskId ? response : st)
+      );
+      
+      // Reset form and close dialog
+      setIsEditSubtaskDialogOpen(false);
+      
+      toast({
+        title: "Subtask updated",
+        description: "Your subtask has been updated successfully",
+      });
+    } catch (error: unknown) {
+      console.error("Error updating subtask:", error);
+      
+      if (error instanceof Error && error.message?.includes("permission")) {
+        setSubtasksPermissionError(true);
+        toast({
+          title: "Permission denied",
+          description: "You don't have permission to update subtasks for this task",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update subtask",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setIsSubmittingEditSubtask(false);
+      setEditingSubtaskId(null);
+      setEditSubtaskTitle("");
+      setEditSubtaskDescription("");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -354,10 +482,65 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-medium text-gray-900">Subtasks</h2>
               {!subtasksPermissionError && (
-                <Button variant="outline" size="sm" className="flex items-center gap-1">
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Subtask</span>
-                </Button>
+                <Dialog open={isSubtaskDialogOpen} onOpenChange={setIsSubtaskDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Subtask</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Add New Subtask</DialogTitle>
+                      <DialogDescription>
+                        Create a new subtask for this task. Click save when you're done.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="subtask-title" className="text-right">
+                          Title
+                        </Label>
+                        <Input
+                          id="subtask-title"
+                          value={newSubtaskTitle}
+                          onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                          className="col-span-3"
+                          placeholder="Enter subtask title"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="subtask-description" className="text-right">
+                          Description
+                        </Label>
+                        <Textarea
+                          id="subtask-description"
+                          value={newSubtaskDescription}
+                          onChange={(e) => setNewSubtaskDescription(e.target.value)}
+                          className="col-span-3"
+                          placeholder="Enter subtask description (optional)"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button 
+                        type="submit" 
+                        onClick={handleAddSubtask} 
+                        disabled={!newSubtaskTitle.trim() || isSubmittingSubtask}
+                      >
+                        {isSubmittingSubtask ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Subtask"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               )}
             </div>
 
@@ -400,9 +583,19 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                       </Button>
                     </div>
                     <div className="flex-1">
-                      <p className={`font-medium ${subtask.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
-                        {subtask.title}
-                      </p>
+                      <div className="flex items-start justify-between">
+                        <p className={`font-medium ${subtask.completed ? "line-through text-gray-500" : "text-gray-900"}`}>
+                          {subtask.title}
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                          onClick={() => openEditSubtaskDialog(subtask)}
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                       {subtask.description && (
                         <p className="text-sm text-gray-600 mt-1">{subtask.description}</p>
                       )}
@@ -428,7 +621,12 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                       : "No subtasks yet"}
                   </p>
                   {!subtasksPermissionError && (
-                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-1"
+                      onClick={() => setIsSubtaskDialogOpen(true)}
+                    >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Add your first subtask</span>
                     </Button>
@@ -598,6 +796,61 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           </Card>
         </div>
       </div>
+
+      {/* Add Edit Subtask Dialog */}
+      <Dialog open={isEditSubtaskDialogOpen} onOpenChange={setIsEditSubtaskDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Subtask</DialogTitle>
+            <DialogDescription>
+              Make changes to the subtask. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-subtask-title" className="text-right">
+                Title
+              </Label>
+              <Input
+                id="edit-subtask-title"
+                value={editSubtaskTitle}
+                onChange={(e) => setEditSubtaskTitle(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter subtask title"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-subtask-description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="edit-subtask-description"
+                value={editSubtaskDescription}
+                onChange={(e) => setEditSubtaskDescription(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter subtask description (optional)"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="submit" 
+              onClick={handleUpdateSubtask} 
+              disabled={!editSubtaskTitle.trim() || isSubmittingEditSubtask}
+            >
+              {isSubmittingEditSubtask ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -137,12 +137,12 @@
 
 - [ ] 5.0 Task Management Features
   - [x] 5.1 Create task detail page layout (2-column)
-  - [ ] 5.2 Implement task information section
-  - [ ] 5.3 Create subtask management UI
-  - [ ] 5.4 Implement subtask creation, editing, and completion
-  - [ ] 5.5 Create comments section
-  - [ ] 5.6 Implement comment creation and display
-  - [ ] 5.7 Add task details sidebar with metadata
+  - [x] 5.2 Implement task information section
+  - [x] 5.3 Create subtask management UI
+  - [x] 5.4 Implement subtask creation, editing, and completion
+  - [x] 5.5 Create comments section
+  - [x] 5.6 Implement comment creation and display
+  - [x] 5.7 Add task details sidebar with metadata
   - [ ] 5.8 Implement task editing functionality
   - [ ] 5.9 Create task assignment dropdown
   - [ ] 5.10 Add priority selection UI
