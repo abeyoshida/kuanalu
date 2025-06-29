@@ -12,18 +12,14 @@ import {
   MessageSquare,
   Plus,
   Check,
-  Clock,
   MoreHorizontal,
   Edit,
-  Trash2,
-  Tag,
   Clipboard,
   AlertCircle,
   Loader2,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { Card } from "@/components/ui/card"
 import type { TaskWithMeta } from "@/types/task"
 import type { SubtaskWithMeta } from "@/types/subtask"
@@ -33,21 +29,6 @@ import { getTaskSubtasks } from "@/lib/actions/subtask-actions"
 import { getTaskComments, createComment } from "@/lib/actions/comment-actions"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
-
-const statusColors: Record<string, string> = {
-  backlog: "bg-gray-100 text-gray-800",
-  todo: "bg-blue-100 text-blue-800",
-  in_progress: "bg-yellow-100 text-yellow-800",
-  in_review: "bg-orange-100 text-orange-800",
-  done: "bg-green-100 text-green-800",
-}
-
-const priorityColors: Record<string, string> = {
-  low: "text-green-600",
-  medium: "text-yellow-600",
-  high: "text-red-600",
-  urgent: "text-purple-600",
-}
 
 interface TaskDetailProps {
   _taskId: string
@@ -111,10 +92,10 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           try {
             const subtasksData = await getTaskSubtasks(taskId);
             setSubtasks(subtasksData);
-          } catch (subtaskError: any) {
+          } catch (subtaskError: unknown) {
             console.error("Error fetching subtasks:", subtaskError);
             // Check if it's a permission error
-            if (subtaskError.message?.includes("permission")) {
+            if (subtaskError instanceof Error && subtaskError.message?.includes("permission")) {
               setSubtasksPermissionError(true);
             }
             // Don't set an error state for subtasks, just show an empty state with a message
@@ -125,26 +106,28 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           try {
             const commentsData = await getTaskComments(taskId);
             setComments(commentsData);
-          } catch (commentError: any) {
+          } catch (commentError: unknown) {
             console.error("Error fetching comments:", commentError);
             // Check if it's a permission error
-            if (commentError.message?.includes("permission")) {
+            if (commentError instanceof Error && commentError.message?.includes("permission")) {
               setCommentsPermissionError(true);
             }
             // Don't set an error state for comments, just show an empty state with a message
             setComments([]);
           }
-        } catch (taskError: any) {
+        } catch (taskError: unknown) {
           console.error("Error fetching task:", taskError);
           // Check if the error is related to authentication
-          if (taskError.message?.includes("logged in")) {
+          if (taskError instanceof Error && taskError.message?.includes("logged in")) {
             setError("You must be logged in to view task details");
             // Redirect to login page after a short delay
             setTimeout(() => {
               router.push("/auth/login");
             }, 2000);
-          } else {
+          } else if (taskError instanceof Error) {
             setError(taskError.message || "Failed to load task details");
+          } else {
+            setError("Failed to load task details");
           }
         }
       } finally {
@@ -196,7 +179,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           
           throw new Error('Failed to update subtask');
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error updating subtask:", error);
         
         // Revert the optimistic update
@@ -205,7 +188,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
         );
         
         // Check if it's a permission error
-        if (error.message?.includes("permission")) {
+        if (error instanceof Error && error.message?.includes("permission")) {
           setSubtasksPermissionError(true);
           toast({
             title: "Permission denied",
@@ -220,7 +203,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           });
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error updating subtask:", error);
       toast({
         title: "Error",
@@ -228,7 +211,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
         variant: "destructive"
       });
     }
-  }
+  };
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !task) return;
@@ -249,11 +232,11 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           title: "Comment added",
           description: "Your comment has been added successfully",
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error adding comment:", error);
         
         // Check if it's a permission error
-        if (error.message?.includes("permission")) {
+        if (error instanceof Error && error.message?.includes("permission")) {
           setCommentsPermissionError(true);
           toast({
             title: "Permission denied",
@@ -268,7 +251,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           });
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error adding comment:", error);
       toast({
         title: "Error",
@@ -276,26 +259,26 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
         variant: "destructive"
       });
     }
-  }
+  };
 
   const formatDate = (date: Date | string | null | undefined) => {
-    if (!date) return "Not set"
+    if (!date) return "Not set";
     
     if (date instanceof Date) {
-      return date.toLocaleDateString()
+      return date.toLocaleDateString();
     }
     
     try {
-      return new Date(date).toLocaleDateString()
-    } catch (e) {
-      return String(date)
+      return new Date(date).toLocaleDateString();
+    } catch {
+      return String(date);
     }
-  }
+  };
 
   // Calculate progress for subtasks
-  const completedSubtasks = subtasks.filter(st => st.completed).length
-  const totalSubtasks = subtasks.length
-  const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
+  const completedSubtasks = subtasks.filter(st => st.completed).length;
+  const totalSubtasks = subtasks.length;
+  const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
 
   if (isLoading) {
     return (

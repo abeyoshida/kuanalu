@@ -4,10 +4,8 @@ import { auth } from "@/lib/auth/auth"
 import { redirect } from "next/navigation"
 import { Metadata } from "next"
 
-// This function is used to extract and validate the ID parameter
-export async function generateMetadata(
-  { params }: { params: { id: string } }
-): Promise<Metadata> {
+// This function is used to generate metadata for the page
+export async function generateMetadata(): Promise<Metadata> {
   // Use a generic title that doesn't access params.id
   return {
     title: "Task Details | FlowBoard",

@@ -83,35 +83,24 @@ export const rolePermissions: Record<Role, Permission[]> = {
   member: [
     // Organization permissions
     { action: 'read', subject: 'organization' },
-    { action: 'update', subject: 'organization' },
     
     // Project permissions
-    { action: 'create', subject: 'project' },
     { action: 'read', subject: 'project' },
-    { action: 'update', subject: 'project' },
-    { action: 'delete', subject: 'project' },
     
     // Task permissions
     { action: 'create', subject: 'task' },
     { action: 'read', subject: 'task' },
     { action: 'update', subject: 'task' },
-    { action: 'delete', subject: 'task' },
-    { action: 'assign', subject: 'task' },
     
     // Subtask permissions
     { action: 'create', subject: 'subtask' },
     { action: 'read', subject: 'subtask' },
     { action: 'update', subject: 'subtask' },
-    { action: 'delete', subject: 'subtask' },
     
     // Comment permissions
     { action: 'create', subject: 'comment' },
     { action: 'read', subject: 'comment' },
     { action: 'update', subject: 'comment' },
-    { action: 'delete', subject: 'comment' },
-    
-    // User management permissions
-    { action: 'invite', subject: 'user' },
   ],
   
   guest: [
