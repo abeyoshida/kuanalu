@@ -63,8 +63,13 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       const projectsMap: Record<number, ProjectWithMeta[]> = {}
       
       for (const org of orgs) {
-        const projects = await getOrganizationProjects(org.id)
-        projectsMap[org.id] = projects
+        try {
+          const projects = await getOrganizationProjects(org.id)
+          projectsMap[org.id] = projects
+        } catch (err) {
+          console.error(`Error fetching projects for organization ${org.id}:`, err)
+          projectsMap[org.id] = []
+        }
       }
       
       setOrganizationProjects(projectsMap)
@@ -106,6 +111,50 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     // For paths like /projects/123, we need to check if it starts with /projects/
     if (path !== '/' && pathname.startsWith(`${path}/`)) return true
     return false
+  }
+
+  // If no organizations, show a message
+  if (!loading && organizations.length === 0) {
+    return (
+      <div
+        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-transform duration-300 z-40 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        style={{ width: "256px" }}
+      >
+        <div className="flex flex-col h-full">
+          {/* Sidebar Header */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                <span className="text-white font-bold text-sm">FB</span>
+              </div>
+              <div>
+                <h2 className="font-semibold text-gray-900">FlowBoard</h2>
+                <p className="text-xs text-gray-500">Workspace</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4">
+            <Link href="/organizations">
+              <Button className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Organization
+              </Button>
+            </Link>
+          </div>
+
+          <div className="flex-1 p-4">
+            <div className="text-center p-4 border border-dashed border-gray-300 rounded-md">
+              <p className="text-sm text-gray-500">
+                You don&apos;t have any organizations yet. Create one to get started.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

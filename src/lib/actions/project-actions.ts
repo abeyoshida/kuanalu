@@ -24,7 +24,7 @@ import { hasPermission } from "@/lib/auth/permissions";
 /**
  * Create a new project
  */
-export async function createProject(formData: FormData) {
+export async function createProject(formData: FormData, skipRedirect = false) {
   const session = await auth();
   
   if (!session?.user) {
@@ -71,47 +71,47 @@ export async function createProject(formData: FormData) {
       .replace(/\s+/g, '-') // Replace spaces with hyphens
       .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
     
-    // Begin transaction
-    const result = await db.transaction(async (tx) => {
-      // Create the project
-      const [newProject] = await tx
-        .insert(projects)
-        .values({
-          name: name.trim(),
-          slug,
-          description: description ? description.trim() : null,
-          status,
-          visibility,
-          organizationId,
-          ownerId: userId,
-          startDate,
-          targetDate,
-          icon: icon || null,
-          color: color || null,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
-        .returning();
-      
-      // Add the current user as owner
-      await tx
-        .insert(projectMembers)
-        .values({
-          userId,
-          projectId: newProject.id,
-          role: 'owner',
-          addedBy: userId,
-          joinedAt: new Date(),
-          createdAt: new Date()
-        });
-      
-      return newProject;
-    });
+    // Create the project without using transactions
+    const [newProject] = await db
+      .insert(projects)
+      .values({
+        name: name.trim(),
+        slug,
+        description: description ? description.trim() : null,
+        status,
+        visibility,
+        organizationId,
+        ownerId: userId,
+        startDate,
+        targetDate,
+        icon: icon || null,
+        color: color || null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    
+    // Add the current user as owner
+    await db
+      .insert(projectMembers)
+      .values({
+        userId,
+        projectId: newProject.id,
+        role: 'owner',
+        addedBy: userId,
+        joinedAt: new Date(),
+        createdAt: new Date()
+      });
     
     revalidatePath(`/organizations/${organizationId}/projects`);
     
+    // If skipRedirect is true, return the project data instead of redirecting
+    if (skipRedirect) {
+      return newProject;
+    }
+    
     // Redirect to the new project page
-    return redirect(`/projects/${result.id}`);
+    return redirect(`/projects/${newProject.id}`);
   } catch (error) {
     console.error('Failed to create project:', error);
     throw new Error("Failed to create project");
@@ -128,12 +128,19 @@ export async function getOrganizationProjects(organizationId: number): Promise<P
     return [];
   }
   
+  const userId = parseInt(session.user.id);
+  
   try {
     // Check if user is a member of the organization
     const isMember = await db
       .select()
-      .from(projects)
-      .where(eq(projects.organizationId, organizationId))
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.userId, userId),
+          eq(organizationMembers.organizationId, organizationId)
+        )
+      )
       .limit(1);
     
     if (!isMember.length) {

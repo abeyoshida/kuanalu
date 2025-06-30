@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
       }
     });
     
-    // Use the existing server action
-    const project = await createProject(formData);
+    // Use the existing server action with skipRedirect=true
+    const project = await createProject(formData, true);
     
     return NextResponse.json(project, { status: 201 });
   } catch (error) {

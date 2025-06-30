@@ -169,3 +169,15 @@
   - [ ] 7.6 Implement notification preferences for users
   - [ ] 7.7 Add email queue for reliable delivery
   - [ ] 7.8 Create notification history page 
+
+- [ ] 8.0 Permissions System Enhancement
+  - [x] 8.1 Update user registration to include organization creation
+  - [x] 8.2 Implement organization ownership assignment during registration
+  - [ ] 8.3 Create comprehensive role-based permission system and fix transaction issues
+  - [ ] 8.4 Implement permission checks for all API endpoints
+  - [ ] 8.5 Add UI components for role management
+  - [ ] 8.6 Create user invitation flow with role assignment
+  - [ ] 8.7 Implement organization settings page with member management
+  - [ ] 8.8 Add visual indicators for user permissions in UI
+  - [ ] 8.9 Create audit logging for permission changes
+  - [ ] 8.10 Add graceful error handling for permission denied scenarios 

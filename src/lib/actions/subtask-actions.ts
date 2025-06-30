@@ -2,11 +2,12 @@
 
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
-import { subtasks, tasks, users, projects } from "@/lib/db/schema";
+import { subtasks, tasks, users, projects, organizationMembers } from "@/lib/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { SubtaskWithMeta } from "@/types/subtask";
 import { hasPermission } from "@/lib/auth/permissions";
+import { rolePermissions } from "@/lib/auth/permissions-data";
 
 /**
  * Get all subtasks for a task
@@ -174,15 +175,54 @@ export async function getSubtaskById(subtaskId: number): Promise<SubtaskWithMeta
     
     const projectId = task[0].projectId;
     
+    // Get project details to find organization
+    const project = await db
+      .select({
+        organizationId: projects.organizationId
+      })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
+    // Get user's role in the organization
+    const memberRecord = await db
+      .select({
+        role: organizationMembers.role
+      })
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.userId, userId),
+          eq(organizationMembers.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    
+    if (!memberRecord.length) {
+      console.error(`User ${userId} is not a member of the organization ${organizationId}`);
+      throw new Error(`You are not a member of the organization that owns this project`);
+    }
+    
+    const userRole = memberRecord[0].role;
+    console.log(`getSubtaskById - User role: ${userRole}`);
+    console.log(`getSubtaskById - Organization ID: ${organizationId}`);
+    
     // Check if user has permission to view this subtask
     const hasViewPermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'read',
       'subtask'
     );
     
     if (!hasViewPermission) {
+      console.error(`Permission denied: User ${userId} with role ${userRole} cannot view subtask ${subtaskId}`);
       throw new Error("You don't have permission to view this subtask");
     }
     
@@ -236,7 +276,9 @@ export async function createSubtask(data: {
   try {
     // Get the task to check permissions
     const task = await db
-      .select({ projectId: tasks.projectId })
+      .select({ 
+        projectId: tasks.projectId
+      })
       .from(tasks)
       .where(eq(tasks.id, data.taskId))
       .limit(1);
@@ -247,16 +289,53 @@ export async function createSubtask(data: {
     
     const projectId = task[0].projectId;
     
+    // Get project details to find organization
+    const project = await db
+      .select({
+        organizationId: projects.organizationId
+      })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
+    // Get user's role in the organization
+    const memberRecord = await db
+      .select({
+        role: organizationMembers.role
+      })
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.userId, userId),
+          eq(organizationMembers.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    
+    if (!memberRecord.length) {
+      throw new Error(`You are not a member of the organization (ID: ${organizationId}) that owns this project`);
+    }
+    
+    const userRole = memberRecord[0].role;
+    console.log(`User role: ${userRole}`);
+    console.log(`Available roles in rolePermissions: ${Object.keys(rolePermissions)}`);
+    
     // Check if user has permission to create subtasks
     const hasCreatePermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'create',
       'subtask'
     );
     
     if (!hasCreatePermission) {
-      throw new Error("You don't have permission to create subtasks for this task");
+      throw new Error(`You don't have permission to create subtasks for this task. Your role: ${userRole}`);
     }
     
     // Get max position for ordering
@@ -290,13 +369,25 @@ export async function createSubtask(data: {
       })
       .returning();
     
-    revalidatePath(`/task/${data.taskId}`);
+    // Revalidate the task page with the subtask ID as a query parameter to avoid redirect issues
+    revalidatePath(`/task/${data.taskId}?subtaskId=${newSubtask.id}`);
     
     // Get the created subtask with meta information
-    const subtaskWithMeta = await getSubtaskById(newSubtask.id);
-    
-    if (!subtaskWithMeta) {
-      throw new Error("Failed to retrieve created subtask");
+    let subtaskWithMeta;
+    try {
+      subtaskWithMeta = await getSubtaskById(newSubtask.id);
+      
+      if (!subtaskWithMeta) {
+        throw new Error("Failed to retrieve created subtask");
+      }
+    } catch (error) {
+      console.error('Error retrieving created subtask:', error);
+      // Return a basic version of the subtask if we can't get the full metadata
+      subtaskWithMeta = {
+        ...newSubtask,
+        assigneeName: undefined,
+        creatorName: undefined
+      } as SubtaskWithMeta;
     }
     
     return subtaskWithMeta;
@@ -530,52 +621,50 @@ export async function updateSubtaskPositions(
       throw new Error("You don't have permission to update subtask positions");
     }
     
-    // Start a transaction for position updates
-    await db.transaction(async (tx) => {
-      if (newPosition > oldPosition) {
-        // Moving down, shift subtasks in between up
-        await tx
-          .update(subtasks)
-          .set({
-            position: sql`${subtasks.position} - 1`,
-            updatedAt: new Date()
-          })
-          .where(
-            and(
-              eq(subtasks.taskId, taskId),
-              sql`${subtasks.position} > ${oldPosition}`,
-              sql`${subtasks.position} <= ${newPosition}`
-            )
-          );
-      } else if (newPosition < oldPosition) {
-        // Moving up, shift subtasks in between down
-        await tx
-          .update(subtasks)
-          .set({
-            position: sql`${subtasks.position} + 1`,
-            updatedAt: new Date()
-          })
-          .where(
-            and(
-              eq(subtasks.taskId, taskId),
-              sql`${subtasks.position} >= ${newPosition}`,
-              sql`${subtasks.position} < ${oldPosition}`
-            )
-          );
-      } else {
-        // No position change
-        return;
-      }
-      
-      // Update the subtask with new position
-      await tx
+    // Update positions without using transactions
+    if (newPosition > oldPosition) {
+      // Moving down, shift subtasks in between up
+      await db
         .update(subtasks)
         .set({
-          position: newPosition,
+          position: sql`${subtasks.position} - 1`,
           updatedAt: new Date()
         })
-        .where(eq(subtasks.id, subtaskId));
-    });
+        .where(
+          and(
+            eq(subtasks.taskId, taskId),
+            sql`${subtasks.position} > ${oldPosition}`,
+            sql`${subtasks.position} <= ${newPosition}`
+          )
+        );
+    } else if (newPosition < oldPosition) {
+      // Moving up, shift subtasks in between down
+      await db
+        .update(subtasks)
+        .set({
+          position: sql`${subtasks.position} + 1`,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(subtasks.taskId, taskId),
+            sql`${subtasks.position} >= ${newPosition}`,
+            sql`${subtasks.position} < ${oldPosition}`
+          )
+        );
+    } else {
+      // No position change
+      return;
+    }
+    
+    // Update the subtask with new position
+    await db
+      .update(subtasks)
+      .set({
+        position: newPosition,
+        updatedAt: new Date()
+      })
+      .where(eq(subtasks.id, subtaskId));
     
     revalidatePath(`/task/${taskId}`);
   } catch (error) {

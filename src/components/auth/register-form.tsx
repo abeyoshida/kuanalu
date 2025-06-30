@@ -18,7 +18,9 @@ interface RegisterFormProps {
 export function RegisterForm({ callbackUrl = "/dashboard" }: RegisterFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -79,6 +81,12 @@ export function RegisterForm({ callbackUrl = "/dashboard" }: RegisterFormProps) 
       return;
     }
 
+    if (!organizationName.trim()) {
+      setError("Organization name is required");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -86,9 +94,12 @@ export function RegisterForm({ callbackUrl = "/dashboard" }: RegisterFormProps) 
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
+          firstName,
+          lastName,
+          name: `${firstName} ${lastName}`.trim(),
           email,
           password,
+          organizationName,
         }),
       });
 
@@ -128,17 +139,47 @@ export function RegisterForm({ callbackUrl = "/dashboard" }: RegisterFormProps) 
             </Alert>
           )}
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First name</Label>
+              <Input
+                id="firstName"
+                type="text"
+                autoComplete="given-name"
+                required
+                placeholder="John"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last name</Label>
+              <Input
+                id="lastName"
+                type="text"
+                autoComplete="family-name"
+                required
+                placeholder="Doe"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="name">Full name</Label>
+            <Label htmlFor="organizationName">Organization name</Label>
             <Input
-              id="name"
+              id="organizationName"
               type="text"
-              autoComplete="name"
               required
-              placeholder="John Doe"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              placeholder="Acme Inc."
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
             />
+            <p className="text-xs text-gray-500">
+              You&apos;ll be the owner of this organization
+            </p>
           </div>
 
           <div className="space-y-2">

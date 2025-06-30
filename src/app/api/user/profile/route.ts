@@ -20,7 +20,7 @@ export async function PUT(request: Request) {
     const userId = parseInt(session.user.id);
     
     // Parse request body
-    const { name, email, bio } = await request.json();
+    const { name, firstName, lastName, email, bio } = await request.json();
     
     // Validate input
     if (!name || !email) {
@@ -49,6 +49,8 @@ export async function PUT(request: Request) {
       .update(users)
       .set({
         name,
+        firstName,
+        lastName,
         email,
         bio,
         updatedAt: new Date(),

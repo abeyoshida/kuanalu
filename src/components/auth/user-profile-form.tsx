@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,8 @@ interface UserProfileFormProps {
 export function UserProfileForm({ user }: UserProfileFormProps) {
   const router = useRouter();
   const [name, setName] = useState(user.name || "");
+  const [firstName, setFirstName] = useState(user.firstName || "");
+  const [lastName, setLastName] = useState(user.lastName || "");
   const [email, setEmail] = useState(user.email || "");
   const [bio, setBio] = useState(user.bio || "");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -41,6 +43,13 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
       .toUpperCase();
   };
 
+  // Update full name when first or last name changes
+  useEffect(() => {
+    if (firstName || lastName) {
+      setName(`${firstName} ${lastName}`.trim());
+    }
+  }, [firstName, lastName]);
+
   const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -55,6 +64,8 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
         },
         body: JSON.stringify({
           name,
+          firstName,
+          lastName,
           email,
           bio,
         }),
@@ -187,13 +198,35 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
                 </div>
                 
                 <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First name"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last name"
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
+                    <Label htmlFor="name">Full Name (Display Name)</Label>
                     <Input
                       id="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Your name"
+                      placeholder="Your display name"
                     />
                   </div>
                   

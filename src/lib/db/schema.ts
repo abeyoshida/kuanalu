@@ -103,6 +103,8 @@ export const organizations = pgTable('organizations', {
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
   email: text('email').notNull().unique(),
   password: text('password'), // Hashed password
   image: text('image'), // Profile image URL

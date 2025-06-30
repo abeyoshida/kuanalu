@@ -26,6 +26,8 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
       .select({
         id: users.id,
         name: users.name,
+        firstName: users.firstName,
+        lastName: users.lastName,
         email: users.email,
         image: users.image,
         bio: users.bio,
@@ -90,6 +92,8 @@ export async function updateUserProfile(formData: FormData) {
   
   // Extract form data
   const name = formData.get('name') as string;
+  const firstName = formData.get('firstName') as string;
+  const lastName = formData.get('lastName') as string;
   const bio = formData.get('bio') as string;
   const jobTitle = formData.get('jobTitle') as string;
   const department = formData.get('department') as string;
@@ -107,6 +111,8 @@ export async function updateUserProfile(formData: FormData) {
       .update(users)
       .set({
         name: name.trim(),
+        firstName: firstName || null,
+        lastName: lastName || null,
         bio: bio || null,
         jobTitle: jobTitle || null,
         department: department || null,
@@ -235,6 +241,8 @@ export async function getUserById(userId: number): Promise<SafeUser | null> {
       .select({
         id: users.id,
         name: users.name,
+        firstName: users.firstName,
+        lastName: users.lastName,
         email: users.email,
         image: users.image,
         bio: users.bio,

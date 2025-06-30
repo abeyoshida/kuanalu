@@ -49,40 +49,35 @@ export async function createOrganization(formData: FormData) {
       .replace(/\s+/g, '-') // Replace spaces with hyphens
       .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
     
-    // Begin transaction
-    const result = await db.transaction(async (tx) => {
-      // Create the organization
-      const [newOrg] = await tx
-        .insert(organizations)
-        .values({
-          name: name.trim(),
-          slug,
-          description: description ? description.trim() : null,
-          visibility,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning();
-      
-      // Add the current user as owner
-      await tx
-        .insert(organizationMembers)
-        .values({
-          userId,
-          organizationId: newOrg.id,
-          role: 'owner',
-          invitedBy: userId,
-          joinedAt: new Date(),
-          createdAt: new Date(),
-        });
-      
-      return newOrg;
-    });
+    // Create the organization without using transactions
+    const [newOrg] = await db
+      .insert(organizations)
+      .values({
+        name: name.trim(),
+        slug,
+        description: description ? description.trim() : null,
+        visibility,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    
+    // Add the current user as owner
+    await db
+      .insert(organizationMembers)
+      .values({
+        userId,
+        organizationId: newOrg.id,
+        role: 'owner',
+        invitedBy: userId,
+        joinedAt: new Date(),
+        createdAt: new Date(),
+      });
     
     revalidatePath('/organizations');
     
     // Redirect to the new organization page
-    return redirect(`/organizations/${result.id}`);
+    return redirect(`/organizations/${newOrg.id}`);
   } catch (error) {
     console.error('Failed to create organization:', error);
     throw new Error("Failed to create organization");
@@ -127,22 +122,32 @@ export async function getUserOrganizations(): Promise<OrganizationWithMeta[]> {
     // Get member count for each organization
     const orgsWithMeta = await Promise.all(
       userOrgs.map(async (org) => {
-        const [memberResult] = await db
-          .select({ count: count() })
-          .from(organizationMembers)
-          .where(eq(organizationMembers.organizationId, org.id));
-        
-        const [projectResult] = await db
-          .select({ count: count() })
-          .from(organizations)
-          .where(eq(organizations.id, org.id));
-        
-        return {
-          ...org,
-          memberCount: Number(memberResult.count),
-          projectCount: Number(projectResult.count),
-          userRole: org.role,
-        };
+        try {
+          const [memberResult] = await db
+            .select({ count: count() })
+            .from(organizationMembers)
+            .where(eq(organizationMembers.organizationId, org.id));
+          
+          const [projectResult] = await db
+            .select({ count: count() })
+            .from(organizations)
+            .where(eq(organizations.id, org.id));
+          
+          return {
+            ...org,
+            memberCount: Number(memberResult.count),
+            projectCount: Number(projectResult.count),
+            userRole: org.role,
+          };
+        } catch (err) {
+          console.error(`Error getting metadata for organization ${org.id}:`, err);
+          return {
+            ...org,
+            memberCount: 0,
+            projectCount: 0,
+            userRole: org.role,
+          };
+        }
       })
     );
     

@@ -1,16 +1,36 @@
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, organizations, organizationMembers } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password } = await request.json();
+    const { firstName, lastName, name, email, password, organizationName } = await request.json();
     
     // Basic validation
-    if (!name || !email || !password) {
+    if (!email || !password || !organizationName) {
       return NextResponse.json(
-        { error: "Name, email, and password are required" },
+        { error: "Email, password, and organization name are required" },
+        { status: 400 }
+      );
+    }
+    
+    // Use the provided name or combine firstName and lastName
+    const fullName = name || `${firstName} ${lastName}`.trim();
+    
+    // Extract first and last name if not provided directly
+    let extractedFirstName = firstName;
+    let extractedLastName = lastName;
+    
+    if (!firstName && !lastName && fullName) {
+      const nameParts = fullName.trim().split(/\s+/);
+      extractedFirstName = nameParts[0] || "";
+      extractedLastName = nameParts.slice(1).join(" ") || "";
+    }
+    
+    if (!fullName) {
+      return NextResponse.json(
+        { error: "Name is required" },
         { status: 400 }
       );
     }
@@ -33,11 +53,19 @@ export async function POST(request: Request) {
     // In production, use a server action or API route with bcrypt
     const hashedPassword = password;
     
-    // Create the user
+    // Create the organization slug from the name
+    const organizationSlug = organizationName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    
+    // Create the user first
     const [newUser] = await db
       .insert(users)
       .values({
-        name,
+        name: fullName,
+        firstName: extractedFirstName,
+        lastName: extractedLastName,
         email,
         password: hashedPassword,
         createdAt: new Date(),
@@ -45,10 +73,34 @@ export async function POST(request: Request) {
       })
       .returning({ id: users.id });
     
+    // Create the organization
+    const [newOrg] = await db
+      .insert(organizations)
+      .values({
+        name: organizationName,
+        slug: organizationSlug,
+        visibility: 'private',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning({ id: organizations.id });
+    
+    // Add the user as owner of the organization
+    await db
+      .insert(organizationMembers)
+      .values({
+        userId: newUser.id,
+        organizationId: newOrg.id,
+        role: 'owner',
+        joinedAt: new Date(),
+        createdAt: new Date(),
+      });
+    
     return NextResponse.json(
       { 
-        message: "User registered successfully",
-        userId: newUser.id
+        message: "User and organization created successfully",
+        userId: newUser.id,
+        organizationId: newOrg.id
       },
       { status: 201 }
     );

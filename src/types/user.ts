@@ -46,6 +46,8 @@ export interface UserPreferences {
 // User creation input type
 export interface CreateUserInput {
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   password: string;
   image?: string;
@@ -61,6 +63,8 @@ export interface CreateUserInput {
 // User update input type
 export interface UpdateUserInput {
   name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   password?: string;
   image?: string;

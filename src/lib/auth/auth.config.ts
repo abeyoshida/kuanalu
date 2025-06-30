@@ -10,6 +10,8 @@ declare module "next-auth" {
     user: {
       id: string;
       name?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
       email?: string | null;
       image?: string | null;
       role?: string | null;
@@ -18,11 +20,15 @@ declare module "next-auth" {
 
   interface User {
     id: string;
+    firstName?: string | null;
+    lastName?: string | null;
     role?: string;
   }
   
   interface JWT {
     id: string;
+    firstName?: string | null;
+    lastName?: string | null;
     role?: string;
   }
 }
@@ -57,6 +63,8 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.firstName = user.firstName;
+        token.lastName = user.lastName;
       }
       return token;
     },
@@ -64,6 +72,8 @@ export const authConfig: NextAuthConfig = {
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string | undefined;
+        session.user.firstName = token.firstName as string | null | undefined;
+        session.user.lastName = token.lastName as string | null | undefined;
       }
       return session;
     },
@@ -119,6 +129,8 @@ export const authConfig: NextAuthConfig = {
           return {
             id: user.id.toString(),
             name: user.name,
+            firstName: user.firstName || null,
+            lastName: user.lastName || null,
             email: user.email,
             image: user.image || null,
             role: "user", // Default role since it's not in the schema

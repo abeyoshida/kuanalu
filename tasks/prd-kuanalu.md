@@ -111,7 +111,64 @@ TaskFlow is a comprehensive task management application modeled after Jira, desi
 - Collaboration: Increased comment activity and task updates
 - Project visibility: Improved awareness of project status and bottlenecks
 
-## 9. Open Questions
+## 9. Permissions
+
+### Hierarchy and Structure
+- Organizations are the top level in the permission hierarchy
+- An organization can have multiple users, projects, tasks, subtasks, and comments
+- All entities (projects, tasks, etc.) belong to an organization
+
+### User Registration and Ownership
+- When a user registers, they must provide:
+  - First name
+  - Last name
+  - Organization name
+  - Email address
+  - Password (with confirmation)
+- The first user to register with an organization automatically becomes the Owner
+- Each organization can have only one Owner
+
+### Role Types
+1. **Owner**
+   - Has complete administrative control over the organization
+   - Can invite users to join the organization
+   - Can assign and modify roles for all users
+   - Has full CRUD permissions for all organization resources
+   - Cannot be removed from the organization (except by deleting the organization)
+
+2. **Admin**
+   - Can manage projects, tasks, and users
+   - Can invite new users to the organization
+   - Can assign roles (except Owner) to users
+   - Has full CRUD permissions for all organization resources
+
+3. **Member**
+   - Can create and manage projects, tasks, subtasks
+   - Can assign tasks to other members
+   - Can update task status, priority, and due dates
+   - Can add comments to tasks
+   - Cannot modify organization settings or manage user roles
+
+4. **Guest**
+   - Can view assigned tasks and projects they've been explicitly added to
+   - Can comment on tasks they can view
+   - Cannot create new projects or tasks
+   - Limited to read-only access for most resources
+
+### Permission Operations
+- Create: Ability to create new resources
+- Read: Ability to view resources
+- Update: Ability to modify existing resources
+- Delete: Ability to remove resources
+
+### Implementation Requirements
+- Role-based access control system
+- Permission checks at both API and UI levels
+- Clear visual indicators of current user permissions
+- Graceful handling of permission denied scenarios
+- Audit logging for permission changes
+
+## 10. Open Questions
 
 - What authentication provider will be used? (Auth.js, Clerk, etc.)
 - Will there be any limits on the number of projects, tasks, or users?
