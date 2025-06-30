@@ -17,6 +17,9 @@ export default function Header({
 }: HeaderProps) {
   const router = useRouter();
   const { title, entityName } = useHeader();
+  
+  // Extract first name from the full name
+  const firstName = userName.split(' ')[0];
 
   const handleLogout = async () => {
     try {
@@ -55,7 +58,7 @@ export default function Header({
         
         <div className="flex items-center gap-4">
           <div className="text-sm">
-            Welcome, <span className="font-medium">{userName}</span>
+            Welcome, <span className="font-medium">{firstName}</span>
           </div>
           <Link href="/profile">
             <Button variant="outline" size="sm" className="flex items-center gap-2">
