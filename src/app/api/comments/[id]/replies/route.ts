@@ -6,6 +6,7 @@ import {
   validateNumericParam,
   handleApiError
 } from "@/lib/validation/api-validation";
+import { validateCommentPermission } from "@/lib/validation/permission-validation";
 
 // GET /api/comments/[id]/replies - Get replies for a comment
 export async function GET(
@@ -24,6 +25,10 @@ export async function GET(
     if (typeof commentIdResult !== 'number') {
       return commentIdResult;
     }
+    
+    // Validate permission
+    const permissionError = await validateCommentPermission(session, commentIdResult, 'read');
+    if (permissionError) return permissionError;
     
     // Get replies for the comment
     const replies = await getCommentReplies(commentIdResult);

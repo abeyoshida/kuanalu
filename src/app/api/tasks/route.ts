@@ -6,6 +6,7 @@ import {
   validateRequestBody,
   handleApiError
 } from "@/lib/validation/api-validation";
+import { validateProjectPermission } from "@/lib/validation/permission-validation";
 import { createTaskSchema, convertToCreateTaskInput } from "@/types/task";
 
 // GET /api/tasks - Get tasks (with filters)
@@ -42,6 +43,10 @@ export async function POST(request: NextRequest) {
     
     // Convert schema data to CreateTaskInput
     const taskData = convertToCreateTaskInput(validation.data);
+    
+    // Validate permission for the project
+    const permissionError = await validateProjectPermission(session, taskData.projectId, 'create');
+    if (permissionError) return permissionError;
     
     // Create the task
     const task = await createTask(taskData);

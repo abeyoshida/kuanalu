@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { users, organizations, organizationMembers } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { createWithRelations } from "@/lib/db/sequential-ops";
 
 export async function POST(request: Request) {
   try {
@@ -59,48 +60,59 @@ export async function POST(request: Request) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
     
-    // Create the user first
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        name: fullName,
-        firstName: extractedFirstName,
-        lastName: extractedLastName,
-        email,
-        password: hashedPassword,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning({ id: users.id });
-    
-    // Create the organization
-    const [newOrg] = await db
-      .insert(organizations)
-      .values({
-        name: organizationName,
-        slug: organizationSlug,
-        visibility: 'private',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning({ id: organizations.id });
-    
-    // Add the user as owner of the organization
-    await db
-      .insert(organizationMembers)
-      .values({
-        userId: newUser.id,
-        organizationId: newOrg.id,
-        role: 'owner',
-        joinedAt: new Date(),
-        createdAt: new Date(),
-      });
+    // Use sequential operations instead of a transaction
+    const result = await createWithRelations(
+      // Create the user first
+      async () => {
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            name: fullName,
+            firstName: extractedFirstName,
+            lastName: extractedLastName,
+            email,
+            password: hashedPassword,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .returning({ id: users.id });
+        
+        return newUser;
+      },
+      // Then create the organization and add the user as owner
+      async (newUser) => {
+        // Create the organization
+        const [newOrg] = await db
+          .insert(organizations)
+          .values({
+            name: organizationName,
+            slug: organizationSlug,
+            visibility: 'private',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .returning({ id: organizations.id });
+        
+        // Add the user as owner of the organization
+        await db
+          .insert(organizationMembers)
+          .values({
+            userId: newUser.id,
+            organizationId: newOrg.id,
+            role: 'owner',
+            joinedAt: new Date(),
+            createdAt: new Date(),
+          });
+        
+        return newOrg;
+      }
+    );
     
     return NextResponse.json(
       { 
         message: "User and organization created successfully",
-        userId: newUser.id,
-        organizationId: newOrg.id
+        userId: result.main.id,
+        organizationId: result.related.id
       },
       { status: 201 }
     );

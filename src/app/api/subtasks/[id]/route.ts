@@ -7,6 +7,7 @@ import {
   validateRequestBody,
   handleApiError
 } from "@/lib/validation/api-validation";
+import { validateSubtaskPermission } from "@/lib/validation/permission-validation";
 import { updateSubtaskSchema, convertToUpdateSubtaskInput } from "@/types/subtask";
 
 // GET /api/subtasks/[id] - Get a specific subtask
@@ -26,6 +27,10 @@ export async function GET(
     if (typeof subtaskIdResult !== 'number') {
       return subtaskIdResult;
     }
+    
+    // Validate permission
+    const permissionError = await validateSubtaskPermission(session, subtaskIdResult, 'read');
+    if (permissionError) return permissionError;
     
     // Get the subtask
     const subtask = await getSubtaskById(subtaskIdResult);
@@ -60,6 +65,10 @@ export async function PATCH(
     if (typeof subtaskIdResult !== 'number') {
       return subtaskIdResult;
     }
+    
+    // Validate permission
+    const permissionError = await validateSubtaskPermission(session, subtaskIdResult, 'update');
+    if (permissionError) return permissionError;
     
     // Validate request body
     const validation = await validateRequestBody(request, updateSubtaskSchema);
@@ -97,6 +106,10 @@ export async function DELETE(
     if (typeof subtaskIdResult !== 'number') {
       return subtaskIdResult;
     }
+    
+    // Validate permission
+    const permissionError = await validateSubtaskPermission(session, subtaskIdResult, 'delete');
+    if (permissionError) return permissionError;
     
     // Delete the subtask
     await deleteSubtask(subtaskIdResult);

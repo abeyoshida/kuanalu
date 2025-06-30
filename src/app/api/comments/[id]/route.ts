@@ -7,6 +7,7 @@ import {
   validateRequestBody,
   handleApiError
 } from "@/lib/validation/api-validation";
+import { validateCommentPermission } from "@/lib/validation/permission-validation";
 import { updateCommentSchema } from "@/types/comment";
 
 // GET /api/comments/[id] - Get a specific comment
@@ -26,6 +27,10 @@ export async function GET(
     if (typeof commentIdResult !== 'number') {
       return commentIdResult;
     }
+    
+    // Validate permission
+    const permissionError = await validateCommentPermission(session, commentIdResult, 'read');
+    if (permissionError) return permissionError;
     
     // Get the comment
     const comment = await getCommentById(commentIdResult);
@@ -61,6 +66,10 @@ export async function PATCH(
       return commentIdResult;
     }
     
+    // Validate permission
+    const permissionError = await validateCommentPermission(session, commentIdResult, 'update');
+    if (permissionError) return permissionError;
+    
     // Validate request body
     const validation = await validateRequestBody(request, updateCommentSchema);
     if ('error' in validation) return validation.error;
@@ -91,6 +100,10 @@ export async function DELETE(
     if (typeof commentIdResult !== 'number') {
       return commentIdResult;
     }
+    
+    // Validate permission
+    const permissionError = await validateCommentPermission(session, commentIdResult, 'delete');
+    if (permissionError) return permissionError;
     
     // Delete the comment
     await deleteComment(commentIdResult);

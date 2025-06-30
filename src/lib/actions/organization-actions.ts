@@ -12,6 +12,7 @@ import {
   OrganizationWithMeta,
   OrganizationSettings
 } from "@/types/organization";
+import { createWithRelations } from "@/lib/db/sequential-ops";
 
 export interface OrganizationWithMemberCount {
   id: number;
@@ -49,35 +50,45 @@ export async function createOrganization(formData: FormData) {
       .replace(/\s+/g, '-') // Replace spaces with hyphens
       .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
     
-    // Create the organization without using transactions
-    const [newOrg] = await db
-      .insert(organizations)
-      .values({
-        name: name.trim(),
-        slug,
-        description: description ? description.trim() : null,
-        visibility,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-    
-    // Add the current user as owner
-    await db
-      .insert(organizationMembers)
-      .values({
-        userId,
-        organizationId: newOrg.id,
-        role: 'owner',
-        invitedBy: userId,
-        joinedAt: new Date(),
-        createdAt: new Date(),
-      });
+    // Use sequential operations instead of transactions
+    const result = await createWithRelations(
+      // Create the organization
+      async () => {
+        const [newOrg] = await db
+          .insert(organizations)
+          .values({
+            name: name.trim(),
+            slug,
+            description: description ? description.trim() : null,
+            visibility,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .returning();
+        
+        return newOrg;
+      },
+      // Add the current user as owner
+      async (newOrg) => {
+        await db
+          .insert(organizationMembers)
+          .values({
+            userId,
+            organizationId: newOrg.id,
+            role: 'owner',
+            invitedBy: userId,
+            joinedAt: new Date(),
+            createdAt: new Date(),
+          });
+        
+        return newOrg;
+      }
+    );
     
     revalidatePath('/organizations');
     
     // Redirect to the new organization page
-    return redirect(`/organizations/${newOrg.id}`);
+    return redirect(`/organizations/${result.related.id}`);
   } catch (error) {
     console.error('Failed to create organization:', error);
     throw new Error("Failed to create organization");

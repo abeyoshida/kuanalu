@@ -7,6 +7,7 @@ import {
   validateRequestBody,
   handleApiError
 } from "@/lib/validation/api-validation";
+import { validateTaskPermission } from "@/lib/validation/permission-validation";
 import { updateTaskSchema, convertToUpdateTaskInput } from "@/types/task";
 
 // GET /api/tasks/[id] - Get a specific task
@@ -26,6 +27,10 @@ export async function GET(
     if (typeof taskIdResult !== 'number') {
       return taskIdResult;
     }
+    
+    // Validate permission
+    const permissionError = await validateTaskPermission(session, taskIdResult, 'read');
+    if (permissionError) return permissionError;
     
     // Get the task
     const task = await getTaskById(taskIdResult);
@@ -61,6 +66,10 @@ export async function PATCH(
       return taskIdResult;
     }
     
+    // Validate permission
+    const permissionError = await validateTaskPermission(session, taskIdResult, 'update');
+    if (permissionError) return permissionError;
+    
     // Validate request body
     const validation = await validateRequestBody(request, updateTaskSchema);
     if ('error' in validation) return validation.error;
@@ -94,6 +103,10 @@ export async function DELETE(
     if (typeof taskIdResult !== 'number') {
       return taskIdResult;
     }
+    
+    // Validate permission
+    const permissionError = await validateTaskPermission(session, taskIdResult, 'delete');
+    if (permissionError) return permissionError;
     
     // Delete the task
     await deleteTask(taskIdResult);

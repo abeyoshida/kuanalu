@@ -140,22 +140,70 @@ const tasksWithRelations = await db.query.tasks.findMany({
 
 ## Transactions
 
-Transactions ensure that multiple database operations either all succeed or all fail:
+> **Important Note**: The Neon HTTP driver used in this project **does not support transactions**. 
+> Instead, use the sequential operations utility described below.
+
+In a traditional database setup, you would use transactions like this:
 
 ```typescript
+// THIS WILL NOT WORK WITH NEON HTTP DRIVER
 await db.transaction(async (tx) => {
-  // Create a project
-  const [project] = await tx.insert(projects)
-    .values({ name: 'New Project', organizationId: 1 })
-    .returning();
-  
-  // Create tasks for the project
-  await tx.insert(tasks).values([
-    { title: 'Task 1', projectId: project.id, createdBy: 1 },
-    { title: 'Task 2', projectId: project.id, createdBy: 1 }
-  ]);
+  await tx.insert(users).values({ name: 'John' });
+  await tx.insert(posts).values({ title: 'Hello', authorId: 1 });
 });
 ```
+
+### Sequential Operations Alternative
+
+Since transactions are not supported, we've created utility functions in `src/lib/db/sequential-ops.ts` to handle operations that would normally require transactions:
+
+```typescript
+import { executeSequential, createWithRelations, updateMultipleEntities } from '@/lib/db/sequential-ops';
+
+// Example 1: Execute operations sequentially
+await executeSequential([
+  async () => await db.insert(users).values({ name: 'John' }),
+  async () => await db.insert(posts).values({ title: 'Hello', authorId: 1 })
+]);
+
+// Example 2: Create an entity with related entities
+const result = await createWithRelations(
+  // Create main entity
+  async () => {
+    const [user] = await db.insert(users).values({ name: 'John' }).returning();
+    return user;
+  },
+  // Create related entities
+  async (user) => {
+    const [post] = await db.insert(posts).values({ 
+      title: 'Hello', 
+      authorId: user.id 
+    }).returning();
+    return post;
+  }
+);
+
+// Example 3: Update multiple related entities
+await updateMultipleEntities([
+  async () => await db.update(users).set({ name: 'John Doe' }).where(eq(users.id, 1)),
+  async () => await db.update(posts).set({ title: 'Updated Title' }).where(eq(posts.authorId, 1))
+]);
+```
+
+### Error Handling
+
+The sequential operations utility includes error handling, but it cannot provide true transaction guarantees:
+
+- If an operation fails, subsequent operations will not be executed
+- For `executeSequential`, you can provide rollback operations to be executed if an operation fails
+- However, operations that have already completed cannot be truly rolled back
+
+### Best Practices
+
+1. Keep operations as simple as possible
+2. Handle errors appropriately
+3. Consider implementing application-level validation before performing database operations
+4. For critical operations, implement compensating actions in case of failure
 
 ## Using in API Routes
 

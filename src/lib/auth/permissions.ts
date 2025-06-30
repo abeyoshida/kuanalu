@@ -44,6 +44,86 @@ export async function hasPermission(
 }
 
 /**
+ * Check if a user has all of the specified permissions
+ */
+export async function hasMultiplePermissions(
+  userId: number,
+  organizationId: number,
+  permissions: Array<{ action: string, subject: string }>
+): Promise<boolean> {
+  try {
+    // Get user's role in the organization
+    const memberRecord = await db
+      .select()
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.userId, userId),
+          eq(organizationMembers.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    
+    if (!memberRecord.length) {
+      return false; // User is not a member of the organization
+    }
+    
+    const userRole = memberRecord[0].role as Role;
+    const userPermissions = rolePermissions[userRole];
+    
+    // Check if the user has all specified permissions
+    return permissions.every(({ action, subject }) => 
+      userPermissions.some(
+        (permission) => permission.action === action && permission.subject === subject
+      )
+    );
+  } catch (error) {
+    console.error('Multiple permissions check error:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if a user has any of the specified permissions
+ */
+export async function hasAnyPermission(
+  userId: number,
+  organizationId: number,
+  permissions: Array<{ action: string, subject: string }>
+): Promise<boolean> {
+  try {
+    // Get user's role in the organization
+    const memberRecord = await db
+      .select()
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.userId, userId),
+          eq(organizationMembers.organizationId, organizationId)
+        )
+      )
+      .limit(1);
+    
+    if (!memberRecord.length) {
+      return false; // User is not a member of the organization
+    }
+    
+    const userRole = memberRecord[0].role as Role;
+    const userPermissions = rolePermissions[userRole];
+    
+    // Check if the user has any of the specified permissions
+    return permissions.some(({ action, subject }) => 
+      userPermissions.some(
+        (permission) => permission.action === action && permission.subject === subject
+      )
+    );
+  } catch (error) {
+    console.error('Any permission check error:', error);
+    return false;
+  }
+}
+
+/**
  * Check if a user is an organization owner
  */
 export async function isOrganizationOwner(

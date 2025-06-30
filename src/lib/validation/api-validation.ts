@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodSchema } from "zod";
 import { Session } from "next-auth";
+import { hasPermission } from "@/lib/auth/permissions";
 
 /**
  * Validates that a user is authenticated
@@ -13,6 +14,35 @@ export function validateAuthentication(session: Session | null): NextResponse | 
     );
   }
   return null;
+}
+
+/**
+ * Validates that a user has permission to perform an action on a subject
+ */
+export async function validatePermission(
+  userId: number,
+  organizationId: number,
+  action: string,
+  subject: string
+): Promise<NextResponse | null> {
+  try {
+    const hasAccess = await hasPermission(userId, organizationId, action, subject);
+    
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: `Permission denied. You don't have ${action} permission for ${subject}.` },
+        { status: 403 }
+      );
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Permission validation error:', error);
+    return NextResponse.json(
+      { error: "Error checking permissions" },
+      { status: 500 }
+    );
+  }
 }
 
 /**

@@ -50,7 +50,7 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
     hideCompleted: false,
   })
   const [sort, setSort] = useState<SortOptions>({
-    field: TaskSortField.CREATED_AT,
+    field: TaskSortField.PRIORITY,
     direction: SortDirection.DESC,
   })
 

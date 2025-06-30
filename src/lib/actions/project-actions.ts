@@ -20,6 +20,7 @@ import {
   ProjectCategoryInput
 } from "@/types/project";
 import { hasPermission } from "@/lib/auth/permissions";
+import { createWithRelations } from "@/lib/db/sequential-ops";
 
 /**
  * Create a new project
@@ -71,47 +72,57 @@ export async function createProject(formData: FormData, skipRedirect = false) {
       .replace(/\s+/g, '-') // Replace spaces with hyphens
       .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
     
-    // Create the project without using transactions
-    const [newProject] = await db
-      .insert(projects)
-      .values({
-        name: name.trim(),
-        slug,
-        description: description ? description.trim() : null,
-        status,
-        visibility,
-        organizationId,
-        ownerId: userId,
-        startDate,
-        targetDate,
-        icon: icon || null,
-        color: color || null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
-    
-    // Add the current user as owner
-    await db
-      .insert(projectMembers)
-      .values({
-        userId,
-        projectId: newProject.id,
-        role: 'owner',
-        addedBy: userId,
-        joinedAt: new Date(),
-        createdAt: new Date()
-      });
+    // Use sequential operations instead of transactions
+    const result = await createWithRelations(
+      // Create the project
+      async () => {
+        const [newProject] = await db
+          .insert(projects)
+          .values({
+            name: name.trim(),
+            slug,
+            description: description ? description.trim() : null,
+            status,
+            visibility,
+            organizationId,
+            ownerId: userId,
+            startDate,
+            targetDate,
+            icon: icon || null,
+            color: color || null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .returning();
+        
+        return newProject;
+      },
+      // Add the current user as owner
+      async (newProject) => {
+        await db
+          .insert(projectMembers)
+          .values({
+            userId,
+            projectId: newProject.id,
+            role: 'owner',
+            addedBy: userId,
+            joinedAt: new Date(),
+            createdAt: new Date()
+          });
+        
+        return newProject;
+      }
+    );
     
     revalidatePath(`/organizations/${organizationId}/projects`);
     
     // If skipRedirect is true, return the project data instead of redirecting
     if (skipRedirect) {
-      return newProject;
+      return result.main;
     }
     
     // Redirect to the new project page
-    return redirect(`/projects/${newProject.id}`);
+    return redirect(`/projects/${result.main.id}`);
   } catch (error) {
     console.error('Failed to create project:', error);
     throw new Error("Failed to create project");

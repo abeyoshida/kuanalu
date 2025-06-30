@@ -1,79 +1,177 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { hasPermission } from '@/lib/auth/permissions';
+import { ReactNode, useState, useEffect } from 'react';
+import { Role } from '@/lib/auth/permissions-data';
+import { roleHasPermission, roleHasMultiplePermissions, roleHasAnyPermission } from '@/lib/auth/client-permissions';
 
 interface WithPermissionProps {
-  organizationId: number;
-  userId: number;
+  children: ReactNode;
+  userRole: Role;
   action: string;
   subject: string;
-  fallback?: React.ReactNode;
-  children: React.ReactNode;
+  fallback?: ReactNode;
 }
 
+interface WithMultiplePermissionsProps {
+  children: ReactNode;
+  userRole: Role;
+  permissions: Array<{ action: string; subject: string }>;
+  type?: 'all' | 'any';
+  fallback?: ReactNode;
+}
+
+/**
+ * Component that conditionally renders children based on user permissions
+ */
 export function WithPermission({
-  organizationId,
+  children,
+  userRole,
+  action,
+  subject,
+  fallback = null
+}: WithPermissionProps) {
+  const hasPermission = roleHasPermission(userRole, action, subject);
+  
+  return hasPermission ? <>{children}</> : <>{fallback}</>;
+}
+
+/**
+ * Component that conditionally renders children based on multiple user permissions
+ */
+export function WithMultiplePermissions({
+  children,
+  userRole,
+  permissions,
+  type = 'all',
+  fallback = null
+}: WithMultiplePermissionsProps) {
+  const hasPermission = type === 'all' 
+    ? roleHasMultiplePermissions(userRole, permissions)
+    : roleHasAnyPermission(userRole, permissions);
+  
+  return hasPermission ? <>{children}</> : <>{fallback}</>;
+}
+
+interface WithAsyncPermissionProps {
+  children: ReactNode;
+  userId: number;
+  organizationId: number;
+  action: string;
+  subject: string;
+  fallback?: ReactNode;
+  loadingFallback?: ReactNode;
+}
+
+interface WithAsyncMultiplePermissionsProps {
+  children: ReactNode;
+  userId: number;
+  organizationId: number;
+  permissions: Array<{ action: string; subject: string }>;
+  type?: 'all' | 'any';
+  fallback?: ReactNode;
+  loadingFallback?: ReactNode;
+}
+
+/**
+ * Component that conditionally renders children based on async permission check
+ */
+export function WithAsyncPermission({
+  children,
   userId,
+  organizationId,
   action,
   subject,
   fallback = null,
-  children
-}: WithPermissionProps) {
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
-
+  loadingFallback = null
+}: WithAsyncPermissionProps) {
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  
   useEffect(() => {
     const checkPermission = async () => {
       try {
-        const permitted = await hasPermission(userId, organizationId, action, subject);
-        setHasAccess(permitted);
+        const response = await fetch('/api/auth/check-permission', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId,
+            organizationId,
+            action,
+            subject
+          }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setHasPermission(data.hasPermission);
+        } else {
+          setHasPermission(false);
+        }
       } catch (error) {
-        console.error('Permission check failed:', error);
-        setHasAccess(false);
+        console.error('Error checking permission:', error);
+        setHasPermission(false);
       }
     };
-
+    
     checkPermission();
   }, [userId, organizationId, action, subject]);
-
-  if (hasAccess === null) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+  
+  if (hasPermission === null) {
+    return <>{loadingFallback}</>;
   }
-
-  if (!hasAccess) {
-    return fallback;
-  }
-
-  return <>{children}</>;
+  
+  return hasPermission ? <>{children}</> : <>{fallback}</>;
 }
 
-export function withPermissionCheck<P extends object>(
-  Component: React.ComponentType<P>,
-  action: string,
-  subject: string
-) {
-  return function PermissionCheckedComponent(
-    props: P & { organizationId: number; userId: number }
-  ) {
-    return (
-      <WithPermission
-        organizationId={props.organizationId}
-        userId={props.userId}
-        action={action}
-        subject={subject}
-        fallback={
-          <div className="p-4 text-center">
-            <p className="text-red-500">You don&apos;t have permission to access this resource.</p>
-          </div>
+/**
+ * Component that conditionally renders children based on async multiple permission checks
+ */
+export function WithAsyncMultiplePermissions({
+  children,
+  userId,
+  organizationId,
+  permissions,
+  type = 'all',
+  fallback = null,
+  loadingFallback = null
+}: WithAsyncMultiplePermissionsProps) {
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    const checkPermissions = async () => {
+      try {
+        const response = await fetch('/api/auth/check-permission', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId,
+            organizationId,
+            permissions,
+            type: type === 'all' ? 'multiple' : 'any'
+          }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setHasPermission(data.hasPermission);
+        } else {
+          setHasPermission(false);
         }
-      >
-        <Component {...props} />
-      </WithPermission>
-    );
-  };
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+        setHasPermission(false);
+      }
+    };
+    
+    checkPermissions();
+  }, [userId, organizationId, permissions, type]);
+  
+  if (hasPermission === null) {
+    return <>{loadingFallback}</>;
+  }
+  
+  return hasPermission ? <>{children}</> : <>{fallback}</>;
 } 

@@ -189,10 +189,23 @@ export async function getCommentById(commentId: number): Promise<CommentWithMeta
     
     const projectId = task[0].projectId;
     
+    // Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
     // Check if user has permission to view this comment
     const hasViewPermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'read',
       'comment'
     );
@@ -273,10 +286,23 @@ export async function createComment(data: {
     
     const projectId = task[0].projectId;
     
+    // Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
     // Check if user has permission to comment on this task
     const hasCreatePermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'create',
       'comment'
     );
@@ -384,11 +410,24 @@ export async function updateComment(
     
     const projectId = task[0].projectId;
     
+    // Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
     // Check if user is the comment author or has admin permissions
     const isAuthor = commentUserId === userId;
     const hasUpdatePermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'update',
       'comment'
     );
@@ -502,11 +541,24 @@ export async function deleteComment(commentId: number): Promise<void> {
     
     const projectId = task[0].projectId;
     
+    // Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
     // Check if user is the comment author or has admin permissions
     const isAuthor = commentUserId === userId;
     const hasDeletePermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'delete',
       'comment'
     );
@@ -566,10 +618,23 @@ export async function getCommentReplies(commentId: number): Promise<CommentWithM
     
     const projectId = task[0].projectId;
     
+    // Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
     // Check if user has permission to view comments
     const hasViewPermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'read',
       'comment'
     );

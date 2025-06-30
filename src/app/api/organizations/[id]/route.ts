@@ -5,6 +5,13 @@ import {
   updateOrganization, 
   deleteOrganization 
 } from "@/lib/actions/organization-actions";
+import { 
+  validateAuthentication, 
+  validateNumericParam,
+  validateRequestBody,
+  handleApiError
+} from "@/lib/validation/api-validation";
+import { validateOrganizationPermission } from "@/lib/validation/permission-validation";
 import { z } from "zod";
 
 // Schema for organization update
@@ -24,45 +31,26 @@ export async function GET(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Validate authentication
+    const authError = validateAuthentication(session);
+    if (authError) return authError;
+    
+    // Validate organization ID
+    const orgIdResult = validateNumericParam(params.id, "organization ID");
+    if (typeof orgIdResult !== 'number') {
+      return orgIdResult;
     }
     
-    const organizationId = parseInt(params.id);
-    if (isNaN(organizationId)) {
-      return NextResponse.json(
-        { error: "Invalid organization ID" },
-        { status: 400 }
-      );
-    }
+    // Validate permission
+    const permissionError = await validateOrganizationPermission(session, orgIdResult, 'read');
+    if (permissionError) return permissionError;
     
-    const organization = await getOrganizationById(organizationId);
+    // Get the organization
+    const organization = await getOrganizationById(orgIdResult);
     
     return NextResponse.json(organization);
   } catch (error) {
-    console.error(`Error fetching organization ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("don't have access")) {
-      return NextResponse.json(
-        { error: "You don't have access to this organization" },
-        { status: 403 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("not found")) {
-      return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(
-      { error: "Failed to fetch organization" },
-      { status: 500 }
-    );
+    return handleApiError(error, "organization");
   }
 }
 
@@ -74,61 +62,41 @@ export async function PUT(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Validate authentication
+    const authError = validateAuthentication(session);
+    if (authError) return authError;
+    
+    // Validate organization ID
+    const orgIdResult = validateNumericParam(params.id, "organization ID");
+    if (typeof orgIdResult !== 'number') {
+      return orgIdResult;
     }
     
-    const organizationId = parseInt(params.id);
-    if (isNaN(organizationId)) {
-      return NextResponse.json(
-        { error: "Invalid organization ID" },
-        { status: 400 }
-      );
-    }
+    // Validate permission
+    const permissionError = await validateOrganizationPermission(session, orgIdResult, 'update');
+    if (permissionError) return permissionError;
     
-    const body = await request.json();
-    
-    // Validate input
-    const result = updateOrgSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: result.error.format() },
-        { status: 400 }
-      );
-    }
+    // Validate request body
+    const validation = await validateRequestBody(request, updateOrgSchema);
+    if ('error' in validation) return validation.error;
     
     // Convert to FormData for compatibility with existing server action
     const formData = new FormData();
-    Object.entries(result.data).forEach(([key, value]) => {
+    Object.entries(validation.data).forEach(([key, value]) => {
       if (value !== undefined) {
         formData.append(key, value.toString());
       }
     });
     
     // Use the existing server action
-    await updateOrganization(organizationId, formData);
+    await updateOrganization(orgIdResult, formData);
     
     // Fetch the updated organization
-    const updatedOrg = await getOrganizationById(organizationId);
+    const updatedOrg = await getOrganizationById(orgIdResult);
     
     return NextResponse.json(updatedOrg);
   } catch (error) {
-    console.error(`Error updating organization ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("don't have permission")) {
-      return NextResponse.json(
-        { error: "You don't have permission to update this organization" },
-        { status: 403 }
-      );
-    }
-    
-    return NextResponse.json(
-      { error: "Failed to update organization" },
-      { status: 500 }
-    );
+    return handleApiError(error, "organization");
   }
 }
 
@@ -140,40 +108,28 @@ export async function DELETE(
   try {
     const session = await auth();
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Validate authentication
+    const authError = validateAuthentication(session);
+    if (authError) return authError;
+    
+    // Validate organization ID
+    const orgIdResult = validateNumericParam(params.id, "organization ID");
+    if (typeof orgIdResult !== 'number') {
+      return orgIdResult;
     }
     
-    const organizationId = parseInt(params.id);
-    if (isNaN(organizationId)) {
-      return NextResponse.json(
-        { error: "Invalid organization ID" },
-        { status: 400 }
-      );
-    }
+    // Validate permission
+    const permissionError = await validateOrganizationPermission(session, orgIdResult, 'delete');
+    if (permissionError) return permissionError;
     
-    await deleteOrganization(organizationId);
+    // Delete the organization
+    await deleteOrganization(orgIdResult);
     
     return NextResponse.json(
       { message: "Organization deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
-    console.error(`Error deleting organization ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("don't have permission")) {
-      return NextResponse.json(
-        { error: "You don't have permission to delete this organization" },
-        { status: 403 }
-      );
-    }
-    
-    return NextResponse.json(
-      { error: "Failed to delete organization" },
-      { status: 500 }
-    );
+    return handleApiError(error, "organization");
   }
 } 

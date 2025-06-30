@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { SubtaskWithMeta } from "@/types/subtask";
 import { hasPermission } from "@/lib/auth/permissions";
 import { rolePermissions } from "@/lib/auth/permissions-data";
+import { updateMultipleEntities } from "@/lib/db/sequential-ops";
 
 /**
  * Get all subtasks for a task
@@ -621,50 +622,63 @@ export async function updateSubtaskPositions(
       throw new Error("You don't have permission to update subtask positions");
     }
     
-    // Update positions without using transactions
-    if (newPosition > oldPosition) {
-      // Moving down, shift subtasks in between up
-      await db
-        .update(subtasks)
-        .set({
-          position: sql`${subtasks.position} - 1`,
-          updatedAt: new Date()
-        })
-        .where(
-          and(
-            eq(subtasks.taskId, taskId),
-            sql`${subtasks.position} > ${oldPosition}`,
-            sql`${subtasks.position} <= ${newPosition}`
-          )
-        );
-    } else if (newPosition < oldPosition) {
-      // Moving up, shift subtasks in between down
-      await db
-        .update(subtasks)
-        .set({
-          position: sql`${subtasks.position} + 1`,
-          updatedAt: new Date()
-        })
-        .where(
-          and(
-            eq(subtasks.taskId, taskId),
-            sql`${subtasks.position} >= ${newPosition}`,
-            sql`${subtasks.position} < ${oldPosition}`
-          )
-        );
-    } else {
-      // No position change
+    // No position change
+    if (newPosition === oldPosition) {
       return;
     }
     
+    // Use updateMultipleEntities instead of sequential updates
+    const operations = [];
+    
+    if (newPosition > oldPosition) {
+      // Moving down, shift subtasks in between up
+      operations.push(async () => {
+        return await db
+          .update(subtasks)
+          .set({
+            position: sql`${subtasks.position} - 1`,
+            updatedAt: new Date()
+          })
+          .where(
+            and(
+              eq(subtasks.taskId, taskId),
+              sql`${subtasks.position} > ${oldPosition}`,
+              sql`${subtasks.position} <= ${newPosition}`
+            )
+          );
+      });
+    } else if (newPosition < oldPosition) {
+      // Moving up, shift subtasks in between down
+      operations.push(async () => {
+        return await db
+          .update(subtasks)
+          .set({
+            position: sql`${subtasks.position} + 1`,
+            updatedAt: new Date()
+          })
+          .where(
+            and(
+              eq(subtasks.taskId, taskId),
+              sql`${subtasks.position} >= ${newPosition}`,
+              sql`${subtasks.position} < ${oldPosition}`
+            )
+          );
+      });
+    }
+    
     // Update the subtask with new position
-    await db
-      .update(subtasks)
-      .set({
-        position: newPosition,
-        updatedAt: new Date()
-      })
-      .where(eq(subtasks.id, subtaskId));
+    operations.push(async () => {
+      return await db
+        .update(subtasks)
+        .set({
+          position: newPosition,
+          updatedAt: new Date()
+        })
+        .where(eq(subtasks.id, subtaskId));
+    });
+    
+    // Execute all operations
+    await updateMultipleEntities(operations);
     
     revalidatePath(`/task/${taskId}`);
   } catch (error) {
