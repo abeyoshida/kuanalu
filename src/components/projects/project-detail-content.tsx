@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, AlertCircle, List, Search, X } from "lucide-react";
+import { Calendar, Clock, AlertCircle, List, CalendarDays } from "lucide-react";
 import ProjectKanbanBoard from "@/components/project-kanban-board";
 import { useHeader } from "@/components/layout/header-context";
 import TaskList from "@/components/task-list";
@@ -16,64 +16,20 @@ import {
   TaskFilterOptions
 } from "@/types/task";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-
-// Simple Search Component that doesn't use URL parameters
-function SimpleSearch({ onSearch }: { onSearch: (term: string) => void }) {
-  const [searchTerm, setSearchTerm] = useState("");
-  
-  const handleSearch = () => {
-    onSearch(searchTerm);
-  };
-  
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-  
-  return (
-    <div className="flex gap-2">
-      <div className="relative flex-1">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-        <Input
-          placeholder="Search tasks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="pl-9 pr-10"
-        />
-        {searchTerm && (
-          <button 
-            onClick={() => setSearchTerm('')}
-            className="absolute right-2.5 top-2.5 text-gray-500 hover:text-gray-700"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-      <Button onClick={handleSearch}>Search</Button>
-    </div>
-  );
-}
-
-interface Project {
-  id: number;
-  name: string;
-  description: string | null;
-  status: string;
-}
+import SimpleSearch from "@/components/simple-search";
+import CalendarView from "@/components/calendar-view";
+import { Project } from '@/types/project';
 
 interface ProjectDetailContentProps {
   project: Project;
+  initialTab?: string;
 }
 
-export default function ProjectDetailContent({ project }: ProjectDetailContentProps) {
+export default function ProjectDetailContent({ project, initialTab = "board" }: ProjectDetailContentProps) {
   const { setEntityName } = useHeader();
   const [tasks, setTasks] = useState<TaskWithMeta[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("board");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -87,25 +43,14 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
     // Clean up when unmounting
     return () => setEntityName(null);
   }, [project.name, setEntityName]);
-  
-  // Handle tab change
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    
-    // Reset pagination when switching to list view
-    if (value === "list") {
-      setCurrentPage(1);
-      loadTasks();
-    }
-  };
-  
-  // Load tasks
-  const loadTasks = async (page = currentPage) => {
+
+  // Load tasks with optional page size override
+  const loadTasks = useCallback(async (page = currentPage, pageSizeOverride?: number) => {
     try {
       setIsLoading(true);
       const filters: TaskFilterOptions = {
         page,
-        pageSize
+        pageSize: pageSizeOverride || pageSize
       };
       
       if (searchTerm) {
@@ -115,7 +60,7 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
       // Call the API with pagination parameters and sorting
       const response = await fetch(`/api/projects/${project.id}/tasks?` + new URLSearchParams({
         page: page.toString(),
-        pageSize: pageSize.toString(),
+        pageSize: (pageSizeOverride || pageSize).toString(),
         sort: TaskSortField.PRIORITY,
         direction: SortDirection.DESC,
         ...(searchTerm ? { search: searchTerm } : {})
@@ -136,6 +81,30 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
       console.error("Error loading tasks:", error);
     } finally {
       setIsLoading(false);
+    }
+  }, [currentPage, pageSize, project.id, searchTerm]);
+
+  // Load tasks when component mounts or initialTab changes
+  useEffect(() => {
+    if (activeTab === "list" || activeTab === "calendar") {
+      const pageSizeOverride = activeTab === "calendar" ? 100 : undefined;
+      loadTasks(1, pageSizeOverride);
+    }
+  }, [initialTab, activeTab, loadTasks]);
+  
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    
+    // Reset pagination when switching to list view
+    if (value === "list") {
+      setCurrentPage(1);
+      loadTasks();
+    }
+    
+    // Load tasks for calendar view
+    if (value === "calendar") {
+      loadTasks(1, 100); // Load more tasks for calendar view
     }
   };
   
@@ -202,6 +171,7 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
         <TabsList className="mb-6">
           <TabsTrigger value="board">Kanban Board</TabsTrigger>
           <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
         </TabsList>
@@ -246,6 +216,29 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="calendar">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarDays className="h-5 w-5 text-gray-500" />
+                Task Calendar
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-[600px] flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-4">
+                    <Skeleton className="h-8 w-32" />
+                    <Skeleton className="h-[500px] w-full" />
+                  </div>
+                </div>
+              ) : (
+                <CalendarView tasks={tasks} />
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="overview">

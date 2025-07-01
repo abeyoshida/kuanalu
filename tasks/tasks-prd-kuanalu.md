@@ -15,6 +15,8 @@
 - `components/task-detail.tsx` - Task detail page component
 - `components/task-list.tsx` - Task list component for list view
 - `components/task-list-filter.tsx` - Filter component for task list view
+- `components/calendar-view.tsx` - Calendar view component for displaying tasks by due date
+- `components/simple-search.tsx` - Simple search component for task searching
 - `components/projects/project-detail-content.tsx` - Project detail content with tabs for different views
 - `app/api/auth/[...nextauth]/route.ts` - Authentication API routes
 - `app/api/tasks/route.ts` - Tasks API endpoints
@@ -23,7 +25,7 @@
 - `app/task/[id]/page.tsx` - Task detail page
 - `app/projects/[id]/page.tsx` - Project page with task board
 - `app/(auth)/projects/[id]/list/page.tsx` - List view for tasks
-- `app/projects/[id]/calendar/page.tsx` - Calendar view for tasks
+- `app/(auth)/projects/[id]/calendar/page.tsx` - Calendar view for tasks
 - `app/auth/register/page.tsx` - User registration page
 - `app/auth/login/page.tsx` - User login page
 - `app/auth/logout/page.tsx` - User logout page
@@ -156,11 +158,11 @@
   - [x] 6.1 Create list view component for tasks
   - [x] 6.2 Implement sorting and filtering in list view
   - [x] 6.3 Add pagination to list view
-  - [ ] 6.4 Create calendar view component
-  - [ ] 6.5 Implement task display by due date in calendar
-  - [ ] 6.6 Add month/week/day view options in calendar
-  - [ ] 6.7 Create view switcher component
-  - [ ] 6.8 Implement consistent task actions across views
+  - [x] 6.4 Create calendar view component
+  - [x] 6.5 Implement task display by due date in calendar
+  - [x] 6.6 Add month/week/day view options in calendar
+  - [x] 6.7 Create view switcher component
+  - [x] 6.8 Implement consistent task actions across views
   - [ ] 6.9 Ensure responsive design for all views
 
 - [ ] 7.0 Email Notifications
