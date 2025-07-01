@@ -154,7 +154,7 @@
   - [x] 5.11 Implement due date picker
   - [ ] 5.12 Create task history/activity log
 
-- [ ] 6.0 Additional Views (List and Calendar)
+- [x] 6.0 Additional Views (List and Calendar)
   - [x] 6.1 Create list view component for tasks
   - [x] 6.2 Implement sorting and filtering in list view
   - [x] 6.3 Add pagination to list view
@@ -163,7 +163,7 @@
   - [x] 6.6 Add month/week/day view options in calendar
   - [x] 6.7 Create view switcher component
   - [x] 6.8 Implement consistent task actions across views
-  - [ ] 6.9 Ensure responsive design for all views
+  - [x] 6.9 Ensure responsive design for all views
 
 - [ ] 7.0 Email Notifications
   - [ ] 7.1 Set up email service provider

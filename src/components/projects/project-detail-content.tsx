@@ -166,9 +166,9 @@ export default function ProjectDetailContent({ project, initialTab = "board" }: 
   };
   
   return (
-    <div>
+    <div className="w-full overflow-x-hidden">
       <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 flex flex-wrap justify-start !justify-start">
           <TabsTrigger value="board">Kanban Board</TabsTrigger>
           <TabsTrigger value="list">List View</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
@@ -176,7 +176,7 @@ export default function ProjectDetailContent({ project, initialTab = "board" }: 
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="board">
+        <TabsContent value="board" className="w-full overflow-x-auto">
           <ProjectKanbanBoard projectId={project.id} />
         </TabsContent>
         
@@ -185,13 +185,13 @@ export default function ProjectDetailContent({ project, initialTab = "board" }: 
             <SimpleSearch onSearch={handleSearch} />
             
             <Card>
-              <CardHeader>
+              <CardHeader className="sm:flex-row sm:items-center">
                 <CardTitle className="flex items-center gap-2">
                   <List className="h-5 w-5 text-gray-500" />
                   Task List
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-x-auto">
                 {isLoading ? (
                   <div className="space-y-2">
                     <Skeleton className="h-12 w-full" />
@@ -220,7 +220,7 @@ export default function ProjectDetailContent({ project, initialTab = "board" }: 
         
         <TabsContent value="calendar">
           <Card>
-            <CardHeader>
+            <CardHeader className="sm:flex-row sm:items-center">
               <CardTitle className="flex items-center gap-2">
                 <CalendarDays className="h-5 w-5 text-gray-500" />
                 Task Calendar
@@ -228,10 +228,10 @@ export default function ProjectDetailContent({ project, initialTab = "board" }: 
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="h-[600px] flex items-center justify-center">
+                <div className="h-[400px] md:h-[600px] flex items-center justify-center">
                   <div className="flex flex-col items-center gap-4">
                     <Skeleton className="h-8 w-32" />
-                    <Skeleton className="h-[500px] w-full" />
+                    <Skeleton className="h-[300px] md:h-[500px] w-full" />
                   </div>
                 </div>
               ) : (

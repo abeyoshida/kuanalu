@@ -191,7 +191,7 @@ export default function TaskList({
     );
   };
 
-  // Render sort indicator
+  // Helper function to render sort indicator
   const renderSortIndicator = (field: TaskSortField) => {
     if (field !== sortField) {
       return <ArrowUpDown className="h-4 w-4 ml-1" />;
@@ -204,87 +204,89 @@ export default function TaskList({
 
   return (
     <div className="w-full overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[400px]">
-              <Button 
-                variant="ghost" 
-                onClick={() => handleSort(TaskSortField.TITLE)}
-                className="flex items-center"
-              >
-                Task {renderSortIndicator(TaskSortField.TITLE)}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button 
-                variant="ghost" 
-                onClick={() => handleSort(TaskSortField.STATUS)}
-                className="flex items-center"
-              >
-                Status {renderSortIndicator(TaskSortField.STATUS)}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button 
-                variant="ghost" 
-                onClick={() => handleSort(TaskSortField.PRIORITY)}
-                className="flex items-center"
-              >
-                Priority {renderSortIndicator(TaskSortField.PRIORITY)}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button 
-                variant="ghost" 
-                onClick={() => handleSort(TaskSortField.ASSIGNEE)}
-                className="flex items-center"
-              >
-                Assignee {renderSortIndicator(TaskSortField.ASSIGNEE)}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button 
-                variant="ghost" 
-                onClick={() => handleSort(TaskSortField.DUE_DATE)}
-                className="flex items-center"
-              >
-                Due Date {renderSortIndicator(TaskSortField.DUE_DATE)}
-              </Button>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedTasks.length === 0 ? (
+      <div className="min-w-[600px]"> {/* Minimum width to prevent squishing on mobile */}
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                No tasks found
-              </TableCell>
+              <TableHead className="w-[40%]">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleSort(TaskSortField.TITLE)}
+                  className="flex items-center"
+                >
+                  Task {renderSortIndicator(TaskSortField.TITLE)}
+                </Button>
+              </TableHead>
+              <TableHead className="w-[15%]">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleSort(TaskSortField.STATUS)}
+                  className="flex items-center"
+                >
+                  Status {renderSortIndicator(TaskSortField.STATUS)}
+                </Button>
+              </TableHead>
+              <TableHead className="w-[15%]">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleSort(TaskSortField.PRIORITY)}
+                  className="flex items-center"
+                >
+                  Priority {renderSortIndicator(TaskSortField.PRIORITY)}
+                </Button>
+              </TableHead>
+              <TableHead className="hidden sm:table-cell w-[15%]">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleSort(TaskSortField.ASSIGNEE)}
+                  className="flex items-center"
+                >
+                  Assignee {renderSortIndicator(TaskSortField.ASSIGNEE)}
+                </Button>
+              </TableHead>
+              <TableHead className="w-[15%]">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => handleSort(TaskSortField.DUE_DATE)}
+                  className="flex items-center"
+                >
+                  Due Date {renderSortIndicator(TaskSortField.DUE_DATE)}
+                </Button>
+              </TableHead>
             </TableRow>
-          ) : (
-            sortedTasks.map((task) => (
-              <TableRow key={task.id} className="hover:bg-gray-50">
-                <TableCell>
-                  <Link href={`/task/${task.id}`} className="hover:underline font-medium">
-                    {task.title}
-                  </Link>
-                  {task.subtaskCount && task.subtaskCount > 0 && (
-                    <Badge variant="outline" className="ml-2">
-                      {task.subtaskCount} subtask{task.subtaskCount > 1 ? 's' : ''}
-                    </Badge>
-                  )}
+          </TableHeader>
+          <TableBody>
+            {sortedTasks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                  No tasks found
                 </TableCell>
-                <TableCell>{renderStatusBadge(task.status)}</TableCell>
-                <TableCell>{renderPriorityBadge(task.priority)}</TableCell>
-                <TableCell>
-                  {task.assigneeName || <span className="text-gray-400">Unassigned</span>}
-                </TableCell>
-                <TableCell>{renderDueDate(task)}</TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              sortedTasks.map((task) => (
+                <TableRow key={task.id} className="hover:bg-gray-50">
+                  <TableCell>
+                    <Link href={`/task/${task.id}`} className="hover:underline font-medium">
+                      {task.title}
+                    </Link>
+                    {task.subtaskCount && task.subtaskCount > 0 && (
+                      <Badge variant="outline" className="ml-2">
+                        {task.subtaskCount} subtask{task.subtaskCount > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>{renderStatusBadge(task.status)}</TableCell>
+                  <TableCell>{renderPriorityBadge(task.priority)}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {task.assigneeName || <span className="text-gray-400">Unassigned</span>}
+                  </TableCell>
+                  <TableCell>{renderDueDate(task)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
       
       {pagination && onPageChange && (
         <div className="mt-4">

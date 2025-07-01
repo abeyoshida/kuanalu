@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   addDays, 
   startOfMonth, 
@@ -10,13 +10,16 @@ import {
   isSameMonth, 
   addMonths, 
   subMonths,
-  isToday
+  isToday,
+  startOfWeek,
+  endOfWeek
 } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TaskWithMeta } from '@/types/task';
 import Link from 'next/link';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface CalendarViewProps {
   tasks: TaskWithMeta[];
@@ -24,7 +27,18 @@ interface CalendarViewProps {
 
 export default function CalendarView({ tasks }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'month' | 'week'>('month');
+  const [view, setView] = useState<'month' | 'week' | 'agenda'>('month');
+  const isMobile = useMediaQuery('(max-width: 640px)');
+  const isTablet = useMediaQuery('(max-width: 1024px)');
+  
+  // Set default view based on screen size
+  useEffect(() => {
+    if (isMobile) {
+      setView('agenda');
+    } else if (isTablet && view === 'agenda') {
+      setView('week');
+    }
+  }, [isMobile, isTablet, view]);
 
   const daysInMonth = useMemo(() => {
     const monthStart = startOfMonth(currentDate);
@@ -36,8 +50,9 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
   }, [currentDate]);
 
   const daysInWeek = useMemo(() => {
-    const weekStart = addDays(currentDate, -currentDate.getDay());
-    return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    const weekStart = startOfWeek(currentDate);
+    const weekEnd = endOfWeek(currentDate);
+    return eachDayOfInterval({ start: weekStart, end: weekEnd });
   }, [currentDate]);
 
   const days = view === 'month' ? daysInMonth : daysInWeek;
@@ -88,42 +103,44 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
     }
   };
 
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={handlePrevious}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h2 className="text-xl font-semibold">
-            {format(currentDate, view === 'month' ? 'MMMM yyyy' : "'Week of' MMM d, yyyy")}
-          </h2>
-          <Button variant="outline" onClick={handleNext}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" onClick={handleToday}>Today</Button>
-        </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant={view === 'month' ? 'default' : 'outline'} 
-            onClick={() => setView('month')}
-          >
-            Month
-          </Button>
-          <Button 
-            variant={view === 'week' ? 'default' : 'outline'} 
-            onClick={() => setView('week')}
-          >
-            Week
-          </Button>
-        </div>
-      </div>
+  // Get all tasks for the current month/week for agenda view
+  const currentViewTasks = useMemo(() => {
+    if (view !== 'agenda') return [];
+    
+    const allTasks: Array<{ task: TaskWithMeta, dateKey: string }> = [];
+    
+    // Add all tasks with due dates in the current view
+    days.forEach(day => {
+      const dateKey = format(day, 'yyyy-MM-dd');
+      const dayTasks = tasksByDate[dateKey] || [];
+      dayTasks.forEach(task => {
+        allTasks.push({ task, dateKey });
+      });
+    });
+    
+    // Sort by date then priority
+    return allTasks.sort((a, b) => {
+      // First sort by date
+      const dateA = new Date(a.dateKey).getTime();
+      const dateB = new Date(b.dateKey).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+      
+      // Then by priority
+      const priorityMap: Record<string, number> = {
+        urgent: 4, high: 3, medium: 2, low: 1
+      };
+      return (priorityMap[b.task.priority] || 0) - (priorityMap[a.task.priority] || 0);
+    });
+  }, [days, tasksByDate, view]);
 
+  // Render the calendar grid view (month or week)
+  const renderCalendarGrid = () => {
+    return (
       <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
         {/* Day headers */}
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div key={day} className="bg-white p-2 text-center font-medium">
-            {day}
+            {isMobile ? day.charAt(0) : day}
           </div>
         ))}
         
@@ -136,7 +153,7 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
           return (
             <div 
               key={dateKey}
-              className={`bg-white min-h-[100px] ${view === 'week' ? 'h-[200px]' : ''} p-1 border-t border-gray-200 ${
+              className={`bg-white ${view === 'week' ? 'min-h-[120px]' : 'min-h-[80px] md:min-h-[100px]'} p-1 border-t border-gray-200 ${
                 isCurrentMonth ? 'opacity-100' : 'opacity-50 bg-gray-50'
               } ${isToday(day) ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
             >
@@ -150,8 +167,8 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
                   </Badge>
                 )}
               </div>
-              <div className="overflow-y-auto max-h-[80px]">
-                {dayTasks.map((task) => (
+              <div className={`overflow-y-auto ${view === 'week' ? 'max-h-[80px]' : 'max-h-[40px] md:max-h-[60px]'}`}>
+                {dayTasks.slice(0, view === 'week' ? 5 : (isMobile ? 1 : 3)).map((task) => (
                   <Link 
                     href={`/task/${task.id}`} 
                     key={task.id}
@@ -163,11 +180,109 @@ export default function CalendarView({ tasks }: CalendarViewProps) {
                     </div>
                   </Link>
                 ))}
+                {dayTasks.length > (view === 'week' ? 5 : (isMobile ? 1 : 3)) && (
+                  <div className="text-xs text-gray-500 text-center">
+                    +{dayTasks.length - (view === 'week' ? 5 : (isMobile ? 1 : 3))} more
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
+    );
+  };
+
+  // Render the agenda view for mobile
+  const renderAgendaView = () => {
+    if (currentViewTasks.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          No tasks scheduled for this {view === 'month' ? 'month' : 'week'}
+        </div>
+      );
+    }
+
+    let currentDateKey = '';
+    
+    return (
+      <div className="space-y-4">
+        {currentViewTasks.map(({ task, dateKey }) => {
+          const showDateHeader = dateKey !== currentDateKey;
+          if (showDateHeader) {
+            currentDateKey = dateKey;
+          }
+          
+          return (
+            <div key={task.id}>
+              {showDateHeader && (
+                <div className={`text-sm font-medium pt-4 ${isToday(new Date(dateKey)) ? 'text-blue-600' : ''}`}>
+                  {format(new Date(dateKey), 'EEEE, MMMM d')}
+                </div>
+              )}
+              <Link 
+                href={`/task/${task.id}`}
+                className="flex items-center p-2 border-l-4 rounded-r-md mb-1 bg-white hover:bg-gray-50"
+                style={{ borderLeftColor: getPriorityColor(task.priority).replace('bg-', '') }}
+              >
+                <div className="ml-2">
+                  <div className="font-medium">{task.title}</div>
+                  <div className="text-xs text-gray-500 flex items-center">
+                    <CalendarIcon className="h-3 w-3 mr-1" />
+                    {format(new Date(task.dueDate!), 'h:mm a')}
+                  </div>
+                </div>
+              </Link>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" onClick={handlePrevious} size="sm">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h2 className="text-lg md:text-xl font-semibold">
+            {format(currentDate, view === 'month' ? 'MMMM yyyy' : "'Week of' MMM d, yyyy")}
+          </h2>
+          <Button variant="outline" onClick={handleNext} size="sm">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" onClick={handleToday} size="sm">Today</Button>
+        </div>
+        <div className="flex space-x-2">
+          <Button 
+            variant={view === 'month' ? 'default' : 'outline'} 
+            onClick={() => setView('month')}
+            size="sm"
+            className={isMobile ? 'hidden' : ''}
+          >
+            Month
+          </Button>
+          <Button 
+            variant={view === 'week' ? 'default' : 'outline'} 
+            onClick={() => setView('week')}
+            size="sm"
+            className={isMobile ? 'hidden' : ''}
+          >
+            Week
+          </Button>
+          <Button 
+            variant={view === 'agenda' ? 'default' : 'outline'} 
+            onClick={() => setView('agenda')}
+            size="sm"
+          >
+            Agenda
+          </Button>
+        </div>
+      </div>
+
+      {view === 'agenda' ? renderAgendaView() : renderCalendarGrid()}
     </div>
   );
 } 
