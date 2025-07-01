@@ -121,7 +121,8 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
   const handleSort = (sortOption: TaskSortOption) => {
     // Sort client-side
     const sortedTasks = [...tasks].sort((a, b) => {
-      let valueA, valueB;
+      let valueA: string | number;
+      let valueB: string | number;
       
       switch (sortOption.field) {
         case TaskSortField.TITLE:
@@ -149,7 +150,7 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
       
       const compareResult = typeof valueA === 'string'
         ? valueA.localeCompare(valueB as string)
-        : (valueA as number) - (valueB as number);
+        : valueA - valueB;
       
       return sortOption.direction === SortDirection.ASC ? compareResult : -compareResult;
     });

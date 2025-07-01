@@ -255,9 +255,9 @@ export default function Sidebar({ isOpen }: SidebarProps) {
               Members
             </Link>
             <Link
-              href="/profile"
+              href={selectedOrgId ? `/organizations/${selectedOrgId}?tab=settings` : "/organizations"}
               className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md ${
-                isActivePath("/profile") ? "bg-gray-100 text-gray-900" : ""
+                isActivePath("/organizations") && (pathname.includes("/settings") || pathname.includes("?tab=settings")) ? "bg-gray-100 text-gray-900" : ""
               }`}
             >
               <Settings className="w-4 h-4" />

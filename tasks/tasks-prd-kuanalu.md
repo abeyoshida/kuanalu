@@ -13,13 +13,16 @@
 - `components/create-task-dialog.tsx` - Dialog for creating new tasks
 - `components/task-card.tsx` - Task card component
 - `components/task-detail.tsx` - Task detail page component
+- `components/task-list.tsx` - Task list component for list view
+- `components/task-list-filter.tsx` - Filter component for task list view
+- `components/projects/project-detail-content.tsx` - Project detail content with tabs for different views
 - `app/api/auth/[...nextauth]/route.ts` - Authentication API routes
 - `app/api/tasks/route.ts` - Tasks API endpoints
 - `app/api/projects/route.ts` - Projects API endpoints
 - `app/api/organizations/route.ts` - Organizations API endpoints
 - `app/task/[id]/page.tsx` - Task detail page
 - `app/projects/[id]/page.tsx` - Project page with task board
-- `app/projects/[id]/list/page.tsx` - List view for tasks
+- `app/(auth)/projects/[id]/list/page.tsx` - List view for tasks
 - `app/projects/[id]/calendar/page.tsx` - Calendar view for tasks
 - `app/auth/register/page.tsx` - User registration page
 - `app/auth/login/page.tsx` - User login page
@@ -150,8 +153,8 @@
   - [ ] 5.12 Create task history/activity log
 
 - [ ] 6.0 Additional Views (List and Calendar)
-  - [ ] 6.1 Create list view component for tasks
-  - [ ] 6.2 Implement sorting and filtering in list view
+  - [x] 6.1 Create list view component for tasks
+  - [x] 6.2 Implement sorting and filtering in list view
   - [ ] 6.3 Add pagination to list view
   - [ ] 6.4 Create calendar view component
   - [ ] 6.5 Implement task display by due date in calendar
@@ -175,7 +178,7 @@
   - [x] 8.2 Implement organization ownership assignment during registration
   - [x] 8.3 Create comprehensive role-based permission system and fix transaction issues
   - [x] 8.4 Implement permission checks for all API endpoints
-  - [ ] 8.5 Add UI components for role management
+  - [x] 8.5 Add UI components for role management
   - [ ] 8.6 Create user invitation flow with role assignment
   - [ ] 8.7 Implement organization settings page with member management
   - [ ] 8.8 Add visual indicators for user permissions in UI

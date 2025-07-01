@@ -3,54 +3,14 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, AlertCircle, List, Search, X } from "lucide-react";
+import { Calendar, Clock, AlertCircle, List } from "lucide-react";
 import ProjectKanbanBoard from "@/components/project-kanban-board";
 import { useHeader } from "@/components/layout/header-context";
 import TaskList from "@/components/task-list";
+import TaskListFilter from "@/components/task-list-filter";
 import { getProjectTasks } from "@/lib/actions/task-actions";
-import { TaskFilterOptions, TaskSortOption, TaskSortField, SortDirection, TaskWithMeta } from "@/types/task";
+import { TaskFilterOptions, TaskSortOption, TaskSortField, SortDirection } from "@/types/task";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-
-// Simple Search Component that doesn't use URL parameters
-function SimpleSearch({ onSearch }: { onSearch: (term: string) => void }) {
-  const [searchTerm, setSearchTerm] = useState("");
-  
-  const handleSearch = () => {
-    onSearch(searchTerm);
-  };
-  
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-  
-  return (
-    <div className="flex gap-2">
-      <div className="relative flex-1">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-        <Input
-          placeholder="Search tasks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="pl-9 pr-10"
-        />
-        {searchTerm && (
-          <button 
-            onClick={() => setSearchTerm('')}
-            className="absolute right-2.5 top-2.5 text-gray-500 hover:text-gray-700"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-      <Button onClick={handleSearch}>Search</Button>
-    </div>
-  );
-}
 
 interface Project {
   id: number;
@@ -65,10 +25,13 @@ interface ProjectDetailContentProps {
 
 export default function ProjectDetailContent({ project }: ProjectDetailContentProps) {
   const { setEntityName } = useHeader();
-  const [tasks, setTasks] = useState<TaskWithMeta[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("board");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [currentFilters, setCurrentFilters] = useState<TaskFilterOptions>({});
+  const [currentSort, setCurrentSort] = useState<TaskSortOption>({
+    field: TaskSortField.PRIORITY,
+    direction: SortDirection.DESC
+  });
 
   // Set the project name in the header when the component mounts
   useEffect(() => {
@@ -78,83 +41,114 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
     return () => setEntityName(null);
   }, [project.name, setEntityName]);
   
-  // Handle tab change
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    
-    // Load tasks when switching to list view
-    if (value === "list") {
-      loadTasks();
-    }
-  };
-  
-  // Load tasks
-  const loadTasks = async () => {
+  // Fetch tasks when needed
+  const fetchTasks = async (filters?: TaskFilterOptions, sort?: TaskSortOption) => {
     try {
       setIsLoading(true);
-      const filters: TaskFilterOptions = {};
+      // Get tasks from API
+      // Note: The API doesn't directly support sorting via TaskFilterOptions
+      // In a real implementation, you would need to add sorting parameters to the API
+      const projectTasks = await getProjectTasks(project.id, filters);
       
-      if (searchTerm) {
-        filters.search = searchTerm;
+      // If we have sort options, sort the tasks client-side
+      let sortedTasks = [...projectTasks];
+      
+      if (sort) {
+        sortedTasks.sort((a, b) => {
+          let valueA, valueB;
+          
+          switch (sort.field) {
+            case TaskSortField.TITLE:
+              valueA = a.title?.toLowerCase() || '';
+              valueB = b.title?.toLowerCase() || '';
+              break;
+            case TaskSortField.STATUS:
+              valueA = a.status || '';
+              valueB = b.status || '';
+              break;
+            case TaskSortField.PRIORITY:
+              // Map priority to numeric values for sorting
+              const priorityMap: Record<string, number> = {
+                urgent: 4,
+                high: 3,
+                medium: 2,
+                low: 1
+              };
+              valueA = priorityMap[a.priority || 'medium'] || 0;
+              valueB = priorityMap[b.priority || 'medium'] || 0;
+              break;
+            case TaskSortField.DUE_DATE:
+              valueA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+              valueB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+              break;
+            case TaskSortField.CREATED_AT:
+              valueA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              valueB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              break;
+            case TaskSortField.UPDATED_AT:
+              valueA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+              valueB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+              break;
+            case TaskSortField.ASSIGNEE:
+              valueA = a.assigneeName?.toLowerCase() || '';
+              valueB = b.assigneeName?.toLowerCase() || '';
+              break;
+            default:
+              return 0;
+          }
+          
+          // Apply sort direction
+          const compareResult = typeof valueA === 'string'
+            ? valueA.localeCompare(valueB as string)
+            : (valueA as number) - (valueB as number);
+          
+          return sort.direction === SortDirection.ASC ? compareResult : -compareResult;
+        });
       }
       
-      const projectTasks = await getProjectTasks(project.id, filters);
-      setTasks(projectTasks);
+      setTasks(sortedTasks);
     } catch (error) {
-      console.error("Error loading tasks:", error);
+      console.error("Error fetching tasks:", error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Handle tab change to load tasks when list tab is selected
+  const [activeTab, setActiveTab] = useState("board");
   
-  // Handle search
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    
-    // Only fetch if we're on the list tab
-    if (activeTab === "list") {
-      loadTasks();
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+  
+  // Load tasks when the list tab is selected
+  useEffect(() => {
+    if (activeTab === "list" && tasks.length === 0) {
+      fetchTasks(currentFilters, currentSort);
+    }
+  }, [activeTab]);
+  
+  // Handle filter changes
+  const handleFilterChange = (filters: TaskFilterOptions) => {
+    // Only update and fetch if filters actually changed
+    const filtersChanged = JSON.stringify(filters) !== JSON.stringify(currentFilters);
+    if (filtersChanged) {
+      setCurrentFilters(filters);
+      fetchTasks(filters, currentSort);
     }
   };
   
-  // Handle sort
-  const handleSort = (sortOption: TaskSortOption) => {
-    // Sort client-side
-    const sortedTasks = [...tasks].sort((a, b) => {
-      let valueA, valueB;
+  // Handle sort changes
+  const handleSortChange = (sortOption: TaskSortOption) => {
+    // Only update and fetch if sort options actually changed
+    const sortChanged = 
+      sortOption.field !== currentSort.field || 
+      sortOption.direction !== currentSort.direction;
       
-      switch (sortOption.field) {
-        case TaskSortField.TITLE:
-          valueA = a.title?.toLowerCase() || '';
-          valueB = b.title?.toLowerCase() || '';
-          break;
-        case TaskSortField.STATUS:
-          valueA = a.status || '';
-          valueB = b.status || '';
-          break;
-        case TaskSortField.PRIORITY:
-          const priorityMap: Record<string, number> = {
-            urgent: 4, high: 3, medium: 2, low: 1
-          };
-          valueA = priorityMap[a.priority || 'medium'] || 0;
-          valueB = priorityMap[b.priority || 'medium'] || 0;
-          break;
-        case TaskSortField.DUE_DATE:
-          valueA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
-          valueB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
-          break;
-        default:
-          return 0;
-      }
-      
-      const compareResult = typeof valueA === 'string'
-        ? valueA.localeCompare(valueB as string)
-        : (valueA as number) - (valueB as number);
-      
-      return sortOption.direction === SortDirection.ASC ? compareResult : -compareResult;
-    });
-    
-    setTasks(sortedTasks);
+    if (sortChanged) {
+      setCurrentSort(sortOption);
+      fetchTasks(currentFilters, sortOption);
+    }
   };
   
   return (
@@ -173,8 +167,10 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
         
         <TabsContent value="list">
           <div className="space-y-4">
-            <SimpleSearch onSearch={handleSearch} />
-            
+            <TaskListFilter 
+              projectId={project.id} 
+              onFilterChange={handleFilterChange} 
+            />
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -194,7 +190,8 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
                 ) : (
                   <TaskList 
                     tasks={tasks} 
-                    onSortChange={handleSort}
+                    onSortChange={handleSortChange}
+                    onFilterChange={handleFilterChange}
                   />
                 )}
               </CardContent>
@@ -290,4 +287,4 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
       </Tabs>
     </div>
   );
-}
+} 
