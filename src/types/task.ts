@@ -110,6 +110,19 @@ export interface TaskFilterOptions {
   search?: string;
   includeArchived?: boolean;
   includeCompleted?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+// Pagination result interface
+export interface PaginatedTasksResult {
+  tasks: TaskWithMeta[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    pageSize: number;
+  };
 }
 
 // Task sort options

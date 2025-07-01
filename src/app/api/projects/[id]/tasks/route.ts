@@ -1,59 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
-import { getProjectTasks, createTask } from "@/lib/actions/task-actions";
-import { z } from "zod";
-import { TaskSortField, SortDirection } from "@/types/task";
-
-// Schema for task creation
-const createTaskSchema = z.object({
-  title: z.string().min(1, "Task title is required"),
-  description: z.string().optional(),
-  status: z.enum(["backlog", "todo", "in_progress", "in_review", "done"]).optional(),
-  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
-  type: z.enum(["feature", "bug", "improvement", "documentation", "task", "epic"]).optional(),
-  assigneeId: z.number().int().nullable().optional(),
-  reporterId: z.number().int().optional(),
-  parentTaskId: z.number().int().nullable().optional(),
-  dueDate: z.string().optional().nullable(),
-  startDate: z.string().optional().nullable(),
-  estimatedHours: z.number().optional().nullable(),
-  points: z.number().optional().nullable(),
-  position: z.number().optional().nullable(),
-  labels: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      color: z.string()
-    })
-  ).optional()
-});
-
-// Schema for task filtering
-const taskFilterSchema = z.object({
-  status: z.array(z.enum(["backlog", "todo", "in_progress", "in_review", "done"])).optional(),
-  priority: z.array(z.enum(["low", "medium", "high", "urgent"])).optional(),
-  type: z.array(z.enum(["feature", "bug", "improvement", "documentation", "task", "epic"])).optional(),
-  assigneeId: z.array(z.number()).optional(),
-  reporterId: z.array(z.number()).optional(),
-  dueDate: z.object({
-    from: z.string().optional(),
-    to: z.string().optional()
-  }).optional(),
-  search: z.string().optional(),
-  includeArchived: z.boolean().optional(),
-  includeCompleted: z.boolean().optional()
-});
-
-// Schema for task sorting
-const taskSortSchema = z.object({
-  field: z.nativeEnum(TaskSortField),
-  direction: z.nativeEnum(SortDirection)
-});
+import { db } from '@/lib/db';
+import { tasks, users, projectMembers, projects, subtasks, comments } from '@/lib/db/schema';
+import { and, eq, isNull, count, inArray, sql } from 'drizzle-orm';
+import { hasPermission } from '@/lib/auth/permissions';
+import { PaginatedTasksResult, TaskWithMeta } from '@/types/task';
 
 // GET /api/projects/[id]/tasks - Get tasks for a project
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
 ) {
   try {
     const session = await auth();
@@ -65,7 +20,12 @@ export async function GET(
       );
     }
     
-    const projectId = parseInt(params.id);
+    // Extract project ID from URL path
+    const url = request.url;
+    const pathParts = url.split('/');
+    const projectIdStr = pathParts[pathParts.indexOf('projects') + 1];
+    const projectId = parseInt(projectIdStr);
+    
     if (isNaN(projectId)) {
       return NextResponse.json(
         { error: "Invalid project ID" },
@@ -73,72 +33,221 @@ export async function GET(
       );
     }
     
-    // Parse query parameters for filtering and sorting
-    const url = new URL(request.url);
-    const filterParams = url.searchParams.get("filter");
-    const sortParams = url.searchParams.get("sort");
+    const userId = parseInt(session.user.id);
     
-    let filter;
+    // Check if user is a member of the project
+    const membership = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, projectId)
+        )
+      )
+      .limit(1);
     
-    if (filterParams) {
-      try {
-        const filterData = JSON.parse(filterParams);
-        const result = taskFilterSchema.safeParse(filterData);
-        if (result.success) {
-          // Create a properly typed filter object
-          const typedFilter: Record<string, unknown> = { ...result.data };
-          
-          // Convert date strings to Date objects if present
-          if (typedFilter.dueDate) {
-            const dueDate = typedFilter.dueDate as Record<string, string>;
-            if (dueDate.from) {
-              dueDate.from = new Date(dueDate.from).toISOString();
-            }
-            if (dueDate.to) {
-              dueDate.to = new Date(dueDate.to).toISOString();
-            }
-          }
-          
-          filter = typedFilter;
+    const isProjectMember = membership.length > 0;
+    
+    // If not a project member, check if project is public or if user has organization-level permissions
+    if (!isProjectMember) {
+      // Get the project and its organization
+      const project = await db
+        .select({
+          visibility: projects.visibility,
+          organizationId: projects.organizationId
+        })
+        .from(projects)
+        .where(eq(projects.id, projectId))
+        .limit(1);
+      
+      if (!project.length) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      }
+      
+      // Check if user has organization-level permissions
+      const hasViewPermission = await hasPermission(
+        userId,
+        project[0].organizationId,
+        'read',
+        'task'
+      );
+      
+      // If user doesn't have org-level permissions and project is not public, deny access
+      if (!hasViewPermission && project[0].visibility !== 'public') {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      }
+    }
+    
+    // Parse query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('pageSize') || '10');
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status')?.split(',') || [];
+    const priority = searchParams.get('priority')?.split(',') || [];
+    const includeCompleted = searchParams.get('includeCompleted') !== 'false';
+    const sortField = searchParams.get('sort') || 'priority';
+    const sortDirection = searchParams.get('direction') || 'desc';
+    
+    // Build where conditions
+    const whereConditions = [eq(tasks.projectId, projectId)];
+    
+    // Add search filter
+    if (search) {
+      whereConditions.push(
+        sql`(${tasks.title} LIKE ${`%${search}%`} OR (${tasks.description} IS NOT NULL AND ${tasks.description} LIKE ${`%${search}%`}))`
+      );
+    }
+    
+    // Add status filter
+    if (status.length > 0) {
+      whereConditions.push(inArray(tasks.status, status as Array<"backlog" | "todo" | "in_progress" | "in_review" | "done">));
+    }
+    
+    // Add priority filter
+    if (priority.length > 0) {
+      whereConditions.push(inArray(tasks.priority, priority as Array<"low" | "medium" | "high" | "urgent">));
+    }
+    
+    // Add completed filter
+    if (!includeCompleted) {
+      whereConditions.push(sql`${tasks.status} != 'done'`);
+    }
+    
+    // By default, exclude archived tasks
+    whereConditions.push(isNull(tasks.archivedAt));
+    
+    // Get total count for pagination
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(tasks)
+      .where(and(...whereConditions));
+    
+    const totalItems = Number(totalResult.count);
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const currentPage = Math.min(Math.max(1, page), Math.max(1, totalPages));
+    const offset = (currentPage - 1) * pageSize;
+    
+    // Get paginated tasks with sorting
+    const tasksList = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        description: tasks.description,
+        status: tasks.status,
+        priority: tasks.priority,
+        type: tasks.type,
+        projectId: tasks.projectId,
+        assigneeId: tasks.assigneeId,
+        reporterId: tasks.reporterId,
+        parentTaskId: tasks.parentTaskId,
+        dueDate: tasks.dueDate,
+        startDate: tasks.startDate,
+        estimatedHours: tasks.estimatedHours,
+        actualHours: tasks.actualHours,
+        points: tasks.points,
+        position: tasks.position,
+        labels: tasks.labels,
+        metadata: tasks.metadata,
+        completedAt: tasks.completedAt,
+        createdBy: tasks.createdBy,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        archivedAt: tasks.archivedAt,
+        assigneeName: users.name
+      })
+      .from(tasks)
+      .leftJoin(users, eq(tasks.assigneeId, users.id))
+      .where(and(...whereConditions))
+      .limit(pageSize)
+      .offset(offset);
+    
+    // Apply sorting manually after fetching the data
+    const sortedTasksList = [...tasksList].sort((a, b) => {
+      if (sortField === 'priority') {
+        // Map priority to numeric values for sorting
+        const priorityMap: Record<string, number> = {
+          urgent: 4, high: 3, medium: 2, low: 1
+        };
+        
+        const valueA = priorityMap[a.priority as string] || 0;
+        const valueB = priorityMap[b.priority as string] || 0;
+        
+        // First sort by priority
+        if (valueA !== valueB) {
+          return sortDirection === 'desc' ? valueB - valueA : valueA - valueB;
         }
-      } catch (error) {
-        console.error("Error parsing filter parameters:", error);
+        
+        // Then sort by due date
+        const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        return dateA - dateB;
+      } else if (sortField === 'dueDate') {
+        const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        return sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
+      } else {
+        // Default sort by position
+        return (a.position as number || 0) - (b.position as number || 0);
       }
-    }
+    });
     
-    if (sortParams) {
-      try {
-        const sortData = JSON.parse(sortParams);
-        taskSortSchema.safeParse(sortData);
-        // Sort is no longer used since we removed it from getProjectTasks
-      } catch (error) {
-        console.error("Error parsing sort parameters:", error);
+    // Get subtask, comment, and child task counts
+    const tasksWithMeta = await Promise.all(
+      sortedTasksList.map(async (task: Record<string, unknown>) => {
+        const [subtaskResult] = await db
+          .select({ count: count() })
+          .from(subtasks)
+          .where(eq(subtasks.taskId, task.id as number));
+        
+        const [commentResult] = await db
+          .select({ count: count() })
+          .from(comments)
+          .where(eq(comments.taskId, task.id as number));
+        
+        const [childTaskResult] = await db
+          .select({ count: count() })
+          .from(tasks)
+          .where(
+            and(
+              eq(tasks.parentTaskId, task.id as number),
+              isNull(tasks.archivedAt)
+            )
+          );
+        
+        // Check if task is overdue
+        const isOverdue = task.dueDate && task.status !== 'done' && 
+          new Date(task.dueDate as Date) < new Date() && !task.completedAt;
+        
+        return {
+          ...task,
+          reporterName: undefined,
+          assigneeName: task.assigneeName || undefined,
+          subtaskCount: Number(subtaskResult.count),
+          commentCount: Number(commentResult.count),
+          childTaskCount: Number(childTaskResult.count),
+          isOverdue: isOverdue || false
+        } as TaskWithMeta;
+      })
+    );
+    
+    // Create pagination result
+    const result: PaginatedTasksResult = {
+      tasks: tasksWithMeta,
+      pagination: {
+        currentPage,
+        totalPages,
+        totalItems,
+        pageSize
       }
-    }
+    };
     
-    // Get tasks with filtering
-    const tasks = await getProjectTasks(projectId, filter);
-    
-    return NextResponse.json(tasks);
+    return NextResponse.json(result);
   } catch (error) {
-    console.error(`Error fetching tasks for project ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("must be logged in")) {
-      return NextResponse.json(
-        { error: "You must be logged in to view tasks" },
-        { status: 401 }
-      );
-    }
-    
-    if (error instanceof Error && error.message.includes("don't have access")) {
-      return NextResponse.json(
-        { error: "You don't have access to this project's tasks" },
-        { status: 403 }
-      );
-    }
-    
+    console.error('Error fetching tasks:', error);
     return NextResponse.json(
-      { error: "Failed to fetch tasks" },
+      { error: 'Failed to fetch tasks' },
       { status: 500 }
     );
   }
@@ -147,7 +256,6 @@ export async function GET(
 // POST /api/projects/[id]/tasks - Create a new task
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
 ) {
   try {
     const session = await auth();
@@ -159,7 +267,12 @@ export async function POST(
       );
     }
     
-    const projectId = parseInt(params.id);
+    // Extract project ID from URL path
+    const url = request.url;
+    const pathParts = url.split('/');
+    const projectIdStr = pathParts[pathParts.indexOf('projects') + 1];
+    const projectId = parseInt(projectIdStr);
+    
     if (isNaN(projectId)) {
       return NextResponse.json(
         { error: "Invalid project ID" },
@@ -167,41 +280,61 @@ export async function POST(
       );
     }
     
-    const body = await request.json();
+    const userId = parseInt(session.user.id);
     
-    // Validate input
-    const result = createTaskSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: result.error.format() },
-        { status: 400 }
-      );
-    }
-    
-    // Convert date strings to Date objects if present
-    const taskData = {
-      ...result.data,
+    // Check if user has permission to create tasks in this project
+    const hasCreatePermission = await hasPermission(
+      userId,
       projectId,
-      dueDate: result.data.dueDate ? new Date(result.data.dueDate) : null,
-      startDate: result.data.startDate ? new Date(result.data.startDate) : null
-    };
+      'create',
+      'task'
+    );
     
-    // Create the task
-    const task = await createTask(taskData);
-    
-    return NextResponse.json(task, { status: 201 });
-  } catch (error) {
-    console.error(`Error creating task for project ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("don't have permission")) {
+    if (!hasCreatePermission) {
       return NextResponse.json(
-        { error: "You don't have permission to create tasks in this project" },
+        { error: 'You do not have permission to create tasks in this project' },
         { status: 403 }
       );
     }
     
+    const data = await request.json();
+    
+    // Validate required fields
+    if (!data.title) {
+      return NextResponse.json(
+        { error: 'Title is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Set default values
+    const taskData = {
+      title: data.title,
+      description: data.description || null,
+      status: data.status || 'todo',
+      priority: data.priority || 'medium',
+      type: data.type || 'task',
+      projectId,
+      assigneeId: data.assigneeId || null,
+      reporterId: userId,
+      parentTaskId: data.parentTaskId || null,
+      dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      estimatedHours: data.estimatedHours || null,
+      points: data.points || null,
+      position: data.position || 0,
+      labels: data.labels || [],
+      createdBy: userId
+    };
+    
+    // Insert task
+    const [newTask] = await db.insert(tasks).values(taskData).returning();
+    
+    return NextResponse.json(newTask);
+  } catch (error) {
+    console.error('Error creating task:', error);
     return NextResponse.json(
-      { error: "Failed to create task" },
+      { error: 'Failed to create task' },
       { status: 500 }
     );
   }

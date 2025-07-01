@@ -27,15 +27,25 @@ import {
   SortDirection, 
   TaskSortOption
 } from '@/types/task';
+import { Pagination } from '@/components/ui/pagination';
 
 interface TaskListProps {
   tasks: TaskWithMeta[];
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    pageSize: number;
+  };
   onSortChange?: (sortOption: TaskSortOption) => void;
+  onPageChange?: (page: number) => void;
 }
 
 export default function TaskList({ 
   tasks, 
-  onSortChange
+  pagination,
+  onSortChange,
+  onPageChange
 }: TaskListProps) {
   const [sortField, setSortField] = useState<TaskSortField>(TaskSortField.PRIORITY);
   const [sortDirection, setSortDirection] = useState<SortDirection>(SortDirection.DESC);
@@ -275,6 +285,20 @@ export default function TaskList({
           )}
         </TableBody>
       </Table>
+      
+      {pagination && onPageChange && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={onPageChange}
+          />
+          <div className="text-sm text-gray-500 text-center mt-2">
+            Showing {(pagination.currentPage - 1) * pagination.pageSize + 1}-
+            {Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems)} of {pagination.totalItems} tasks
+          </div>
+        </div>
+      )}
     </div>
   );
 }

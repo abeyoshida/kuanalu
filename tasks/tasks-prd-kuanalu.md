@@ -155,7 +155,7 @@
 - [ ] 6.0 Additional Views (List and Calendar)
   - [x] 6.1 Create list view component for tasks
   - [x] 6.2 Implement sorting and filtering in list view
-  - [ ] 6.3 Add pagination to list view
+  - [x] 6.3 Add pagination to list view
   - [ ] 6.4 Create calendar view component
   - [ ] 6.5 Implement task display by due date in calendar
   - [ ] 6.6 Add month/week/day view options in calendar

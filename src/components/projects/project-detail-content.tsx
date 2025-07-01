@@ -7,8 +7,14 @@ import { Calendar, Clock, AlertCircle, List, Search, X } from "lucide-react";
 import ProjectKanbanBoard from "@/components/project-kanban-board";
 import { useHeader } from "@/components/layout/header-context";
 import TaskList from "@/components/task-list";
-import { getProjectTasks } from "@/lib/actions/task-actions";
-import { TaskFilterOptions, TaskSortOption, TaskSortField, SortDirection, TaskWithMeta } from "@/types/task";
+import { 
+  TaskSortOption, 
+  TaskSortField, 
+  SortDirection, 
+  TaskWithMeta,
+  PaginatedTasksResult,
+  TaskFilterOptions
+} from "@/types/task";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -69,7 +75,11 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("board");
   const [searchTerm, setSearchTerm] = useState("");
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  
   // Set the project name in the header when the component mounts
   useEffect(() => {
     setEntityName(project.name);
@@ -82,24 +92,46 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     
-    // Load tasks when switching to list view
+    // Reset pagination when switching to list view
     if (value === "list") {
+      setCurrentPage(1);
       loadTasks();
     }
   };
   
   // Load tasks
-  const loadTasks = async () => {
+  const loadTasks = async (page = currentPage) => {
     try {
       setIsLoading(true);
-      const filters: TaskFilterOptions = {};
+      const filters: TaskFilterOptions = {
+        page,
+        pageSize
+      };
       
       if (searchTerm) {
         filters.search = searchTerm;
       }
       
-      const projectTasks = await getProjectTasks(project.id, filters);
-      setTasks(projectTasks);
+      // Call the API with pagination parameters and sorting
+      const response = await fetch(`/api/projects/${project.id}/tasks?` + new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+        sort: TaskSortField.PRIORITY,
+        direction: SortDirection.DESC,
+        ...(searchTerm ? { search: searchTerm } : {})
+      }));
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks');
+      }
+      
+      const data: PaginatedTasksResult = await response.json();
+      
+      setTasks(data.tasks);
+      setCurrentPage(data.pagination.currentPage);
+      setTotalPages(data.pagination.totalPages);
+      setTotalItems(data.pagination.totalItems);
+      setPageSize(data.pagination.pageSize);
     } catch (error) {
       console.error("Error loading tasks:", error);
     } finally {
@@ -110,11 +142,18 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
   // Handle search
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+    setCurrentPage(1); // Reset to first page on new search
     
     // Only fetch if we're on the list tab
     if (activeTab === "list") {
-      loadTasks();
+      loadTasks(1);
     }
+  };
+  
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    loadTasks(page);
   };
   
   // Handle sort
@@ -195,6 +234,13 @@ export default function ProjectDetailContent({ project }: ProjectDetailContentPr
                   <TaskList 
                     tasks={tasks} 
                     onSortChange={handleSort}
+                    pagination={{
+                      currentPage,
+                      totalPages,
+                      totalItems,
+                      pageSize
+                    }}
+                    onPageChange={handlePageChange}
                   />
                 )}
               </CardContent>
