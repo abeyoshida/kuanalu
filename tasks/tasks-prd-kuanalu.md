@@ -6,8 +6,8 @@
 - `lib/db/index.ts` - Database connection setup
 - `components/auth/` - Authentication components
 - `components/ui/` - Reusable UI components
-- `components/kanban-board.tsx` - Kanban board component
-- `components/kanban-column.tsx` - Kanban column component for displaying tasks
+- `components/kanban-board.tsx` - Kanban board component with responsive design
+- `components/kanban-column.tsx` - Kanban column component for displaying tasks with responsive layout
 - `components/kanban-filter.tsx` - Filter component for tasks
 - `components/kanban-sort.tsx` - Sort component for tasks
 - `components/create-task-dialog.tsx` - Dialog for creating new tasks

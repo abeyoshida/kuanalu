@@ -8,6 +8,9 @@ import CreateTaskDialog from "@/components/create-task-dialog"
 import type { TaskStatus } from "@/types/tasks"
 import { getProjectTasks, updateTaskPositions } from "@/lib/actions/task-actions"
 import { TaskWithMeta, TaskSortField, SortDirection } from "@/types/task"
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ProjectKanbanBoardProps {
   projectId: number
@@ -53,6 +56,8 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
     field: TaskSortField.PRIORITY,
     direction: SortDirection.DESC,
   })
+  const [visibleColumnIndex, setVisibleColumnIndex] = useState(0);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   // Fetch tasks on component mount
   useEffect(() => {
@@ -250,9 +255,40 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
     setSort(newSort)
   }
 
-  const getTasksByStatus = (status: TaskStatus) => {
-    return sortedTasks.filter((task) => task.status === status)
+  const handleTaskCreated = async () => {
+    try {
+      setIsLoading(true)
+      const projectTasks = await getProjectTasks(projectId)
+      if (projectTasks && Array.isArray(projectTasks)) {
+        setAllTasks(projectTasks.map(mapDbTaskToUiTask))
+        setError(null)
+      }
+    } catch (err) {
+      console.error("Failed to refresh tasks:", err)
+      setError("Failed to refresh tasks. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
+
+  // Function to handle column navigation for mobile view
+  const handlePreviousColumn = () => {
+    setVisibleColumnIndex(prev => Math.max(0, prev - 1));
+  };
+  
+  const handleNextColumn = () => {
+    setVisibleColumnIndex(prev => Math.min(columns.length - 1, prev + 1));
+  };
+  
+  // Determine which columns to display based on screen size
+  const visibleColumns = useMemo(() => {
+    if (isMobile) {
+      // On mobile, show only one column at a time
+      return [columns[visibleColumnIndex]];
+    }
+    // On desktop, show all columns
+    return columns;
+  }, [isMobile, visibleColumnIndex]);
 
   if (isLoading) {
     return <div className="flex justify-center p-8">Loading tasks...</div>
@@ -292,79 +328,88 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
   }
 
   return (
-    <div className="max-w-full">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 flex-grow">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
           <KanbanFilter 
             onFilterChange={handleFilterChange} 
-            assignees={assignees} 
+            assignees={assignees}
           />
-          <KanbanSort
-            onSortChange={handleSortChange}
-            currentSort={sort}
-          />
+          <KanbanSort onSortChange={handleSortChange} currentSort={sort} />
         </div>
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex justify-end">
           <CreateTaskDialog 
             projectId={projectId} 
-            onTaskCreated={async () => {
-              try {
-                setIsLoading(true)
-                const projectTasks = await getProjectTasks(projectId)
-                setAllTasks(projectTasks.map(mapDbTaskToUiTask))
-                setError(null)
-              } catch (err) {
-                console.error("Failed to refresh tasks:", err)
-                setError("Failed to refresh tasks. Please try again.")
-              } finally {
-                setIsLoading(false)
-              }
-            }}
+            onTaskCreated={handleTaskCreated}
           />
         </div>
       </div>
       
-      <div className="flex flex-nowrap gap-3 md:gap-4 lg:gap-5 overflow-x-auto pb-6 snap-x snap-mandatory md:justify-between">
-        {columns.map((column) => (
-          <div key={column.id} className="snap-start snap-always">
-            <KanbanColumn
-              title={column.title}
-              color={column.color}
-              tasks={getTasksByStatus(column.id)}
-              projectId={projectId}
-              onDragOver={(e) => handleDragOver(e, column.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, column.id)}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              isActiveDropTarget={activeDropColumn === column.id}
-              draggedTaskId={draggedTask?.id}
-              onTaskCreated={async () => {
-                try {
-                  setIsLoading(true)
-                  const projectTasks = await getProjectTasks(projectId)
-                  setAllTasks(projectTasks.map(mapDbTaskToUiTask))
-                  setError(null)
-                } catch (err) {
-                  console.error("Failed to refresh tasks:", err)
-                  setError("Failed to refresh tasks. Please try again.")
-                } finally {
-                  setIsLoading(false)
-                }
-              }}
-            />
-          </div>
-        ))}
-      </div>
-      
-      {/* Mobile scroll indicator */}
-      <div className="mt-2 flex justify-center sm:hidden">
-        <div className="flex gap-1">
-          {columns.map((_, index) => (
-            <div key={index} className="h-1 w-8 bg-gray-300 rounded-full"></div>
-          ))}
+      {error && (
+        <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
+          {error}
         </div>
-      </div>
+      )}
+      
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      ) : (
+        <div className="relative">
+          {isMobile && (
+            <div className="flex justify-between items-center mb-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handlePreviousColumn}
+                disabled={visibleColumnIndex === 0}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-medium">
+                {columns[visibleColumnIndex].title} ({visibleColumnIndex + 1}/{columns.length})
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleNextColumn}
+                disabled={visibleColumnIndex === columns.length - 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
+          <div className="flex overflow-x-auto pb-4 gap-4 min-h-[300px] sm:min-h-[400px] md:min-h-[500px] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            {visibleColumns.map((column) => {
+              const columnTasks = sortedTasks.filter(
+                (task) => task.status === column.id
+              );
+              
+              return (
+                <KanbanColumn
+                  key={column.id}
+                  title={column.title}
+                  color={column.color}
+                  tasks={columnTasks}
+                  projectId={projectId}
+                  onDragOver={(e) => handleDragOver(e, column.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, column.id)}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  isActiveDropTarget={activeDropColumn === column.id}
+                  draggedTaskId={draggedTask?.id}
+                  onTaskCreated={handleTaskCreated}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 } 

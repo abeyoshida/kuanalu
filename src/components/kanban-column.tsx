@@ -50,7 +50,7 @@ export default function KanbanColumn<T extends Task = Task>({
   };
 
   return (
-    <div className="flex-shrink-0 w-[280px] md:w-[240px] lg:w-[220px] xl:w-[250px] 2xl:w-[280px]">
+    <div className="flex-shrink-0 w-full sm:w-[280px] md:w-[240px] lg:w-[220px] xl:w-[250px] 2xl:w-[280px]">
       <div className={`rounded-lg ${color} px-2.5 py-0.5 mb-1.5`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
