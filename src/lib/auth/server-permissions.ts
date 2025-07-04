@@ -2,8 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth/auth';
-import { db } from "@/lib/db";
-import { organizationMembers } from "@/lib/db/schema";
+import { db } from "../db";
+import { users, organizationMembers, projectMembers } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import { Role, Permission, rolePermissions } from './permissions-data';
 
@@ -323,5 +323,29 @@ export async function isOrganizationOwner(
   } catch (error) {
     console.error('Owner check error:', error);
     return false;
+  }
+}
+
+/**
+ * Get the current user from the session
+ * @returns The current user or null if not authenticated
+ */
+export async function getCurrentUser() {
+  try {
+    const session = await auth();
+    
+    if (!session?.user?.email) {
+      return null;
+    }
+    
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, session.user.email));
+    
+    return user || null;
+  } catch (error) {
+    console.error("Error getting current user:", error);
+    return null;
   }
 } 

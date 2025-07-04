@@ -5,8 +5,10 @@ import { db } from "@/lib/db";
 import { invitations, users, organizationMembers, organizations } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { hasPermission, Role } from "@/lib/auth/permissions";
+import { hasPermission } from "@/lib/auth/permissions";
+import { Role } from "@/lib/auth/client-permissions";
 import { randomUUID } from "crypto";
+import { sendInvitationEmailAction } from './email-actions';
 
 interface InvitationResult {
   success: boolean;
@@ -123,7 +125,35 @@ export async function inviteUserToOrganization(
         createdAt: new Date(),
       });
     
-    // TODO: Send invitation email to the user
+    // Get organization details for the email
+    const organization = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, organizationId))
+      .limit(1)
+      .then(results => results[0]);
+    
+    if (!organization) {
+      throw new Error("Organization not found");
+    }
+    
+    // Send invitation email
+    try {
+      await sendInvitationEmailAction({
+        inviteeEmail: email,
+        organizationName: organization.name,
+        invitationToken: token,
+        role: role,
+        expiresAt: expiresAt,
+        organizationId: organizationId,
+      });
+      
+      console.log(`Invitation email queued for ${email}`);
+    } catch (emailError) {
+      console.error("Error sending invitation email:", emailError);
+      // Continue with the invitation process even if email fails
+      // The invitation is still created in the database
+    }
     
     revalidatePath(`/organizations/${organizationId}`);
     

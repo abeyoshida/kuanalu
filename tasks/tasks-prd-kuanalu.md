@@ -167,13 +167,46 @@
 
 - [ ] 7.0 Email Notifications
   - [ ] 7.1 Set up email service provider
+    - [x] 7.1.1 Install Resend and React Email packages
+    - [x] 7.1.2 Set up environment variables for Resend API key
+    - [x] 7.1.3 Create email utility functions for sending emails
+    - [x] 7.1.4 Set up email queue table in the database schema
+    - [x] 7.1.5 Create email queue processing functionality
+    - [x] 7.1.6 Implement email preview functionality for development
+    - [x] 7.1.7 Set up webhook handler for email delivery status
   - [ ] 7.2 Create email templates for notifications
+    - [x] 7.2.1 Create base email layout component
+    - [x] 7.2.2 Create organization invitation email template
+    - [ ] 7.2.3 Create task assignment notification template
+    - [ ] 7.2.4 Create task update notification template
+    - [ ] 7.2.5 Create comment notification template
   - [ ] 7.3 Implement task assignment notification
+    - [ ] 7.3.1 Update task assignment logic to trigger email notifications
+    - [ ] 7.3.2 Create server action for sending assignment notifications
+    - [ ] 7.3.3 Add assignment notification to task card and detail view
   - [ ] 7.4 Add task update notification logic
+    - [ ] 7.4.1 Identify key task updates that should trigger notifications
+    - [ ] 7.4.2 Implement notification logic in task update actions
+    - [ ] 7.4.3 Add recipients determination logic based on task watchers
   - [ ] 7.5 Create comment notification system
+    - [ ] 7.5.1 Update comment creation to trigger notifications
+    - [ ] 7.5.2 Implement mention detection in comments
+    - [ ] 7.5.3 Send notifications to task assignee and mentioned users
   - [ ] 7.6 Implement notification preferences for users
+    - [ ] 7.6.1 Add notification preferences to user schema
+    - [ ] 7.6.2 Create notification settings UI in user profile
+    - [ ] 7.6.3 Update notification sending logic to respect user preferences
   - [ ] 7.7 Add email queue for reliable delivery
-  - [ ] 7.8 Create notification history page 
+    - [ ] 7.7.1 Implement retry logic for failed email sends
+    - [ ] 7.7.2 Create background job for processing email queue
+    - [ ] 7.7.3 Set up monitoring for email delivery status
+  - [ ] 7.8 Create notification history page
+    - [ ] 7.8.1 Add notification history table to database schema
+    - [ ] 7.8.2 Create notification history UI component
+    - [ ] 7.8.3 Implement notification read/unread status
+  - [ ] 7.9 Implement organization invitation system
+    - [x] 7.9.1 Update invitation dialog to send emails
+    - [ ] 7.9.2 Create invitation acceptance route and page
 
 - [ ] 8.0 Permissions System Enhancement
   - [x] 8.1 Update user registration to include organization creation

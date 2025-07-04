@@ -85,6 +85,23 @@ export const visibilityEnum = pgEnum('visibility', [
   'private'
 ]);
 
+// Email status enum
+export const emailStatusEnum = pgEnum('email_status', [
+  'pending',
+  'sent',
+  'failed',
+  'retrying'
+]);
+
+// Email notification type enum
+export const emailNotificationTypeEnum = pgEnum('email_notification_type', [
+  'invitation',
+  'task_assignment',
+  'task_update',
+  'comment',
+  'mention'
+]);
+
 // Organizations table
 export const organizations = pgTable('organizations', {
   id: serial('id').primaryKey(),
@@ -311,6 +328,47 @@ export const invitations = pgTable('invitations', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
+// Email queue table
+export const emailQueue = pgTable('email_queue', {
+  id: serial('id').primaryKey(),
+  to: text('to').notNull(), // Can be a single email or JSON array of emails
+  subject: text('subject').notNull(),
+  htmlContent: text('html_content').notNull(),
+  textContent: text('text_content'),
+  from: text('from').notNull(),
+  cc: text('cc'), // Can be a single email or JSON array of emails
+  bcc: text('bcc'), // Can be a single email or JSON array of emails
+  replyTo: text('reply_to'),
+  status: emailStatusEnum('status').notNull().default('pending'),
+  attempts: integer('attempts').notNull().default(0),
+  maxAttempts: integer('max_attempts').notNull().default(3),
+  error: text('error'),
+  sentAt: timestamp('sent_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  nextAttemptAt: timestamp('next_attempt_at'),
+  metadata: jsonb('metadata'), // Additional metadata about the email
+  emailId: text('email_id'), // ID returned from the email service provider
+  userId: integer('user_id').references(() => users.id), // Optional reference to user who triggered the email
+  organizationId: integer('organization_id').references(() => organizations.id), // Optional reference to organization
+  resourceType: text('resource_type'), // Type of resource this email is about (e.g., task, invitation)
+  resourceId: integer('resource_id'), // ID of the resource this email is about
+});
+
+// Email notifications table
+export const emailNotifications = pgTable('email_notifications', {
+  id: serial('id').primaryKey(),
+  type: emailNotificationTypeEnum('type').notNull(),
+  recipientId: integer('recipient_id').notNull().references(() => users.id),
+  senderId: integer('sender_id').references(() => users.id), // User who triggered the notification
+  resourceType: text('resource_type'), // Type of resource (task, comment, etc.)
+  resourceId: integer('resource_id'), // ID of the resource
+  emailId: text('email_id'), // ID returned from email service
+  read: boolean('read').notNull().default(false),
+  data: jsonb('data'), // Additional data about the notification
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Define relations
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   members: many(organizationMembers),
@@ -333,7 +391,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   resolvedComments: many(comments, { relationName: 'resolver' }),
   sentInvitations: many(invitations, { relationName: 'inviter' }),
   sessions: many(userSessions),
-  permissions: many(userPermissions)
+  permissions: many(userPermissions),
+  receivedNotifications: many(emailNotifications, { relationName: 'recipient' }),
+  sentNotifications: many(emailNotifications, { relationName: 'sender' }),
+  emailQueue: many(emailQueue)
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -496,5 +557,29 @@ export const userPermissionsRelations = relations(userPermissions, ({ one }) => 
   project: one(projects, {
     fields: [userPermissions.projectId],
     references: [projects.id]
+  })
+}));
+
+// Email queue relations
+export const emailQueueRelations = relations(emailQueue, ({ one }) => ({
+  user: one(users, {
+    fields: [emailQueue.userId],
+    references: [users.id]
+  }),
+  organization: one(organizations, {
+    fields: [emailQueue.organizationId],
+    references: [organizations.id]
+  })
+}));
+
+// Email notifications relations
+export const emailNotificationsRelations = relations(emailNotifications, ({ one }) => ({
+  recipient: one(users, {
+    fields: [emailNotifications.recipientId],
+    references: [users.id]
+  }),
+  sender: one(users, {
+    fields: [emailNotifications.senderId],
+    references: [users.id]
   })
 })); 
