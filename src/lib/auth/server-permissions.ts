@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth/auth';
 import { db } from "../db";
-import { users, organizationMembers, projectMembers } from "../db/schema";
+import { users, organizationMembers } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import { Role, Permission, rolePermissions } from './permissions-data';
 

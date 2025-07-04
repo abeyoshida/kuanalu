@@ -1,5 +1,5 @@
-import { queueEmail, createEmailNotification, getUnreadNotifications, markNotificationAsRead, addToQueue } from '@/lib/email/queue';
-import { EmailOptions, EmailNotificationType } from '@/lib/email/types';
+import { createEmailNotification, getUnreadNotifications, markNotificationAsRead, addToQueue } from '@/lib/email/queue';
+import { EmailNotificationType } from '@/lib/email/types';
 import { InvitationEmail } from '@/components/email/invitation-email';
 import { auth } from '@/lib/auth/auth';
 import { db } from '@/lib/db';
@@ -62,7 +62,7 @@ export async function queueEmailAction({
     bcc?: string | string[];
     replyTo?: string;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   userId?: number;
   organizationId?: number;
   resourceType?: string;
@@ -198,7 +198,7 @@ export async function createNotificationAction({
 }: {
   type: EmailNotificationType;
   recipientId: number;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   senderId?: number;
   resourceType?: string;
   resourceId?: number;

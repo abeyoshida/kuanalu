@@ -2,7 +2,6 @@ import { Resend } from 'resend';
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { emailQueue } from '@/lib/db/schema';
-import React from 'react';
 
 // Define the EmailOptions type
 export interface EmailOptions {
@@ -39,7 +38,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
     }
 
     // Prepare email data with required fields
-    const emailData: any = {
+    const emailData: Record<string, unknown> = {
       from: options.from || "noreply@emails.hogalulu.com",
       to: options.to,
       subject: options.subject,
@@ -57,7 +56,8 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       emailData.text = 'No content provided'; // Fallback text
     }
 
-    const { data, error } = await resendClient.emails.send(emailData);
+    // Type assertion needed because the Resend API expects specific types
+    const { data, error } = await resendClient.emails.send(emailData as unknown as Parameters<typeof resendClient.emails.send>[0]);
 
     if (error || !data) {
       console.error('Failed to send email:', error);

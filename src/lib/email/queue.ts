@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { emailQueue, emailNotifications } from '@/lib/db/schema';
-import { EmailOptions, EmailStatus, EmailNotificationType } from './types';
+import { EmailOptions, EmailNotificationType } from './types';
 import { renderEmail, renderEmailText } from './render';
 import { eq, and, lt, sql, or, lte } from 'drizzle-orm';
 import { sendEmail } from './client';
@@ -26,12 +26,12 @@ export async function queueEmail({
   resourceId,
 }: {
   options: EmailOptions;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   userId?: number;
   organizationId?: number;
   resourceType?: string;
   resourceId?: number;
-}): Promise<any> {
+}): Promise<unknown> {
   try {
     // Ensure react is a React element
     const reactElement = options.react as React.ReactElement;
@@ -58,7 +58,7 @@ export async function queueEmail({
       status: 'pending',
       attempts: 0,
       maxAttempts: 3,
-      metadata: metadata as any,
+      metadata: metadata as unknown,
       userId,
       organizationId,
       resourceType,
@@ -157,15 +157,17 @@ export async function processEmailQueue(limit = 10): Promise<number> {
         }
 
         processedCount++;
-      } catch (error: any) {
+      } catch (error) {
         console.error(`Error processing email ${email.id}:`, error);
+        
+        const errorMessage = error instanceof Error ? error.message : String(error);
         
         // Update email status to failed
         await db.update(emailQueue)
           .set({
             status: 'failed',
             attempts: email.attempts + 1,
-            error: error.message || String(error),
+            error: errorMessage,
             updatedAt: new Date(),
             nextAttemptAt: calculateNextAttempt(email.attempts + 1),
           })
@@ -218,7 +220,7 @@ export async function createEmailNotification({
 }: {
   type: EmailNotificationType;
   recipientId: number;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   senderId?: number;
   resourceType?: string;
   resourceId?: number;
@@ -233,7 +235,7 @@ export async function createEmailNotification({
       resourceId,
       emailId,
       read: false,
-      data: data as any,
+      data: data as unknown,
     }).returning();
 
     return notification;
@@ -297,7 +299,7 @@ export async function addToQueue(options: {
   cc?: string | string[];
   bcc?: string | string[];
   replyTo?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   userId?: number;
   organizationId?: number;
   resourceType?: string;

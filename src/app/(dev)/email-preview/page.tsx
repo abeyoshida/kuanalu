@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function EmailPreviewPage() {
@@ -20,20 +20,6 @@ export default function EmailPreviewPage() {
   const [role, setRole] = useState('member');
   const [previewUrl, setPreviewUrl] = useState('');
 
-  useEffect(() => {
-    // Check if we're in development mode
-    fetch('/api/email/preview', { method: 'HEAD' })
-      .then(response => {
-        if (response.status !== 403) {
-          setIsDev(true);
-          updatePreviewUrl();
-        }
-      })
-      .catch(() => {
-        setIsDev(false);
-      });
-  }, []);
-
   const updatePreviewUrl = () => {
     let url = `/api/email/preview?type=${emailType}`;
     
@@ -46,6 +32,20 @@ export default function EmailPreviewPage() {
     
     setPreviewUrl(url);
   };
+
+  useEffect(() => {
+    // Check if we're in development mode
+    fetch('/api/email/preview', { method: 'HEAD' })
+      .then(response => {
+        if (response.status !== 403) {
+          setIsDev(true);
+          updatePreviewUrl();
+        }
+      })
+      .catch(() => {
+        setIsDev(false);
+      });
+  }, [updatePreviewUrl]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

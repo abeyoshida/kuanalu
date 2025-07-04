@@ -37,8 +37,8 @@ export const InvitationEmail = ({
     .join(' ');
 
   return (
-    <BaseEmailLayout previewText={`You've been invited to join ${organizationName}`}>
-      <Heading style={styles.heading}>You've been invited!</Heading>
+    <BaseEmailLayout previewText={`You&apos;ve been invited to join ${organizationName}`}>
+      <Heading style={styles.heading}>You&apos;ve been invited!</Heading>
       
       <Text style={styles.text}>
         Hello{' '}
@@ -65,11 +65,11 @@ export const InvitationEmail = ({
       </Text>
       
       <Text style={styles.text}>
-        If you don't have an account yet, you'll be able to create one when you accept the invitation.
+        If you don&apos;t have an account yet, you&apos;ll be able to create one when you accept the invitation.
       </Text>
       
       <Text style={styles.text}>
-        If you can't click the button above, copy and paste this URL into your browser:
+        If you can&apos;t click the button above, copy and paste this URL into your browser:
       </Text>
       
       <Text style={styles.link}>

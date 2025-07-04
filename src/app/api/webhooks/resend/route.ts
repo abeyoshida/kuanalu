@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { emailQueue, emailStatusEnum } from '@/lib/db/schema';
+import { emailQueue } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
-import { SQL } from 'drizzle-orm';
 
 // Define the types for the webhook payload
 type ResendWebhookEvent = {
@@ -13,9 +12,46 @@ type ResendWebhookEvent = {
     to: string;
     from: string;
     created_at: string;
-    [key: string]: any; // Additional properties depending on event type
+    reason?: string;
+    ip?: string;
+    user_agent?: string;
+    location?: string;
+    url?: string;
+    [key: string]: unknown;
   };
 };
+
+type EmailStatus = 'pending' | 'sent' | 'failed' | 'retrying';
+
+interface EmailEventData {
+  event: string;
+  timestamp: Date;
+  ip?: string;
+  userAgent?: string;
+  location?: string;
+  url?: string;
+}
+
+interface EmailMetadata {
+  opens?: number;
+  openEvents?: Array<{
+    timestamp: Date;
+    ip?: string;
+    userAgent?: string;
+    location?: string;
+  }>;
+  lastOpened?: Date;
+  clicks?: number;
+  clickEvents?: Array<{
+    timestamp: Date;
+    ip?: string;
+    userAgent?: string;
+    location?: string;
+    url?: string;
+  }>;
+  lastClicked?: Date;
+  [key: string]: unknown;
+}
 
 /**
  * Verify the webhook signature from Resend
@@ -137,11 +173,11 @@ export async function POST(request: NextRequest) {
 /**
  * Update the email status in the database
  */
-async function updateEmailStatus(emailId: string, status: 'pending' | 'sent' | 'failed' | 'retrying') {
+async function updateEmailStatus(emailId: string, status: EmailStatus) {
   try {
     await db.update(emailQueue)
       .set({
-        status: status as any, // Cast to any to bypass type checking
+        status,
         updatedAt: new Date(),
       })
       .where(eq(emailQueue.emailId, emailId));
@@ -153,11 +189,11 @@ async function updateEmailStatus(emailId: string, status: 'pending' | 'sent' | '
 /**
  * Update the email status and error message in the database
  */
-async function updateEmailWithError(emailId: string, status: 'pending' | 'sent' | 'failed' | 'retrying', errorMessage: string) {
+async function updateEmailWithError(emailId: string, status: EmailStatus, errorMessage: string) {
   try {
     await db.update(emailQueue)
       .set({
-        status: status as any, // Cast to any to bypass type checking
+        status,
         error: errorMessage,
         updatedAt: new Date(),
       })
@@ -170,7 +206,7 @@ async function updateEmailWithError(emailId: string, status: 'pending' | 'sent' 
 /**
  * Update the email metadata in the database
  */
-async function updateEmailMetadata(emailId: string, eventData: any) {
+async function updateEmailMetadata(emailId: string, eventData: EmailEventData) {
   try {
     // First get the current email record
     const emails = await db.select()
@@ -183,12 +219,12 @@ async function updateEmailMetadata(emailId: string, eventData: any) {
     }
     
     const email = emails[0];
-    const metadata = email.metadata || {};
+    const metadata = (email.metadata as EmailMetadata) || {};
     
     // Update the metadata based on the event type
     if (eventData.event === 'opened') {
-      const opens = (metadata as any).opens || 0;
-      const openEvents = (metadata as any).openEvents || [];
+      const opens = metadata.opens || 0;
+      const openEvents = metadata.openEvents || [];
       
       openEvents.push({
         timestamp: eventData.timestamp,
@@ -204,12 +240,12 @@ async function updateEmailMetadata(emailId: string, eventData: any) {
             opens: opens + 1,
             openEvents,
             lastOpened: eventData.timestamp,
-          },
+          } as unknown,
         })
         .where(eq(emailQueue.emailId, emailId));
     } else if (eventData.event === 'clicked') {
-      const clicks = (metadata as any).clicks || 0;
-      const clickEvents = (metadata as any).clickEvents || [];
+      const clicks = metadata.clicks || 0;
+      const clickEvents = metadata.clickEvents || [];
       
       clickEvents.push({
         timestamp: eventData.timestamp,
@@ -226,194 +262,11 @@ async function updateEmailMetadata(emailId: string, eventData: any) {
             clicks: clicks + 1,
             clickEvents,
             lastClicked: eventData.timestamp,
-          },
+          } as unknown,
         })
         .where(eq(emailQueue.emailId, emailId));
     }
   } catch (error) {
     console.error(`Error updating email metadata:`, error);
-  }
-}
-
-/**
- * Handle email.sent event
- * 
- * @param data The event data
- */
-async function handleEmailSent(data: any) {
-  try {
-    // Update the email status in the database
-    await db.update(emailQueue)
-      .set({
-        status: 'sent',
-        updatedAt: new Date(),
-      })
-      .where(eq(emailQueue.emailId, data.email_id));
-  } catch (error) {
-    console.error('Error handling email.sent webhook:', error);
-  }
-}
-
-/**
- * Handle email.delivered event
- * 
- * @param data The event data
- */
-async function handleEmailDelivered(data: any) {
-  try {
-    // Update the email status in the database
-    await db.update(emailQueue)
-      .set({
-        status: 'sent',
-        updatedAt: new Date(),
-      })
-      .where(eq(emailQueue.emailId, data.email_id));
-  } catch (error) {
-    console.error('Error handling email.delivered webhook:', error);
-  }
-}
-
-/**
- * Handle email.delivery_delayed event
- * 
- * @param data The event data
- */
-async function handleEmailDeliveryDelayed(data: any) {
-  try {
-    // Update the email status in the database
-    await db.update(emailQueue)
-      .set({
-        status: 'failed',
-        updatedAt: new Date(),
-        error: `Delivery delayed: ${data.reason || 'Unknown reason'}`,
-      })
-      .where(eq(emailQueue.emailId, data.email_id));
-  } catch (error) {
-    console.error('Error handling email.delivery_delayed webhook:', error);
-  }
-}
-
-/**
- * Handle email.complained event
- * 
- * @param data The event data
- */
-async function handleEmailComplained(data: any) {
-  try {
-    // Update the email status in the database
-    await db.update(emailQueue)
-      .set({
-        status: 'failed',
-        updatedAt: new Date(),
-        error: 'Recipient marked as spam',
-      })
-      .where(eq(emailQueue.emailId, data.email_id));
-    
-    // TODO: Consider adding the recipient to a suppression list
-  } catch (error) {
-    console.error('Error handling email.complained webhook:', error);
-  }
-}
-
-/**
- * Handle email.bounced event
- * 
- * @param data The event data
- */
-async function handleEmailBounced(data: any) {
-  try {
-    // Update the email status in the database
-    await db.update(emailQueue)
-      .set({
-        status: 'failed',
-        updatedAt: new Date(),
-        error: `Bounced: ${data.reason || 'Unknown reason'}`,
-      })
-      .where(eq(emailQueue.emailId, data.email_id));
-    
-    // TODO: Consider adding the recipient to a suppression list if it's a hard bounce
-  } catch (error) {
-    console.error('Error handling email.bounced webhook:', error);
-  }
-}
-
-/**
- * Handle email.opened event
- * 
- * @param data The event data
- */
-async function handleEmailOpened(data: any) {
-  try {
-    // Update the email metadata in the database
-    const [email] = await db.select().from(emailQueue).where(eq(emailQueue.emailId, data.email_id));
-    
-    if (email) {
-      const metadata = email.metadata || {};
-      const opens = (metadata as any).opens || 0;
-      const openEvents = (metadata as any).openEvents || [];
-      
-      // Add this open event
-      openEvents.push({
-        timestamp: new Date(),
-        ip: data.ip,
-        user_agent: data.user_agent,
-        location: data.location,
-      });
-      
-      // Update the metadata
-      await db.update(emailQueue)
-        .set({
-          metadata: {
-            ...metadata,
-            opens: opens + 1,
-            openEvents,
-            lastOpened: new Date(),
-          },
-        })
-        .where(eq(emailQueue.emailId, data.email_id));
-    }
-  } catch (error) {
-    console.error('Error handling email.opened webhook:', error);
-  }
-}
-
-/**
- * Handle email.clicked event
- * 
- * @param data The event data
- */
-async function handleEmailClicked(data: any) {
-  try {
-    // Update the email metadata in the database
-    const [email] = await db.select().from(emailQueue).where(eq(emailQueue.emailId, data.email_id));
-    
-    if (email) {
-      const metadata = email.metadata || {};
-      const clicks = (metadata as any).clicks || 0;
-      const clickEvents = (metadata as any).clickEvents || [];
-      
-      // Add this click event
-      clickEvents.push({
-        timestamp: new Date(),
-        ip: data.ip,
-        user_agent: data.user_agent,
-        location: data.location,
-        url: data.url,
-      });
-      
-      // Update the metadata
-      await db.update(emailQueue)
-        .set({
-          metadata: {
-            ...metadata,
-            clicks: clicks + 1,
-            clickEvents,
-            lastClicked: new Date(),
-          },
-        })
-        .where(eq(emailQueue.emailId, data.email_id));
-    }
-  } catch (error) {
-    console.error('Error handling email.clicked webhook:', error);
   }
 } 

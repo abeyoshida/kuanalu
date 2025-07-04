@@ -68,7 +68,7 @@ export interface EmailNotification {
   resourceType?: string;
   emailId?: string;
   read: boolean;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   createdAt: Date;
 }
 
