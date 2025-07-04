@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,7 @@ export default function EmailPreviewPage() {
   const [role, setRole] = useState('member');
   const [previewUrl, setPreviewUrl] = useState('');
 
-  const updatePreviewUrl = () => {
+  const updatePreviewUrl = useCallback(() => {
     let url = `/api/email/preview?type=${emailType}`;
     
     if (emailType === 'invitation') {
@@ -31,7 +31,7 @@ export default function EmailPreviewPage() {
     }
     
     setPreviewUrl(url);
-  };
+  }, [emailType, email, orgName, inviterName, role]);
 
   useEffect(() => {
     // Check if we're in development mode
