@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { renderEmail } from '@/lib/email/render';
 import { InvitationEmail } from '@/components/email/invitation-email';
+import { TaskAssignmentEmail } from '@/components/email/task-assignment-email';
 import React from 'react';
 
 /**
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') || 'invitation';
     
     // Render the appropriate email template
-    let emailHtml;
+    let emailComponent;
     
     if (type === 'invitation') {
       const inviteeEmail = searchParams.get('email') || 'user@example.com';
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
       expiresAt.setDate(expiresAt.getDate() + 7);
       
       // Render the invitation email
-      const emailComponent = React.createElement(InvitationEmail, {
+      emailComponent = React.createElement(InvitationEmail, {
         inviteeEmail,
         organizationName,
         inviterName,
@@ -48,11 +49,24 @@ export async function GET(request: NextRequest) {
         role,
         expiresAt,
       });
-      
-      emailHtml = await renderEmail(emailComponent);
+    } else if (type === 'task-assignment') {
+      emailComponent = React.createElement(TaskAssignmentEmail, {
+        recipientEmail: 'user@example.com',
+        recipientName: 'Jane Smith',
+        assignerName: 'John Doe',
+        taskTitle: 'Implement email notifications',
+        taskId: 123,
+        projectName: 'Kuanalu Email System',
+        organizationName: 'Acme Inc.',
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        priority: 'high',
+      });
     } else {
       return NextResponse.json({ error: 'Invalid email type' }, { status: 400 });
     }
+    
+    // Render the email
+    const emailHtml = await renderEmail(emailComponent);
     
     // Return the rendered HTML
     return new NextResponse(emailHtml, {
@@ -61,9 +75,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error previewing email:', error);
+    console.error('Error generating email preview:', error);
     return NextResponse.json(
-      { error: 'Failed to preview email' },
+      { error: 'Failed to generate email preview' },
       { status: 500 }
     );
   }

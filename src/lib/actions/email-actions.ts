@@ -7,6 +7,7 @@ import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import React from 'react';
 import { renderEmail, renderEmailText } from '@/lib/email/render';
+import { sendTaskAssignmentEmail } from '@/lib/email/send-task-assignment';
 
 /**
  * Get the current user from the session
@@ -261,6 +262,98 @@ export async function markNotificationAsReadAction(id: number) {
     return await markNotificationAsRead(id);
   } catch (error) {
     console.error('Error marking notification as read:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send a task assignment email
+ * 
+ * @param recipientEmail The email address of the recipient
+ * @param recipientName The name of the recipient
+ * @param taskTitle The title of the task
+ * @param taskId The ID of the task
+ * @param projectName The name of the project
+ * @param organizationName The name of the organization
+ * @param dueDate Optional due date for the task
+ * @param priority Optional priority of the task
+ * @returns The created email queue item
+ */
+export async function sendTaskAssignmentEmailAction({
+  recipientEmail,
+  recipientName,
+  taskTitle,
+  taskId,
+  projectName,
+  organizationName,
+  dueDate,
+  priority,
+}: {
+  recipientEmail: string;
+  recipientName: string;
+  taskTitle: string;
+  taskId: number;
+  projectName: string;
+  organizationName: string;
+  dueDate?: Date;
+  priority?: string;
+}) {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Unauthorized');
+    }
+
+    const assignerName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.name || 'A user';
+    
+    // Create the email component
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const taskUrl = `${baseUrl}/task/${taskId}`;
+
+    // Render the email component to HTML and text
+    const result = await sendTaskAssignmentEmail({
+      recipientEmail,
+      recipientName,
+      assignerName,
+      taskTitle,
+      taskId,
+      projectName,
+      organizationName,
+      dueDate,
+      priority,
+    });
+
+    // Create a notification record
+    if (result.success) {
+      const recipientUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, recipientEmail))
+        .limit(1);
+
+      if (recipientUser.length > 0) {
+        await createEmailNotification({
+          type: EmailNotificationType.TASK_ASSIGNMENT,
+          recipientId: recipientUser[0].id,
+          senderId: currentUser.id,
+          resourceType: 'task',
+          resourceId: taskId,
+          emailId: result.id,
+          data: {
+            taskTitle,
+            projectName,
+            organizationName,
+            taskUrl,
+            priority,
+            dueDate: dueDate ? dueDate.toISOString() : null,
+          },
+        });
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error sending task assignment email:', error);
     throw error;
   }
 } 

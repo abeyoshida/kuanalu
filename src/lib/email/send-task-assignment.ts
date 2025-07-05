@@ -1,15 +1,45 @@
 import { sendEmail } from './client';
-import { TaskAssignmentEmailData } from './types';
+import { TaskAssignmentEmail } from '@/components/email/task-assignment-email';
 import React from 'react';
+import { renderEmail } from './render';
 
 /**
- * Send a task assignment email notification
+ * Send a task assignment email to a user
  * 
- * @param data Task assignment email data
+ * @param recipientEmail The email address of the recipient
+ * @param recipientName The name of the recipient
+ * @param assignerName The name of the person assigning the task
+ * @param taskTitle The title of the task
+ * @param taskId The ID of the task
+ * @param projectName The name of the project
+ * @param organizationName The name of the organization
+ * @param dueDate Optional due date for the task
+ * @param priority Optional priority of the task
  * @returns The result of sending the email
  */
-export async function sendTaskAssignmentEmail(data: TaskAssignmentEmailData) {
-  const {
+export async function sendTaskAssignmentEmail({
+  recipientEmail,
+  recipientName,
+  assignerName,
+  taskTitle,
+  taskId,
+  projectName,
+  organizationName,
+  dueDate,
+  priority,
+}: {
+  recipientEmail: string;
+  recipientName: string;
+  assignerName: string;
+  taskTitle: string;
+  taskId: number;
+  projectName: string;
+  organizationName: string;
+  dueDate?: Date;
+  priority?: string;
+}) {
+  // Create the email component
+  const emailComponent = React.createElement(TaskAssignmentEmail, {
     recipientEmail,
     recipientName,
     assignerName,
@@ -19,57 +49,16 @@ export async function sendTaskAssignmentEmail(data: TaskAssignmentEmailData) {
     organizationName,
     dueDate,
     priority,
-  } = data;
+  });
 
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const taskUrl = `${baseUrl}/task/${taskId}`;
+  // Render the email component to HTML
+  const emailHtml = await renderEmail(emailComponent);
 
-  // For now, we'll use a simple email without a specific component
-  // In a future task, we'll create a TaskAssignmentEmail component
+  // Send the email
   return sendEmail({
     to: recipientEmail,
-    subject: `[${organizationName}] Task assigned to you: ${taskTitle}`,
-    react: React.createElement('div', {}, [
-      React.createElement('h1', {}, 'Task Assigned to You'),
-      React.createElement('p', {}, `Hello ${recipientName},`),
-      React.createElement('p', {}, [
-        React.createElement('strong', {}, assignerName),
-        ' has assigned a task to you in project ',
-        React.createElement('strong', {}, projectName),
-        '.',
-      ]),
-      React.createElement('div', { 
-        style: { 
-          margin: '20px 0', 
-          padding: '15px', 
-          border: '1px solid #e1e4e8', 
-          borderRadius: '5px' 
-        } 
-      }, [
-        React.createElement('h2', { style: { margin: '0 0 10px 0' } }, taskTitle),
-        priority && React.createElement('p', { style: { margin: '5px 0' } }, [
-          React.createElement('strong', {}, 'Priority:'),
-          ` ${priority}`
-        ]),
-        dueDate && React.createElement('p', { style: { margin: '5px 0' } }, [
-          React.createElement('strong', {}, 'Due Date:'),
-          ` ${new Date(dueDate).toLocaleDateString()}`
-        ])
-      ]),
-      React.createElement('p', {}, 
-        React.createElement('a', {
-          href: taskUrl,
-          style: {
-            backgroundColor: '#4f46e5',
-            color: '#fff',
-            padding: '10px 15px',
-            borderRadius: '4px',
-            textDecoration: 'none',
-            display: 'inline-block',
-          }
-        }, 'View Task')
-      ),
-      React.createElement('p', {}, 'Thank you for using Kuanalu!')
-    ])
+    from: `${organizationName} <tasks@emails.hogalulu.com>`,
+    subject: `Task Assignment: ${taskTitle}`,
+    html: emailHtml,
   });
 } 

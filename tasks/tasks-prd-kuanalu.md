@@ -177,7 +177,7 @@
   - [ ] 7.2 Create email templates for notifications
     - [x] 7.2.1 Create base email layout component
     - [x] 7.2.2 Create organization invitation email template
-    - [ ] 7.2.3 Create task assignment notification template
+    - [x] 7.2.3 Create task assignment notification template
     - [ ] 7.2.4 Create task update notification template
     - [ ] 7.2.5 Create comment notification template
   - [ ] 7.3 Implement task assignment notification
