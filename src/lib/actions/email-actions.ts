@@ -8,6 +8,8 @@ import { eq } from 'drizzle-orm';
 import React from 'react';
 import { renderEmail, renderEmailText } from '@/lib/email/render';
 import { sendTaskAssignmentEmail } from '@/lib/email/send-task-assignment';
+import { sendTaskUpdateEmail } from '@/lib/email/send-task-update';
+import { sendCommentEmail } from '@/lib/email/send-comment';
 
 /**
  * Get the current user from the session
@@ -354,6 +356,202 @@ export async function sendTaskAssignmentEmailAction({
     return result;
   } catch (error) {
     console.error('Error sending task assignment email:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send a task update email
+ * 
+ * @param recipientEmail The email address of the recipient
+ * @param recipientName The name of the recipient
+ * @param taskTitle The title of the task
+ * @param taskId The ID of the task
+ * @param projectName The name of the project
+ * @param organizationName The name of the organization
+ * @param updateType The type of update (status, priority, dueDate, description, other)
+ * @param oldValue Optional old value before the update
+ * @param newValue Optional new value after the update
+ * @returns The created email queue item
+ */
+export async function sendTaskUpdateEmailAction({
+  recipientEmail,
+  recipientName,
+  taskTitle,
+  taskId,
+  projectName,
+  organizationName,
+  updateType,
+  oldValue,
+  newValue,
+}: {
+  recipientEmail: string;
+  recipientName: string;
+  taskTitle: string;
+  taskId: number;
+  projectName: string;
+  organizationName: string;
+  updateType: 'status' | 'priority' | 'dueDate' | 'description' | 'other';
+  oldValue?: string;
+  newValue?: string;
+}) {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Unauthorized');
+    }
+
+    const updaterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.name || 'A user';
+    
+    // Create the email component
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const taskUrl = `${baseUrl}/task/${taskId}`;
+
+    // Send the email
+    const result = await sendTaskUpdateEmail({
+      recipientEmail,
+      recipientName,
+      updaterName,
+      taskTitle,
+      taskId,
+      projectName,
+      organizationName,
+      updateType,
+      oldValue,
+      newValue,
+    });
+
+    // Create a notification record
+    if (result.success) {
+      const recipientUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, recipientEmail))
+        .limit(1);
+
+      if (recipientUser.length > 0) {
+        await createEmailNotification({
+          type: EmailNotificationType.TASK_UPDATE,
+          recipientId: recipientUser[0].id,
+          senderId: currentUser.id,
+          resourceType: 'task',
+          resourceId: taskId,
+          emailId: result.id,
+          data: {
+            taskTitle,
+            projectName,
+            organizationName,
+            taskUrl,
+            updateType,
+            oldValue,
+            newValue,
+          },
+        });
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error sending task update email:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send a comment notification email
+ * 
+ * @param recipientEmail The email address of the recipient
+ * @param recipientName The name of the recipient
+ * @param taskTitle The title of the task
+ * @param taskId The ID of the task
+ * @param commentId The ID of the comment
+ * @param commentContent The content of the comment
+ * @param projectName The name of the project
+ * @param organizationName The name of the organization
+ * @param isMention Whether the notification is for a mention (true) or a comment (false)
+ * @returns The created email queue item
+ */
+export async function sendCommentEmailAction({
+  recipientEmail,
+  recipientName,
+  taskTitle,
+  taskId,
+  commentId,
+  commentContent,
+  projectName,
+  organizationName,
+  isMention = false,
+}: {
+  recipientEmail: string;
+  recipientName: string;
+  taskTitle: string;
+  taskId: number;
+  commentId: number;
+  commentContent: string;
+  projectName: string;
+  organizationName: string;
+  isMention?: boolean;
+}) {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Unauthorized');
+    }
+
+    const commenterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.name || 'A user';
+    
+    // Create the email component
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const taskUrl = `${baseUrl}/task/${taskId}`;
+    const commentUrl = `${baseUrl}/task/${taskId}?comment=${commentId}`;
+
+    // Send the email
+    const result = await sendCommentEmail({
+      recipientEmail,
+      recipientName,
+      commenterName,
+      taskTitle,
+      taskId,
+      commentId,
+      commentContent,
+      projectName,
+      organizationName,
+      isMention,
+    });
+
+    // Create a notification record
+    if (result.success) {
+      const recipientUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, recipientEmail))
+        .limit(1);
+
+      if (recipientUser.length > 0) {
+        await createEmailNotification({
+          type: isMention ? EmailNotificationType.MENTION : EmailNotificationType.COMMENT,
+          recipientId: recipientUser[0].id,
+          senderId: currentUser.id,
+          resourceType: 'comment',
+          resourceId: commentId,
+          emailId: result.id,
+          data: {
+            taskTitle,
+            taskId,
+            projectName,
+            organizationName,
+            commentContent,
+            taskUrl,
+            commentUrl,
+            isMention,
+          },
+        });
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error sending comment email:', error);
     throw error;
   }
 } 

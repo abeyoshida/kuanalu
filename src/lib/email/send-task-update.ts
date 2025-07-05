@@ -1,15 +1,48 @@
 import { sendEmail } from './client';
-import { TaskUpdateEmailData } from './types';
+import { TaskUpdateEmail } from '@/components/email/task-update-email';
 import React from 'react';
+import { renderEmail } from './render';
 
 /**
- * Send a task update email notification
+ * Send a task update email to a user
  * 
- * @param data Task update email data
+ * @param recipientEmail The email address of the recipient
+ * @param recipientName The name of the recipient
+ * @param updaterName The name of the person updating the task
+ * @param taskTitle The title of the task
+ * @param taskId The ID of the task
+ * @param projectName The name of the project
+ * @param organizationName The name of the organization
+ * @param updateType The type of update (status, priority, dueDate, description, other)
+ * @param oldValue Optional old value before the update
+ * @param newValue Optional new value after the update
  * @returns The result of sending the email
  */
-export async function sendTaskUpdateEmail(data: TaskUpdateEmailData) {
-  const {
+export async function sendTaskUpdateEmail({
+  recipientEmail,
+  recipientName,
+  updaterName,
+  taskTitle,
+  taskId,
+  projectName,
+  organizationName,
+  updateType,
+  oldValue,
+  newValue,
+}: {
+  recipientEmail: string;
+  recipientName: string;
+  updaterName: string;
+  taskTitle: string;
+  taskId: number;
+  projectName: string;
+  organizationName: string;
+  updateType: 'status' | 'priority' | 'dueDate' | 'description' | 'other';
+  oldValue?: string;
+  newValue?: string;
+}) {
+  // Create the email component
+  const emailComponent = React.createElement(TaskUpdateEmail, {
     recipientEmail,
     recipientName,
     updaterName,
@@ -20,61 +53,26 @@ export async function sendTaskUpdateEmail(data: TaskUpdateEmailData) {
     updateType,
     oldValue,
     newValue,
-  } = data;
+  });
 
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const taskUrl = `${baseUrl}/task/${taskId}`;
+  // Render the email component to HTML
+  const emailHtml = await renderEmail(emailComponent);
 
-  // Format the update type for display
-  const updateTypeDisplay = updateType
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, (str) => str.toUpperCase());
+  // Create a subject line based on the update type
+  let subject = `Task Update: ${taskTitle}`;
+  if (updateType === 'status') {
+    subject = `Task Status Updated: ${taskTitle}`;
+  } else if (updateType === 'priority') {
+    subject = `Task Priority Updated: ${taskTitle}`;
+  } else if (updateType === 'dueDate') {
+    subject = `Task Due Date Updated: ${taskTitle}`;
+  }
 
+  // Send the email
   return sendEmail({
     to: recipientEmail,
-    subject: `[${organizationName}] Task updated: ${taskTitle}`,
-    react: React.createElement('div', {}, [
-      React.createElement('h1', {}, 'Task Updated'),
-      React.createElement('p', {}, `Hello ${recipientName},`),
-      React.createElement('p', {}, [
-        React.createElement('strong', {}, updaterName),
-        ` has updated the ${updateType} of a task in project `,
-        React.createElement('strong', {}, projectName),
-        '.',
-      ]),
-      React.createElement('div', { 
-        style: { 
-          margin: '20px 0', 
-          padding: '15px', 
-          border: '1px solid #e1e4e8', 
-          borderRadius: '5px' 
-        } 
-      }, [
-        React.createElement('h2', { style: { margin: '0 0 10px 0' } }, taskTitle),
-        React.createElement('p', { style: { margin: '5px 0' } }, [
-          React.createElement('strong', {}, `${updateTypeDisplay} changed from:`),
-          React.createElement('br', {}),
-          React.createElement('span', { style: { color: '#b91c1c' } }, oldValue || 'Not set'),
-          React.createElement('br', {}),
-          React.createElement('strong', {}, 'To:'),
-          React.createElement('br', {}),
-          React.createElement('span', { style: { color: '#15803d' } }, newValue || 'Not set')
-        ])
-      ]),
-      React.createElement('p', {}, 
-        React.createElement('a', {
-          href: taskUrl,
-          style: {
-            backgroundColor: '#4f46e5',
-            color: '#fff',
-            padding: '10px 15px',
-            borderRadius: '4px',
-            textDecoration: 'none',
-            display: 'inline-block',
-          }
-        }, 'View Task')
-      ),
-      React.createElement('p', {}, 'Thank you for using Kuanalu!')
-    ])
+    from: `${organizationName} <updates@emails.hogalulu.com>`,
+    subject,
+    html: emailHtml,
   });
 } 

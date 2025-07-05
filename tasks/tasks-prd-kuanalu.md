@@ -174,12 +174,12 @@
     - [x] 7.1.5 Create email queue processing functionality
     - [x] 7.1.6 Implement email preview functionality for development
     - [x] 7.1.7 Set up webhook handler for email delivery status
-  - [ ] 7.2 Create email templates for notifications
+  - [x] 7.2 Create email templates for notifications
     - [x] 7.2.1 Create base email layout component
     - [x] 7.2.2 Create organization invitation email template
     - [x] 7.2.3 Create task assignment notification template
-    - [ ] 7.2.4 Create task update notification template
-    - [ ] 7.2.5 Create comment notification template
+    - [x] 7.2.4 Create task update notification template
+    - [x] 7.2.5 Create comment notification template
   - [ ] 7.3 Implement task assignment notification
     - [ ] 7.3.1 Update task assignment logic to trigger email notifications
     - [ ] 7.3.2 Create server action for sending assignment notifications

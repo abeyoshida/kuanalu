@@ -23,7 +23,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { inviteUserToOrganization } from "@/lib/actions/invitation-actions";
-import { Role } from "@/lib/auth/permissions";
+import { roleEnum } from "@/lib/db/schema";
+
+type Role = typeof roleEnum.enumValues[number];
 
 interface InviteUserDialogProps {
   children: React.ReactNode;

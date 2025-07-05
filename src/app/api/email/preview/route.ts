@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { renderEmail } from '@/lib/email/render';
 import { InvitationEmail } from '@/components/email/invitation-email';
 import { TaskAssignmentEmail } from '@/components/email/task-assignment-email';
+import { TaskUpdateEmail } from '@/components/email/task-update-email';
+import { CommentEmail } from '@/components/email/comment-email';
 import React from 'react';
 
 /**
@@ -60,6 +62,53 @@ export async function GET(request: NextRequest) {
         organizationName: 'Acme Inc.',
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         priority: 'high',
+      });
+    } else if (type === 'task-update') {
+      // Get update type from query params
+      const updateType = searchParams.get('updateType') || 'status';
+      
+      // Create appropriate props based on update type
+      const updateProps: any = {
+        recipientEmail: 'user@example.com',
+        recipientName: 'Jane Smith',
+        updaterName: 'John Doe',
+        taskTitle: 'Implement email notifications',
+        taskId: 123,
+        projectName: 'Kuanalu Email System',
+        organizationName: 'Acme Inc.',
+        updateType: updateType as 'status' | 'priority' | 'dueDate' | 'description' | 'other',
+      };
+      
+      // Add appropriate old/new values based on update type
+      if (updateType === 'status') {
+        updateProps.oldValue = 'todo';
+        updateProps.newValue = 'in_progress';
+      } else if (updateType === 'priority') {
+        updateProps.oldValue = 'medium';
+        updateProps.newValue = 'high';
+      } else if (updateType === 'dueDate') {
+        updateProps.oldValue = new Date().toISOString();
+        updateProps.newValue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      }
+      
+      emailComponent = React.createElement(TaskUpdateEmail, updateProps);
+    } else if (type === 'comment') {
+      // Check if it's a mention notification
+      const isMention = searchParams.get('mention') === 'true';
+      
+      emailComponent = React.createElement(CommentEmail, {
+        recipientEmail: 'user@example.com',
+        recipientName: 'Jane Smith',
+        commenterName: 'John Doe',
+        taskTitle: 'Implement email notifications',
+        taskId: 123,
+        commentId: 456,
+        commentContent: isMention 
+          ? 'Hey @Jane, could you review the email templates I\'ve created? I want to make sure they follow our design guidelines.'
+          : 'I\'ve made some progress on this task. The email templates are now working correctly, but we still need to integrate them with the task update flow.',
+        projectName: 'Kuanalu Email System',
+        organizationName: 'Acme Inc.',
+        isMention,
       });
     } else {
       return NextResponse.json({ error: 'Invalid email type' }, { status: 400 });
