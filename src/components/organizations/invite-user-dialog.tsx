@@ -21,9 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { inviteUserToOrganization } from "@/lib/actions/invitation-actions";
 import { roleEnum } from "@/lib/db/schema";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type Role = typeof roleEnum.enumValues[number];
 
@@ -37,14 +38,18 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("member");
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
     try {
+      console.log("Inviting user:", email, "to organization:", organizationId, "with role:", role);
       const result = await inviteUserToOrganization(organizationId, email, role);
+      console.log("Invitation result:", result);
       
       if (result.success) {
         toast({
@@ -56,6 +61,17 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
         setEmail("");
         setRole("member");
       } else {
+        // Handle specific error cases
+        if (result.message.includes("already a member")) {
+          setError("This user is already a member of the organization.");
+        } else if (result.message.includes("already been sent")) {
+          setError("An invitation has already been sent to this email address.");
+        } else if (result.message.includes("don't have permission")) {
+          setError("You don't have permission to invite users to this organization.");
+        } else {
+          setError(result.message);
+        }
+        
         toast({
           variant: "destructive",
           title: "Error",
@@ -63,6 +79,8 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
         });
       }
     } catch (error) {
+      console.error("Error inviting user:", error);
+      setError("An unexpected error occurred. Please try again.");
       toast({
         variant: "destructive",
         title: "Error",
@@ -73,8 +91,18 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
     }
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      // Reset form when closing
+      setEmail("");
+      setRole("member");
+      setError(null);
+    }
+    setOpen(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
@@ -84,6 +112,14 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
               Invite a user to join your organization.
             </DialogDescription>
           </DialogHeader>
+          
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email Address</Label>
@@ -119,7 +155,7 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => handleOpenChange(false)}
               disabled={isSubmitting}
             >
               Cancel

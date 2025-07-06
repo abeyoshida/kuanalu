@@ -286,7 +286,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
             variant: "destructive"
           });
         }
-      }
+       }
     } catch (error: unknown) {
       console.error("Error updating subtask:", error);
       toast({

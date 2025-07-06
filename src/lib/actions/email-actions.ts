@@ -161,7 +161,7 @@ export async function sendInvitationEmailAction({
       subject: `You've been invited to join ${organizationName}`,
       htmlContent,
       textContent,
-      from: `${process.env.EMAIL_FROM_NAME || 'Kuanalu'} <${process.env.EMAIL_FROM || 'noreply@example.com'}>`,
+      from: `Kuanalu <onboarding@resend.dev>`,
       metadata: {
         invitationType: 'organization',
         organizationName,

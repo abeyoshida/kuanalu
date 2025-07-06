@@ -317,7 +317,7 @@ export async function addToQueue(options: {
       subject: options.subject,
       htmlContent: options.htmlContent,
       textContent: options.textContent,
-      from: options.from || `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM}>`,
+      from: options.from || `Kuanalu <onboarding@resend.dev>`,
       cc,
       bcc,
       replyTo: options.replyTo,

@@ -33,7 +33,6 @@ export const CommentEmail = ({
 }: CommentEmailProps) => {
   // Create task URL
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const taskUrl = `${baseUrl}/task/${taskId}`;
   const commentUrl = `${baseUrl}/task/${taskId}?comment=${commentId}`;
 
   // Format comment content for display

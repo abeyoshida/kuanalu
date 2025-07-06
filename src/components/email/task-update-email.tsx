@@ -92,7 +92,7 @@ export const TaskUpdateEmail = ({
           dateStyle: 'long',
           timeStyle: 'short',
         }).format(new Date(value));
-      } catch (e) {
+      } catch {
         return value;
       }
     }

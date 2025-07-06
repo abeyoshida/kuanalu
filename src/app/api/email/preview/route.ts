@@ -68,7 +68,18 @@ export async function GET(request: NextRequest) {
       const updateType = searchParams.get('updateType') || 'status';
       
       // Create appropriate props based on update type
-      const updateProps: any = {
+      const updateProps: {
+        recipientEmail: string;
+        recipientName: string;
+        updaterName: string;
+        taskTitle: string;
+        taskId: number;
+        projectName: string;
+        organizationName: string;
+        updateType: 'status' | 'priority' | 'dueDate' | 'description' | 'other';
+        oldValue?: string;
+        newValue?: string;
+      } = {
         recipientEmail: 'user@example.com',
         recipientName: 'Jane Smith',
         updaterName: 'John Doe',
