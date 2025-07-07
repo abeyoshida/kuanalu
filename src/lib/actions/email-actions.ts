@@ -155,13 +155,13 @@ export async function sendInvitationEmailAction({
     const htmlContent = await renderEmail(emailComponent);
     const textContent = await renderEmailText(emailComponent);
 
-    // Add the email to the queue
-    return await addToQueue({
+    // Add the email to the queue and process immediately
+    const result = await addToQueue({
       to: inviteeEmail,
       subject: `You've been invited to join ${organizationName}`,
       htmlContent,
       textContent,
-      from: `Kuanalu <onboarding@resend.dev>`,
+      from: `Kuanalu <noreply@hogalulu.com>`,
       metadata: {
         invitationType: 'organization',
         organizationName,
@@ -171,7 +171,18 @@ export async function sendInvitationEmailAction({
       userId: currentUser.id,
       organizationId,
       resourceType: 'invitation',
+      processImmediately: true, // Process the email immediately
     });
+
+    if (!result.success) {
+      console.error('Failed to send invitation email:', result.error);
+    } else if (result.emailId) {
+      console.log(`Invitation email sent successfully with ID: ${result.emailId}`);
+    } else {
+      console.log('Invitation email queued successfully');
+    }
+
+    return result;
   } catch (error) {
     console.error('Error sending invitation email:', error);
     throw error;

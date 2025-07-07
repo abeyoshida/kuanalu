@@ -2,9 +2,10 @@ import { db } from '@/lib/db';
 import { emailQueue, emailNotifications } from '@/lib/db/schema';
 import { EmailOptions, EmailNotificationType } from './types';
 import { renderEmail, renderEmailText } from './render';
-import { eq, and, lt, sql, or, lte } from 'drizzle-orm';
+import { eq, and, or, lte } from 'drizzle-orm';
 import { sendEmail } from './client';
 import React from 'react';
+import { sql } from 'drizzle-orm';
 
 /**
  * Add an email to the queue
@@ -51,7 +52,7 @@ export async function queueEmail({
       subject: options.subject,
       htmlContent,
       textContent,
-      from: options.from || process.env.EMAIL_FROM || 'onboarding@resend.dev',
+      from: options.from || process.env.EMAIL_FROM || `Kuanalu <noreply@hogalulu.com>`,
       cc,
       bcc,
       replyTo: options.replyTo,
@@ -73,128 +74,16 @@ export async function queueEmail({
 }
 
 /**
- * Process the email queue
- * 
- * @param limit Maximum number of emails to process
- * @returns The number of emails processed
+ * Process the email queue (legacy function for backward compatibility)
  */
 export async function processEmailQueue(limit = 10): Promise<number> {
   try {
-    // Get pending emails that are ready to be sent
-    const pendingEmails = await db.select().from(emailQueue)
-      .where(
-        and(
-          eq(emailQueue.status, 'pending'),
-          or(
-            sql`${emailQueue.nextAttemptAt} IS NULL`,
-            lt(emailQueue.nextAttemptAt, new Date())
-          )
-        )
-      )
-      .limit(limit);
-
-    let processedCount = 0;
-
-    for (const email of pendingEmails) {
-      try {
-        // Parse recipient arrays if stored as JSON strings
-        const to = typeof email.to === 'string' && email.to.startsWith('[') 
-          ? JSON.parse(email.to) 
-          : email.to;
-        
-        // Handle cc and bcc with proper types
-        let cc: string | string[] | undefined = undefined;
-        if (email.cc) {
-          if (typeof email.cc === 'string' && email.cc.startsWith('[')) {
-            cc = JSON.parse(email.cc);
-          } else if (typeof email.cc === 'string') {
-            cc = email.cc;
-          }
-        }
-        
-        let bcc: string | string[] | undefined = undefined;
-        if (email.bcc) {
-          if (typeof email.bcc === 'string' && email.bcc.startsWith('[')) {
-            bcc = JSON.parse(email.bcc);
-          } else if (typeof email.bcc === 'string') {
-            bcc = email.bcc;
-          }
-        }
-
-        // Send the email
-        const result = await sendEmail({
-          from: email.from,
-          to,
-          subject: email.subject,
-          html: email.htmlContent,
-          text: email.textContent || undefined,
-          cc: cc || undefined,
-          bcc: bcc || undefined,
-          replyTo: email.replyTo || undefined,
-        });
-
-        if (result.error) {
-          // Update email status to failed
-          await db.update(emailQueue)
-            .set({
-              status: 'failed',
-              attempts: email.attempts + 1,
-              error: result.error,
-              updatedAt: new Date(),
-              nextAttemptAt: calculateNextAttempt(email.attempts + 1),
-            })
-            .where(eq(emailQueue.id, email.id));
-        } else {
-          // Update email status to sent
-          await db.update(emailQueue)
-            .set({
-              status: 'sent',
-              attempts: email.attempts + 1,
-              sentAt: new Date(),
-              updatedAt: new Date(),
-            })
-            .where(eq(emailQueue.id, email.id));
-        }
-
-        processedCount++;
-      } catch (error) {
-        console.error(`Error processing email ${email.id}:`, error);
-        
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        
-        // Update email status to failed
-        await db.update(emailQueue)
-          .set({
-            status: 'failed',
-            attempts: email.attempts + 1,
-            error: errorMessage,
-            updatedAt: new Date(),
-            nextAttemptAt: calculateNextAttempt(email.attempts + 1),
-          })
-          .where(eq(emailQueue.id, email.id));
-      }
-    }
-
-    return processedCount;
+    const result = await processQueue({ limit });
+    return result.processed;
   } catch (error) {
-    console.error('Error processing email queue:', error);
-    throw error;
+    console.error('Error in processEmailQueue:', error);
+    return 0;
   }
-}
-
-/**
- * Calculate the next attempt time based on the number of attempts
- * Uses exponential backoff
- * 
- * @param attempts Number of attempts so far
- * @returns Date for next attempt
- */
-function calculateNextAttempt(attempts: number): Date {
-  // Exponential backoff: 5min, 15min, 1hr, 4hr, 12hr, 24hr
-  const delayMinutes = Math.min(24 * 60, 5 * Math.pow(3, attempts - 1));
-  const nextAttempt = new Date();
-  nextAttempt.setMinutes(nextAttempt.getMinutes() + delayMinutes);
-  return nextAttempt;
 }
 
 /**
@@ -274,11 +163,14 @@ export async function markNotificationAsRead(id: number) {
  */
 export async function getUnreadNotifications(userId: number, limit = 10) {
   try {
-    return await db.select().from(emailNotifications)
-      .where(and(
-        eq(emailNotifications.recipientId, userId),
-        eq(emailNotifications.read, false)
-      ))
+    return await db
+      .select()
+      .from(emailNotifications)
+      .where(
+        and(
+          eq(emailNotifications.recipientId, userId),
+          eq(emailNotifications.read, false)
+        ))
       .orderBy(sql`${emailNotifications.createdAt} DESC`)
       .limit(limit);
   } catch (error) {
@@ -304,7 +196,8 @@ export async function addToQueue(options: {
   organizationId?: number;
   resourceType?: string;
   resourceId?: number;
-}): Promise<{ success: boolean; id?: number; error?: string }> {
+  processImmediately?: boolean;
+}): Promise<{ success: boolean; id?: number; emailId?: string; error?: string }> {
   try {
     // Convert arrays to strings for storage
     const to = Array.isArray(options.to) ? options.to.join(',') : options.to;
@@ -317,7 +210,7 @@ export async function addToQueue(options: {
       subject: options.subject,
       htmlContent: options.htmlContent,
       textContent: options.textContent,
-      from: options.from || `Kuanalu <onboarding@resend.dev>`,
+      from: options.from || process.env.EMAIL_FROM || `Kuanalu <noreply@hogalulu.com>`,
       cc,
       bcc,
       replyTo: options.replyTo,
@@ -333,6 +226,36 @@ export async function addToQueue(options: {
       updatedAt: new Date()
     }).returning({ id: emailQueue.id });
 
+    // Process the email immediately if requested
+    if (options.processImmediately) {
+      try {
+        // Process just this email
+        const queueItem = await db.select().from(emailQueue).where(eq(emailQueue.id, result.id)).limit(1);
+        
+        if (queueItem.length > 0) {
+          const email = queueItem[0];
+          const processResult = await processQueueItem(email);
+          
+          if (processResult.success) {
+            return { 
+              success: true, 
+              id: result.id, 
+              emailId: processResult.emailId 
+            };
+          } else {
+            return { 
+              success: false, 
+              id: result.id, 
+              error: processResult.error 
+            };
+          }
+        }
+      } catch (processError) {
+        console.error('Error processing email immediately:', processError);
+        // Continue even if immediate processing fails - the email is still in the queue
+      }
+    }
+
     return { success: true, id: result.id };
   } catch (error) {
     console.error('Error adding email to queue:', error);
@@ -340,6 +263,114 @@ export async function addToQueue(options: {
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
     };
+  }
+}
+
+/**
+ * Process a single email queue item
+ */
+async function processQueueItem(email: typeof emailQueue.$inferSelect): Promise<{ 
+  success: boolean; 
+  emailId?: string; 
+  error?: string 
+}> {
+  try {
+    // Convert comma-separated strings back to arrays if needed
+    const to = email.to.includes(',') ? email.to.split(',') : email.to;
+    const cc = email.cc?.includes(',') ? email.cc.split(',') : email.cc;
+    const bcc = email.bcc?.includes(',') ? email.bcc.split(',') : email.bcc;
+    
+    // Send the email
+    const result = await sendEmail({
+      from: email.from,
+      to,
+      subject: email.subject,
+      html: email.htmlContent,
+      text: email.textContent || undefined,
+      cc: cc || undefined,
+      bcc: bcc || undefined,
+      replyTo: email.replyTo || undefined,
+      queueId: email.id
+    });
+    
+    if (result.error) {
+      // Email failed to send, update the queue record
+      const attempts = email.attempts + 1;
+      const maxAttempts = email.maxAttempts || 3;
+      
+      if (attempts >= maxAttempts) {
+        // Max attempts reached, mark as failed
+        await db.update(emailQueue)
+          .set({
+            status: 'failed',
+            attempts,
+            error: result.error,
+            updatedAt: new Date(),
+          })
+          .where(eq(emailQueue.id, email.id));
+      } else {
+        // Calculate next attempt time with exponential backoff
+        const backoffMinutes = Math.pow(2, attempts); // 2, 4, 8, 16, etc. minutes
+        const nextAttemptAt = new Date();
+        nextAttemptAt.setMinutes(nextAttemptAt.getMinutes() + backoffMinutes);
+        
+        await db.update(emailQueue)
+          .set({
+            status: 'retrying',
+            attempts,
+            error: result.error,
+            nextAttemptAt,
+            updatedAt: new Date(),
+          })
+          .where(eq(emailQueue.id, email.id));
+      }
+      
+      return { success: false, error: result.error };
+    } else {
+      // Email was sent successfully, update the queue record
+      await db.update(emailQueue)
+        .set({
+          status: 'sent',
+          sentAt: new Date(),
+          updatedAt: new Date(),
+          emailId: result.id
+        })
+        .where(eq(emailQueue.id, email.id));
+      
+      return { success: true, emailId: result.id };
+    }
+  } catch (error) {
+    // Update the queue record with the error
+    const attempts = email.attempts + 1;
+    const maxAttempts = email.maxAttempts || 3;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (attempts >= maxAttempts) {
+      await db.update(emailQueue)
+        .set({
+          status: 'failed',
+          attempts,
+          error: errorMessage,
+          updatedAt: new Date(),
+        })
+        .where(eq(emailQueue.id, email.id));
+    } else {
+      const backoffMinutes = Math.pow(2, attempts);
+      const nextAttemptAt = new Date();
+      nextAttemptAt.setMinutes(nextAttemptAt.getMinutes() + backoffMinutes);
+      
+      await db.update(emailQueue)
+        .set({
+          status: 'retrying',
+          attempts,
+          error: errorMessage,
+          nextAttemptAt,
+          updatedAt: new Date(),
+        })
+        .where(eq(emailQueue.id, email.id));
+    }
+    
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -381,102 +412,11 @@ export async function processQueue(options: {
     for (const email of pendingEmails) {
       processed++;
       
-      try {
-        // Convert comma-separated strings back to arrays if needed
-        const to = email.to.includes(',') ? email.to.split(',') : email.to;
-        const cc = email.cc?.includes(',') ? email.cc.split(',') : email.cc;
-        const bcc = email.bcc?.includes(',') ? email.bcc.split(',') : email.bcc;
-        
-        // Send the email
-        const result = await sendEmail({
-          from: email.from,
-          to,
-          subject: email.subject,
-          html: email.htmlContent,
-          text: email.textContent || undefined,
-          cc: cc || undefined,
-          bcc: bcc || undefined,
-          replyTo: email.replyTo || undefined,
-          queueId: email.id
-        });
-        
-        if (result.error) {
-          failed++;
-          
-          // Email failed to send, update the queue record
-          const attempts = email.attempts + 1;
-          const maxAttempts = email.maxAttempts || 3;
-          
-          if (attempts >= maxAttempts) {
-            // Max attempts reached, mark as failed
-            await db.update(emailQueue)
-              .set({
-                status: 'failed',
-                attempts,
-                error: result.error,
-                updatedAt: new Date(),
-              })
-              .where(eq(emailQueue.id, email.id));
-          } else {
-            // Calculate next attempt time with exponential backoff
-            const backoffMinutes = Math.pow(2, attempts); // 2, 4, 8, 16, etc. minutes
-            const nextAttemptAt = new Date();
-            nextAttemptAt.setMinutes(nextAttemptAt.getMinutes() + backoffMinutes);
-            
-            await db.update(emailQueue)
-              .set({
-                status: 'retrying',
-                attempts,
-                error: result.error,
-                nextAttemptAt,
-                updatedAt: new Date(),
-              })
-              .where(eq(emailQueue.id, email.id));
-          }
-        } else {
-          success++;
-          
-          // Email was sent successfully, update the queue record
-          await db.update(emailQueue)
-            .set({
-              status: 'sent',
-              sentAt: new Date(),
-              updatedAt: new Date(),
-            })
-            .where(eq(emailQueue.id, email.id));
-        }
-      } catch (error) {
+      const result = await processQueueItem(email);
+      if (result.success) {
+        success++;
+      } else {
         failed++;
-        console.error(`Error processing email ${email.id}:`, error);
-        
-        // Update the queue record with the error
-        const attempts = email.attempts + 1;
-        const maxAttempts = email.maxAttempts || 3;
-        
-        if (attempts >= maxAttempts) {
-          await db.update(emailQueue)
-            .set({
-              status: 'failed',
-              attempts,
-              error: error instanceof Error ? error.message : 'Unknown error',
-              updatedAt: new Date(),
-            })
-            .where(eq(emailQueue.id, email.id));
-        } else {
-          const backoffMinutes = Math.pow(2, attempts);
-          const nextAttemptAt = new Date();
-          nextAttemptAt.setMinutes(nextAttemptAt.getMinutes() + backoffMinutes);
-          
-          await db.update(emailQueue)
-            .set({
-              status: 'retrying',
-              attempts,
-              error: error instanceof Error ? error.message : 'Unknown error',
-              nextAttemptAt,
-              updatedAt: new Date(),
-            })
-            .where(eq(emailQueue.id, email.id));
-        }
       }
     }
     

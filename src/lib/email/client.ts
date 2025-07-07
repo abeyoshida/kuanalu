@@ -56,13 +56,16 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
 
     // Prepare email data with required fields
     const emailData: EmailData = {
-      from: options.from || "Kuanalu <onboarding@resend.dev>",
+      from: options.from || `Kuanalu <noreply@hogalulu.com>`,
       to: options.to,
       subject: options.subject,
     };
 
     // In development or if using Resend in test mode, redirect all emails to the developer's email
     // This is required by Resend's free tier which only allows sending to verified emails
+    // NOTE: Since we're now using a verified domain, we can send to any email address
+    // Uncomment this section if you need to redirect emails during testing
+    /*
     if (process.env.NODE_ENV === 'development' || process.env.EMAIL_DEV_MODE === 'test') {
       // Store the original recipient in the email for reference
       emailData.originalRecipient = emailData.to;
@@ -72,6 +75,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       console.log(`[DEV MODE] Redirecting email from ${emailData.to} to ${devEmail}`);
       emailData.to = devEmail;
     }
+    */
 
     // Add HTML or text content
     if (options.html) {

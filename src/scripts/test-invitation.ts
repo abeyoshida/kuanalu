@@ -5,7 +5,6 @@ import { addToQueue } from '@/lib/email/queue';
 import { renderEmail, renderEmailText } from '@/lib/email/render';
 import { InvitationEmail } from '@/components/email/invitation-email';
 import React from 'react';
-import { processEmailQueue } from '@/lib/email/queue';
 
 async function testInvitation() {
   try {
@@ -42,8 +41,9 @@ async function testInvitation() {
     const organizationId = existingOrgs[0].id;
     const organization = existingOrgs[0];
     
-    // Configuration
-    const email = 'delivered@resend.dev';
+    // Configuration - you can now use a real email address since we have a verified domain
+    // You can still use delivered@resend.dev for testing if you prefer
+    const email = 'delivered@resend.dev'; // Replace with a real email address if desired
     const role = 'member';
     
     console.log(`Using organization ID: ${organizationId}, name: ${organization.name}`);
@@ -94,13 +94,13 @@ async function testInvitation() {
     const htmlContent = await renderEmail(emailComponent);
     const textContent = await renderEmailText(emailComponent);
     
-    // Add the email to the queue
+    // Add the email to the queue with immediate processing
     const queueResult = await addToQueue({
       to: email,
       subject: `You've been invited to join ${organization.name}`,
       htmlContent,
       textContent,
-      from: `Kuanalu <onboarding@resend.dev>`,
+      from: `Kuanalu <noreply@hogalulu.com>`,
       metadata: {
         invitationType: 'organization',
         organizationName: organization.name,
@@ -110,15 +110,19 @@ async function testInvitation() {
       userId: invitedBy,
       organizationId,
       resourceType: 'invitation',
+      processImmediately: true, // Process immediately
     });
     
-    console.log('Email queued:', queueResult);
+    console.log('Email queue result:', queueResult);
     
-    // Process the email queue
-    console.log('Processing email queue...');
-    const processedCount = await processEmailQueue(10);
+    if (queueResult.success && queueResult.emailId) {
+      console.log(`Email sent successfully with ID: ${queueResult.emailId}`);
+    } else if (queueResult.error) {
+      console.error(`Failed to send email: ${queueResult.error}`);
+    } else {
+      console.log('Email queued successfully but not sent immediately');
+    }
     
-    console.log(`Processed ${processedCount} emails from the queue`);
     console.log('Test completed successfully!');
   } catch (error) {
     console.error('Error in invitation test:', error);
