@@ -71,7 +71,7 @@ export async function sendTaskUpdateEmail({
   // Send the email
   return sendEmail({
     to: recipientEmail,
-    from: `${organizationName} <updates@emails.hogalulu.com>`,
+    from: `${organizationName} <updates@hogalulu.com>`,
     subject,
     html: emailHtml,
   });

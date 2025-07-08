@@ -85,9 +85,8 @@ async function testInvitation() {
       inviteeEmail: email,
       organizationName: organization.name,
       inviterName,
-      invitationUrl,
+      acceptUrl: invitationUrl,
       role,
-      expiresAt,
     });
     
     // Render the email component to HTML and text

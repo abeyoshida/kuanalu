@@ -618,16 +618,31 @@ export async function getProjectMembers(projectId: number): Promise<{ id: number
   }
   
   try {
-    // Get all members of the project with their user information
+    // First, get the organization ID for this project
+    const project = await db
+      .select({
+        organizationId: projects.organizationId
+      })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
+    // Get all members of the organization with their user information
     const members = await db
       .select({
         id: users.id,
         name: users.name,
         email: users.email
       })
-      .from(projectMembers)
-      .innerJoin(users, eq(projectMembers.userId, users.id))
-      .where(eq(projectMembers.projectId, projectId))
+      .from(organizationMembers)
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
+      .where(eq(organizationMembers.organizationId, organizationId))
       .orderBy(users.name);
     
     return members;

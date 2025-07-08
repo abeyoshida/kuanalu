@@ -66,7 +66,7 @@ export async function sendCommentEmail({
   // Send the email
   return sendEmail({
     to: recipientEmail,
-    from: `${organizationName} <comments@emails.hogalulu.com>`,
+    from: `${organizationName} <comments@hogalulu.com>`,
     subject,
     html: emailHtml,
   });

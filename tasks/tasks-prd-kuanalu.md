@@ -207,6 +207,7 @@
   - [ ] 7.9 Implement organization invitation system
     - [x] 7.9.1 Update invitation dialog to send emails
     - [ ] 7.9.2 Create invitation acceptance route and page
+  - [x] 7.10 Create Accept Invitation page from the Invite User email
 
 - [ ] 8.0 Permissions System Enhancement
   - [x] 8.1 Update user registration to include organization creation
@@ -219,3 +220,6 @@
   - [ ] 8.8 Add visual indicators for user permissions in UI
   - [ ] 8.9 Create audit logging for permission changes
   - [ ] 8.10 Add graceful error handling for permission denied scenarios 
+
+- [ ] 9.0 Bug Fixes
+  - [ ] Edit Subtask does not work

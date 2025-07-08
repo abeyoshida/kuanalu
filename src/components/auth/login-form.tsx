@@ -1,48 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
-interface LoginFormProps {
-  callbackUrl?: string;
-  registered?: boolean;
-}
-
-export function LoginForm({ callbackUrl = "/dashboard", registered = false }: LoginFormProps) {
+export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
-
-  // Get values from URL search params
-  const urlCallbackUrl = searchParams.get("callbackUrl") || callbackUrl;
-  const urlRegistered = searchParams.get("registered") === "true" || registered;
   
-  // Set success message if registered param is true
-  const [success, setSuccess] = useState<string | null>(
-    urlRegistered ? "Account created successfully! You can now sign in." : null
-  );
+  const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
+  const registered = searchParams?.get('registered') === 'true';
+  const invitedEmail = searchParams?.get('email') || '';
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState(invitedEmail);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  // Handle redirect separately to ensure it completes
+  // Update email if searchParams change
   useEffect(() => {
-    if (isRedirecting) {
-      router.push(urlCallbackUrl);
-      router.refresh();
+    if (invitedEmail) {
+      setEmail(invitedEmail);
     }
-  }, [isRedirecting, router, urlCallbackUrl]);
+  }, [invitedEmail]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -50,130 +36,96 @@ export function LoginForm({ callbackUrl = "/dashboard", registered = false }: Lo
     setError(null);
 
     try {
-      // Use NextAuth's signIn function
-      const result = await signIn("credentials", {
+      const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
-        callbackUrl: urlCallbackUrl,
+        callbackUrl,
       });
-      
-      if (result?.error) {
-        setError(`Authentication failed: ${result.error}`);
-        setIsLoading(false);
-        return;
-      }
 
-      // Set success message
-      setSuccess("Login successful! Redirecting...");
-      
-      // Set a small delay to ensure state updates before redirect
-      setTimeout(() => {
-        setIsRedirecting(true);
-      }, 500);
-      
+      if (result?.error) {
+        setError(result.error);
+        setIsLoading(false);
+      } else if (result?.url) {
+        router.push(result.url);
+      }
     } catch (error) {
-      console.error("Login error:", error);
-      setError("Something went wrong. Please try again.");
+      console.error('Login error:', error);
+      setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }
   };
 
   return (
-    <Card className="shadow-md">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Sign in to FlowBoard</CardTitle>
-        <CardDescription className="text-center">
-          Enter your credentials to access your account
-        </CardDescription>
-      </CardHeader>
+    <div className="space-y-6">
+      {registered && (
+        <Alert className="bg-green-50 border-green-200">
+          <AlertDescription className="text-green-700">
+            Registration successful! Please sign in with your credentials.
+          </AlertDescription>
+        </Alert>
+      )}
       
-      <CardContent>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          {success && (
-            <Alert variant="default" className="bg-green-50 text-green-800 border-green-200">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              placeholder="john@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link href="/auth/forgot-password" className="text-sm font-medium text-primary hover:underline">
-                Forgot password?
-              </Link>
-            </div>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="remember" 
-              checked={rememberMe}
-              onCheckedChange={(checked) => setRememberMe(checked === true)}
-            />
-            <label
-              htmlFor="remember"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="john@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={isLoading}
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link
+              href="/auth/forgot-password"
+              className="text-sm font-medium text-primary hover:underline"
             >
-              Remember me
-            </label>
+              Forgot password?
+            </Link>
           </div>
-
-          <Button
-            type="submit"
-            className="w-full mt-6"
-            disabled={isLoading || isRedirecting}
-          >
-            {isLoading || isRedirecting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isRedirecting ? "Redirecting..." : "Signing in..."}
-              </>
-            ) : (
-              "Sign in"
-            )}
-          </Button>
-        </form>
-      </CardContent>
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isLoading}
+            required
+          />
+        </div>
+        
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            "Sign in"
+          )}
+        </Button>
+      </form>
       
-      <CardFooter className="flex justify-center">
-        <p className="text-sm text-gray-600">
-          Don&apos;t have an account?{" "}
-          <Link href="/auth/register" className="font-medium text-primary hover:underline">
-            Register
-          </Link>
-        </p>
-      </CardFooter>
-    </Card>
+      <div className="text-center text-sm">
+        Don&apos;t have an account?{' '}
+        <Link href={`/auth/register?callbackUrl=${encodeURIComponent(callbackUrl)}`} className="font-medium text-primary hover:underline">
+          Register
+        </Link>
+      </div>
+    </div>
   );
 } 

@@ -1,106 +1,78 @@
 'use server';
 
-import { auth } from "@/lib/auth/auth";
-import { db } from "@/lib/db";
-import { invitations, users, organizationMembers, organizations } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
-import { hasPermission } from "@/lib/auth/permissions";
-import { Role } from "@/lib/auth/client-permissions";
-import { randomUUID } from "crypto";
-import { sendInvitationEmailAction } from './email-actions';
+import { db } from '@/lib/db';
+import { invitations, organizations, users, organizationMembers } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { auth } from '@/lib/auth/auth';
+import { hasPermission } from '@/lib/auth/server-permissions';
+import { v4 as uuidv4 } from 'uuid';
+import { addDays } from 'date-fns';
+import { sendInvitationEmail } from '@/lib/email/send-invitation';
+import { roleEnum } from '@/lib/db/schema';
 
-interface InvitationResult {
-  success: boolean;
-  message: string;
-}
-
-/**
- * Server action to invite a user to an organization
- */
 export async function inviteUserToOrganization(
   organizationId: number,
   email: string,
-  role: Role
-): Promise<InvitationResult> {
+  role: string
+) {
+  console.log('Starting inviteUserToOrganization:', { organizationId, email, role });
+  
   try {
-    console.log("Starting inviteUserToOrganization:", { organizationId, email, role });
-    
+    // Get the current user's session
     const session = await auth();
-    console.log("Session:", session ? "exists" : "null");
+    console.log('Session:', session ? 'exists' : 'does not exist');
     
     if (!session?.user) {
-      console.log("No authenticated user found");
-      return {
-        success: false,
-        message: "You must be logged in to invite users",
-      };
+      return { success: false, message: "You must be logged in to invite users" };
     }
     
-    const currentUserId = parseInt(session.user.id);
-    console.log("Current user ID:", currentUserId);
-    
-    // Check if the current user has permission to invite users
-    console.log("Checking permissions...");
-    const canInviteUsers = await hasPermission(
-      currentUserId,
+    // Check if the current user has permission to invite users to this organization
+    console.log('Checking permissions...');
+    const canInvite = await hasPermission(
+      Number(session.user.id),
       organizationId,
       'invite',
       'user'
     );
-    console.log("Can invite users:", canInviteUsers);
     
-    if (!canInviteUsers) {
-      return {
-        success: false,
-        message: "You don't have permission to invite users to this organization",
-      };
+    console.log('Can invite users:', canInvite);
+    
+    if (!canInvite) {
+      return { success: false, message: "You don't have permission to invite users to this organization" };
     }
     
-    // Check if the email is valid
-    if (!email || !email.includes('@')) {
-      return {
-        success: false,
-        message: "Please provide a valid email address",
-      };
-    }
-    
-    // Check if the user is already a member of the organization
-    console.log("Checking if user already exists...");
+    // Check if the user already exists
+    console.log('Checking if user already exists...');
     const existingUser = await db
       .select()
       .from(users)
       .where(eq(users.email, email))
-      .limit(1);
+      .limit(1)
+      .then(results => results[0] || null);
     
-    console.log("Existing user:", existingUser.length > 0 ? "found" : "not found");
+    console.log('Existing user:', existingUser ? 'found' : 'not found');
     
-    if (existingUser.length > 0) {
-      const userId = existingUser[0].id;
-      
+    // If the user exists, check if they are already a member of the organization
+    if (existingUser) {
       const existingMember = await db
         .select()
         .from(organizationMembers)
         .where(
           and(
-            eq(organizationMembers.userId, userId),
+            eq(organizationMembers.userId, existingUser.id),
             eq(organizationMembers.organizationId, organizationId)
           )
         )
-        .limit(1);
+        .limit(1)
+        .then(results => results[0] || null);
       
-      console.log("Existing member:", existingMember.length > 0 ? "found" : "not found");
-      
-      if (existingMember.length > 0) {
-        return {
-          success: false,
-          message: "This user is already a member of the organization",
-        };
+      if (existingMember) {
+        return { success: false, message: "This user is already a member of the organization" };
       }
     }
     
-    // Check if there's already a pending invitation for this email
-    console.log("Checking for existing invitation...");
+    // Check if an invitation has already been sent to this email for this organization
+    console.log('Checking for existing invitation...');
     const existingInvitation = await db
       .select()
       .from(invitations)
@@ -111,40 +83,37 @@ export async function inviteUserToOrganization(
           eq(invitations.status, 'pending')
         )
       )
-      .limit(1);
+      .limit(1)
+      .then(results => results[0] || null);
     
-    console.log("Existing invitation:", existingInvitation.length > 0 ? "found" : "not found");
+    console.log('Existing invitation:', existingInvitation ? 'found' : 'not found');
     
-    if (existingInvitation.length > 0) {
-      return {
-        success: false,
-        message: "An invitation has already been sent to this email address",
-      };
+    if (existingInvitation) {
+      return { success: false, message: "An invitation has already been sent to this email address" };
     }
     
     // Create a new invitation
-    console.log("Creating new invitation...");
-    const token = randomUUID();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
+    console.log('Creating new invitation...');
+    const token = uuidv4();
+    const expiresAt = addDays(new Date(), 7); // Invitation expires in 7 days
     
     await db
       .insert(invitations)
       .values({
-        token,
         email,
         organizationId,
-        role,
-        invitedBy: currentUserId,
+        role: role as typeof roleEnum.enumValues[number], // Use proper type
+        invitedBy: Number(session.user.id),
         status: 'pending',
         expiresAt,
-        createdAt: new Date(),
-      });
+        token, // Add token field
+      })
+      .returning();
     
-    console.log("Invitation inserted into database");
+    console.log('Invitation inserted into database');
     
     // Get organization details for the email
-    console.log("Getting organization details...");
+    console.log('Getting organization details...');
     const organization = await db
       .select()
       .from(organizations)
@@ -153,161 +122,102 @@ export async function inviteUserToOrganization(
       .then(results => results[0]);
     
     if (!organization) {
-      throw new Error("Organization not found");
+      return { success: false, message: "Organization not found" };
     }
     
-    console.log("Organization found:", organization.name);
+    console.log('Organization found:', organization.name);
     
     // Send invitation email
-    try {
-      console.log("Sending invitation email...");
-      await sendInvitationEmailAction({
-        inviteeEmail: email,
-        organizationName: organization.name,
-        invitationToken: token,
-        role: role,
-        expiresAt: expiresAt,
-        organizationId: organizationId,
-      });
-      
-      console.log(`Invitation email queued for ${email}`);
-    } catch (emailError) {
-      console.error("Error sending invitation email:", emailError);
-      // Continue with the invitation process even if email fails
-      // The invitation is still created in the database
-    }
+    console.log('Sending invitation email...');
     
-    revalidatePath(`/organizations/${organizationId}`);
+    const emailResult = await sendInvitationEmail({
+      inviteeEmail: email,
+      organizationName: organization.name,
+      inviterName: session.user.name || 'Someone',
+      invitationToken: token,
+      role,
+    });
     
-    console.log("Invitation process completed successfully");
-    return {
-      success: true,
-      message: "Invitation sent successfully",
-    };
+    console.log('Email sent successfully:', emailResult);
+    console.log(`Invitation email sent successfully with ID: ${emailResult.id}`);
+    console.log(`Invitation email queued for ${email}`);
+    
+    console.log('Invitation process completed successfully');
+    return { success: true, message: "Invitation sent successfully" };
   } catch (error) {
-    console.error("Error sending invitation:", error);
-    return {
-      success: false,
-      message: "Failed to send invitation",
-    };
+    console.error('Error inviting user:', error);
+    return { success: false, message: "Failed to send invitation" };
   }
 }
 
-/**
- * Server action to accept an invitation
- */
-export async function acceptInvitation(token: string): Promise<InvitationResult> {
+export async function acceptInvitation(token: string) {
   try {
+    // Get the current user's session
     const session = await auth();
     
     if (!session?.user) {
-      return {
-        success: false,
-        message: "You must be logged in to accept an invitation",
-      };
+      return { success: false, message: "You must be logged in to accept an invitation" };
     }
     
-    const currentUserId = parseInt(session.user.id);
-    const currentUserEmail = session.user.email;
-    
-    // Find the invitation by token
+    // Find the invitation
     const invitation = await db
       .select()
       .from(invitations)
       .where(eq(invitations.token, token))
       .limit(1)
-      .then((results) => results[0]);
+      .then(results => results[0]);
     
     if (!invitation) {
-      return {
-        success: false,
-        message: "Invalid invitation token",
-      };
-    }
-    
-    // Check if the invitation is expired
-    if (invitation.status !== 'pending') {
-      return {
-        success: false,
-        message: `This invitation has already been ${invitation.status}`,
-      };
-    }
-    
-    const now = new Date();
-    if (now > invitation.expiresAt) {
-      // Update invitation status to expired
-      await db
-        .update(invitations)
-        .set({ status: 'expired' })
-        .where(eq(invitations.id, invitation.id));
-      
-      return {
-        success: false,
-        message: "This invitation has expired",
-      };
+      return { success: false, message: "Invalid invitation token" };
     }
     
     // Check if the invitation is for the current user
-    if (invitation.email !== currentUserEmail) {
-      return {
-        success: false,
-        message: "This invitation is for a different email address",
-      };
+    if (invitation.email !== session.user.email) {
+      return { success: false, message: "This invitation is for a different email address" };
+    }
+    
+    // Check if the invitation has already been used
+    if (invitation.status !== 'pending') {
+      return { success: false, message: "This invitation has already been used or has expired" };
     }
     
     // Check if the user is already a member of the organization
-    const existingMember = await db
+    const existingMembership = await db
       .select()
       .from(organizationMembers)
       .where(
         and(
-          eq(organizationMembers.userId, currentUserId),
+          eq(organizationMembers.userId, Number(session.user.id)),
           eq(organizationMembers.organizationId, invitation.organizationId)
         )
       )
-      .limit(1);
+      .limit(1)
+      .then(results => results[0]);
     
-    if (existingMember.length > 0) {
-      // Update invitation status to accepted
-      await db
-        .update(invitations)
-        .set({ status: 'accepted' })
-        .where(eq(invitations.id, invitation.id));
-      
-      return {
-        success: false,
-        message: "You are already a member of this organization",
-      };
+    if (existingMembership) {
+      return { success: false, message: "You are already a member of this organization" };
     }
     
-    // Add the user to the organization with the specified role
+    // Add the user to the organization
     await db
       .insert(organizationMembers)
       .values({
-        userId: currentUserId,
+        userId: Number(session.user.id),
         organizationId: invitation.organizationId,
         role: invitation.role,
-        createdAt: new Date(),
+        invitedBy: invitation.invitedBy,
       });
     
-    // Update invitation status to accepted
+    // Update the invitation status
     await db
       .update(invitations)
       .set({ status: 'accepted' })
       .where(eq(invitations.id, invitation.id));
     
-    revalidatePath(`/organizations/${invitation.organizationId}`);
-    
-    return {
-      success: true,
-      message: "You have successfully joined the organization",
-    };
+    return { success: true, message: "Invitation accepted successfully" };
   } catch (error) {
-    console.error("Error accepting invitation:", error);
-    return {
-      success: false,
-      message: "Failed to accept invitation",
-    };
+    console.error('Error accepting invitation:', error);
+    return { success: false, message: "Failed to accept invitation" };
   }
 }
 

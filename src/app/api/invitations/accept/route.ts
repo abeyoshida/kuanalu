@@ -1,39 +1,111 @@
-import { NextRequest, NextResponse } from "next/server";
-import { acceptInvitation } from "@/lib/actions/invitation-actions";
-import { z } from "zod";
-
-const acceptInvitationSchema = z.object({
-  token: z.string().uuid(),
-});
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { invitations, organizationMembers } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { auth } from '@/lib/auth/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // Get the authenticated user
+    const session = await auth();
     
-    // Validate the request body
-    const validationResult = acceptInvitationSchema.safeParse(body);
-    
-    if (!validationResult.success) {
+    if (!session?.user) {
       return NextResponse.json(
-        { error: "Invalid request body", details: validationResult.error.issues },
+        { success: false, message: 'You must be logged in to accept an invitation' },
+        { status: 401 }
+      );
+    }
+    
+    // Get the token from the request body
+    const { token } = await request.json();
+    
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: 'Invitation token is required' },
         { status: 400 }
       );
     }
     
-    const { token } = validationResult.data;
+    // Find the invitation
+    const invitation = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.token, token))
+      .limit(1)
+      .then(results => results[0]);
     
-    // Accept the invitation
-    const result = await acceptInvitation(token);
-    
-    if (result.success) {
-      return NextResponse.json({ message: result.message }, { status: 200 });
-    } else {
-      return NextResponse.json({ error: result.message }, { status: 400 });
+    if (!invitation) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid or expired invitation' },
+        { status: 404 }
+      );
     }
+    
+    // Check if the invitation is for the authenticated user
+    const userEmail = session.user.email || '';
+    if (invitation.email.toLowerCase() !== userEmail.toLowerCase()) {
+      return NextResponse.json(
+        { success: false, message: 'This invitation is for a different email address' },
+        { status: 403 }
+      );
+    }
+    
+    // Check if the invitation has already been used
+    if (invitation.status !== 'pending') {
+      return NextResponse.json(
+        { success: false, message: 'This invitation has already been used or has expired' },
+        { status: 400 }
+      );
+    }
+    
+    // Check if the user is already a member of the organization
+    const existingMembership = await db
+      .select()
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.userId, Number(session.user.id)),
+          eq(organizationMembers.organizationId, invitation.organizationId)
+        )
+      )
+      .limit(1)
+      .then(results => results[0] || null);
+    
+    if (existingMembership) {
+      return NextResponse.json(
+        { success: false, message: 'You are already a member of this organization' },
+        { status: 400 }
+      );
+    }
+    
+    // Use a transaction to ensure data consistency
+    await db.transaction(async (tx) => {
+      // Add the user to the organization
+      await tx
+        .insert(organizationMembers)
+        .values({
+          userId: Number(session.user.id),
+          organizationId: invitation.organizationId,
+          role: invitation.role,
+          invitedBy: invitation.invitedBy,
+        });
+      
+      // Update the invitation status
+      await tx
+        .update(invitations)
+        .set({ status: 'accepted' })
+        .where(eq(invitations.id, invitation.id));
+    });
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Invitation accepted successfully',
+      organizationId: invitation.organizationId,
+    });
   } catch (error) {
-    console.error("Error accepting invitation:", error);
+    console.error('Error accepting invitation:', error);
     return NextResponse.json(
-      { error: "Failed to accept invitation" },
+      { success: false, message: 'Failed to accept invitation' },
       { status: 500 }
     );
   }

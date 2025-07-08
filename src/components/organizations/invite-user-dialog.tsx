@@ -52,9 +52,12 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
       console.log("Invitation result:", result);
       
       if (result.success) {
+        // Show success toast
         toast({
-          title: "Invitation sent",
-          description: `An invitation has been sent to ${email}`,
+          title: "Invitation Sent",
+          description: "The invitation has been sent successfully.",
+          variant: "default",
+          duration: 5000
         });
         
         setOpen(false);
@@ -72,19 +75,24 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
           setError(result.message);
         }
         
+        // Show error toast
         toast({
           variant: "destructive",
-          title: "Error",
-          description: result.message,
+          title: "Invitation Failed",
+          description: "There was a problem sending the invitation.",
+          duration: 5000
         });
       }
     } catch (error) {
       console.error("Error inviting user:", error);
       setError("An unexpected error occurred. Please try again.");
+      
+      // Show error toast for unexpected errors
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send invitation",
+        title: "Invitation Failed",
+        description: "There was a problem sending the invitation.",
+        duration: 5000
       });
     } finally {
       setIsSubmitting(false);

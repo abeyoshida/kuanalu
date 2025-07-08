@@ -36,20 +36,15 @@ export async function GET(request: NextRequest) {
       // Create a sample invitation URL
       const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
       const invitationToken = 'sample-token-for-preview';
-      const invitationUrl = `${baseUrl}/invitations/accept?token=${invitationToken}`;
-      
-      // Set expiration date to 7 days from now
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
+      const acceptUrl = `${baseUrl}/invitations/accept?token=${invitationToken}`;
       
       // Render the invitation email
       emailComponent = React.createElement(InvitationEmail, {
         inviteeEmail,
         organizationName,
         inviterName,
-        invitationUrl,
+        acceptUrl,
         role,
-        expiresAt,
       });
     } else if (type === 'task-assignment') {
       emailComponent = React.createElement(TaskAssignmentEmail, {

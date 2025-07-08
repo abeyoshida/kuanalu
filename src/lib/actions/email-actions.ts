@@ -112,7 +112,6 @@ export async function queueEmailAction({
  * @param organizationName The name of the organization
  * @param invitationToken The invitation token
  * @param role The role the invitee will have
- * @param expiresAt When the invitation expires
  * @param organizationId The organization ID
  * @returns The created email queue item
  */
@@ -121,14 +120,12 @@ export async function sendInvitationEmailAction({
   organizationName,
   invitationToken,
   role,
-  expiresAt,
   organizationId,
 }: {
   inviteeEmail: string;
   organizationName: string;
   invitationToken: string;
   role: string;
-  expiresAt: Date;
   organizationId: number;
 }) {
   try {
@@ -139,16 +136,15 @@ export async function sendInvitationEmailAction({
 
     const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.name || 'A user';
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const invitationUrl = `${baseUrl}/invitations/accept?token=${invitationToken}`;
+    const acceptUrl = `${baseUrl}/invitations/accept?token=${invitationToken}`;
 
     // Create the invitation email component
     const emailComponent = React.createElement(InvitationEmail, {
       inviteeEmail,
       organizationName,
       inviterName,
-      invitationUrl,
+      acceptUrl,
       role,
-      expiresAt,
     });
 
     // Render the email component to HTML and text

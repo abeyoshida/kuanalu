@@ -1,20 +1,36 @@
-import { RegisterForm } from "@/components/auth/register-form";
-import { auth } from "@/lib/auth/auth";
-import { redirect } from "next/navigation";
+import { Suspense } from 'react';
+import { RegisterForm } from '@/components/auth/register-form';
+import { auth } from '@/lib/auth/auth';
+import { redirect } from 'next/navigation';
 
-export default async function RegisterPage() {
-  // Check if user is already logged in
+export const metadata = {
+  title: 'Register | Kuanalu',
+  description: 'Create a new account',
+};
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: { callbackUrl?: string; email?: string; invitationToken?: string };
+}) {
   const session = await auth();
   
-  // Extract callbackUrl from searchParams safely
-  // In Next.js 15, we need to use a different approach
-  const callbackUrl = "/dashboard";
-  
+  // If user is already authenticated, redirect to callbackUrl
   if (session?.user) {
-    redirect(callbackUrl);
+    redirect(searchParams.callbackUrl || '/dashboard');
   }
-  
+
   return (
-    <RegisterForm callbackUrl={callbackUrl} />
+    <div className="flex flex-col space-y-6">
+      <div className="flex flex-col space-y-2 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
+        <p className="text-sm text-muted-foreground">
+          Enter your information to create an account
+        </p>
+      </div>
+      <Suspense fallback={<div>Loading...</div>}>
+        <RegisterForm />
+      </Suspense>
+    </div>
   );
 } 

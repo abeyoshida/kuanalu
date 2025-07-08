@@ -13,7 +13,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Navigation */}
       <header className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,9 +35,9 @@ export default function AuthLayout({
         </div>
       </header>
 
-      {/* Auth form */}
-      <div className="flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-lg">
+      {/* Auth form - centered both horizontally and vertically */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-full max-w-md px-4 sm:px-6 lg:px-8">
           {children}
         </div>
       </div>
