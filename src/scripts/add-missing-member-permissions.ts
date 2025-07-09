@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { rolePermissions as rolePermissionsTable } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 async function addMissingMemberPermissions() {
   try {

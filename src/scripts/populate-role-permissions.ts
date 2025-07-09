@@ -49,7 +49,7 @@ async function populateRolePermissions() {
     
     if (permissionsToInsert.length > 0) {
       // Insert all new permissions
-      const result = await db.insert(rolePermissionsTable).values(permissionsToInsert);
+      await db.insert(rolePermissionsTable).values(permissionsToInsert);
       console.log(`Successfully inserted ${permissionsToInsert.length} permissions`);
     } else {
       console.log("No new permissions to insert");

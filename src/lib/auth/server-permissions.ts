@@ -5,8 +5,7 @@ import { auth } from '@/lib/auth/auth';
 import { db } from "../db";
 import { users, organizationMembers, rolePermissions as rolePermissionsTable } from "../db/schema";
 import { and, eq } from "drizzle-orm";
-import { Role, Permission, rolePermissions } from './permissions-data';
-import { userPermissions } from '../db/schema';
+import { Role } from './permissions-data';
 
 /**
  * Server component utility to check permissions

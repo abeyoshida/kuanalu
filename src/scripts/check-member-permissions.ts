@@ -92,7 +92,7 @@ async function checkMemberPermissions() {
         }));
         
         if (permissionsToInsert.length > 0) {
-          const result = await db.insert(rolePermissionsTable).values(permissionsToInsert);
+          await db.insert(rolePermissionsTable).values(permissionsToInsert);
           console.log(`Successfully added ${permissionsToInsert.length} missing permissions`);
         }
       }

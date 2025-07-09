@@ -1,6 +1,17 @@
 import { db } from "@/lib/db";
 import { rolePermissions as rolePermissionsTable } from "@/lib/db/schema";
 
+// Define a type for the permission records
+type PermissionRecord = {
+  id: number;
+  role: string;
+  resource: string;
+  action: string;
+  granted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 async function checkRolePermissions() {
   try {
     console.log("Checking role_permissions table...");
@@ -13,7 +24,7 @@ async function checkRolePermissions() {
     console.log(`Found ${allPermissions.length} total permissions in the database`);
     
     // Group by role
-    const permissionsByRole: Record<string, any[]> = {};
+    const permissionsByRole: Record<string, PermissionRecord[]> = {};
     
     allPermissions.forEach(perm => {
       if (!permissionsByRole[perm.role]) {
