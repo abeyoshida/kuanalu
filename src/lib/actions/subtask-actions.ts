@@ -451,10 +451,23 @@ export async function updateSubtask(
     
     const projectId = task[0].projectId;
     
+    // Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
     // Check if user has permission to update subtasks
     const hasUpdatePermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'update',
       'subtask'
     );
@@ -540,10 +553,23 @@ export async function deleteSubtask(subtaskId: number): Promise<void> {
     
     const projectId = task[0].projectId;
     
+    // Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
     // Check if user has permission to delete subtasks
     const hasDeletePermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'delete',
       'subtask'
     );
@@ -610,10 +636,23 @@ export async function updateSubtaskPositions(
     
     const projectId = task[0].projectId;
     
+    // Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+    
     // Check if user has permission to update subtasks
     const hasUpdatePermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'update',
       'subtask'
     );

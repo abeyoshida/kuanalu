@@ -369,6 +369,24 @@ export const emailNotifications = pgTable('email_notifications', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Role permissions table for mapping roles to permissions
+export const rolePermissions = pgTable('role_permissions', {
+  id: serial('id').primaryKey(),
+  role: text('role').notNull(), // 'owner', 'admin', 'member', 'guest'
+  resource: text('resource').notNull(), // The resource type (e.g., 'task', 'project', 'organization')
+  action: text('action').notNull(), // The action (e.g., 'create', 'read', 'update', 'delete')
+  granted: boolean('granted').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+}, (table) => {
+  return {
+    // Ensure uniqueness for role-resource-action combination
+    roleResourceActionUnique: primaryKey({
+      columns: [table.role, table.resource, table.action]
+    })
+  };
+});
+
 // Define relations
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   members: many(organizationMembers),

@@ -83,12 +83,14 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
   const [isSubtaskDialogOpen, setIsSubtaskDialogOpen] = useState(false)
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("")
   const [newSubtaskDescription, setNewSubtaskDescription] = useState("")
+  const [newSubtaskAssigneeId, setNewSubtaskAssigneeId] = useState<number | null>(null)
   const [isSubmittingSubtask, setIsSubmittingSubtask] = useState(false)
 
   // Add state for editing subtasks
   const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null)
   const [editSubtaskTitle, setEditSubtaskTitle] = useState("")
   const [editSubtaskDescription, setEditSubtaskDescription] = useState("")
+  const [editSubtaskAssigneeId, setEditSubtaskAssigneeId] = useState<number | null>(null)
   const [isEditSubtaskDialogOpen, setIsEditSubtaskDialogOpen] = useState(false)
   const [isSubmittingEditSubtask, setIsSubmittingEditSubtask] = useState(false)
 
@@ -374,7 +376,8 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
       const response = await createSubtask({
         title: newSubtaskTitle,
         description: newSubtaskDescription || undefined,
-        taskId: task.id
+        taskId: task.id,
+        assigneeId: newSubtaskAssigneeId || undefined
       });
       
       // Add the new subtask to the list
@@ -383,6 +386,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
       // Reset form and close dialog
       setNewSubtaskTitle("");
       setNewSubtaskDescription("");
+      setNewSubtaskAssigneeId(null);
       setIsSubtaskDialogOpen(false);
       
       toast({
@@ -416,6 +420,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
     setEditingSubtaskId(subtask.id);
     setEditSubtaskTitle(subtask.title);
     setEditSubtaskDescription(subtask.description || "");
+    setEditSubtaskAssigneeId(subtask.assigneeId || null);
     setIsEditSubtaskDialogOpen(true);
   };
 
@@ -428,7 +433,8 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
       
       const response = await updateSubtask(editingSubtaskId, {
         title: editSubtaskTitle,
-        description: editSubtaskDescription || null
+        description: editSubtaskDescription || null,
+        assigneeId: editSubtaskAssigneeId
       });
       
       // Update the subtask in the list
@@ -465,6 +471,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
       setEditingSubtaskId(null);
       setEditSubtaskTitle("");
       setEditSubtaskDescription("");
+      setEditSubtaskAssigneeId(null);
     }
   };
 
@@ -859,6 +866,60 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                           placeholder="Enter subtask description (optional)"
                           rows={3}
                         />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="subtask-assignee" className="text-right">
+                          Assignee
+                        </Label>
+                        <div className="col-span-3">
+                          <Select
+                            value={newSubtaskAssigneeId ? String(newSubtaskAssigneeId) : "unassigned"}
+                            onValueChange={(value) => {
+                              const assigneeId = value === "unassigned" ? null : parseInt(value);
+                              setNewSubtaskAssigneeId(assigneeId);
+                            }}
+                          >
+                            <SelectTrigger id="subtask-assignee">
+                              <SelectValue>
+                                {newSubtaskAssigneeId ? (
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-5 w-5">
+                                      <AvatarFallback>
+                                        {getInitials(projectMembers.find(m => m.id === newSubtaskAssigneeId)?.name || "")}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="truncate">
+                                      {projectMembers.find(m => m.id === newSubtaskAssigneeId)?.name || "Unknown User"}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <UserPlus className="h-4 w-4 text-gray-400" />
+                                    <span>Unassigned</span>
+                                  </div>
+                                )}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unassigned">
+                                <div className="flex items-center gap-2">
+                                  <UserPlus className="h-4 w-4 text-gray-400" />
+                                  <span>Unassigned</span>
+                                </div>
+                              </SelectItem>
+                              {projectMembers.map((member) => (
+                                <SelectItem key={member.id} value={String(member.id)}>
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-5 w-5">
+                                      <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
+                                    </Avatar>
+                                    <span>{member.name}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </div>
                     <DialogFooter>
@@ -1302,6 +1363,60 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                 placeholder="Enter subtask description (optional)"
                 rows={3}
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-subtask-assignee" className="text-right">
+                Assignee
+              </Label>
+              <div className="col-span-3">
+                <Select
+                  value={editSubtaskAssigneeId ? String(editSubtaskAssigneeId) : "unassigned"}
+                  onValueChange={(value) => {
+                    const assigneeId = value === "unassigned" ? null : parseInt(value);
+                    setEditSubtaskAssigneeId(assigneeId);
+                  }}
+                >
+                  <SelectTrigger id="edit-subtask-assignee">
+                    <SelectValue>
+                      {editSubtaskAssigneeId ? (
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarFallback>
+                              {getInitials(projectMembers.find(m => m.id === editSubtaskAssigneeId)?.name || "")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">
+                            {projectMembers.find(m => m.id === editSubtaskAssigneeId)?.name || "Unknown User"}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <UserPlus className="h-4 w-4 text-gray-400" />
+                          <span>Unassigned</span>
+                        </div>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">
+                      <div className="flex items-center gap-2">
+                        <UserPlus className="h-4 w-4 text-gray-400" />
+                        <span>Unassigned</span>
+                      </div>
+                    </SelectItem>
+                    {projectMembers.map((member) => (
+                      <SelectItem key={member.id} value={String(member.id)}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
+                          </Avatar>
+                          <span>{member.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>

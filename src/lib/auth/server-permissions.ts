@@ -3,9 +3,10 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth/auth';
 import { db } from "../db";
-import { users, organizationMembers } from "../db/schema";
+import { users, organizationMembers, rolePermissions as rolePermissionsTable } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import { Role, Permission, rolePermissions } from './permissions-data';
+import { userPermissions } from '../db/schema';
 
 /**
  * Server component utility to check permissions
@@ -82,21 +83,30 @@ export async function hasPermission(
     
     const userRole = memberRecord[0].role as Role;
     console.log('User role:', userRole);
-    console.log('Available roles in rolePermissions:', Object.keys(rolePermissions));
     
-    // Check if the role exists in rolePermissions
-    if (!rolePermissions[userRole]) {
-      console.error(`Role "${userRole}" not found in rolePermissions`);
-      // Default to guest permissions if role is not found
-      return rolePermissions['guest'].some(
-        (permission: Permission) => permission.action === action && permission.subject === subject
-      );
+    // Check the role_permissions table for this role, action, and subject
+    const permissionRecord = await db
+      .select({
+        granted: rolePermissionsTable.granted
+      })
+      .from(rolePermissionsTable)
+      .where(
+        and(
+          eq(rolePermissionsTable.role, userRole),
+          eq(rolePermissionsTable.resource, subject),
+          eq(rolePermissionsTable.action, action)
+        )
+      )
+      .limit(1);
+    
+    // If we found a permission record, use that
+    if (permissionRecord.length > 0) {
+      return permissionRecord[0].granted;
     }
     
-    // Check if the user's role has the required permission
-    return rolePermissions[userRole].some(
-      (permission: Permission) => permission.action === action && permission.subject === subject
-    );
+    // If no permission record exists, default to false (no permission)
+    console.log(`No permission record found for role ${userRole}, action ${action}, subject ${subject}`);
+    return false;
   } catch (error) {
     console.error('Permission check error:', error);
     return false;
@@ -131,26 +141,30 @@ export async function hasMultiplePermissions(
     
     const userRole = memberRecord[0].role as Role;
     
-    // Check if the role exists in rolePermissions
-    if (!rolePermissions[userRole]) {
-      console.error(`Role "${userRole}" not found in rolePermissions`);
-      // Default to guest permissions if role is not found
-      const guestPermissions = rolePermissions['guest'];
-      return permissions.every(({ action, subject }) => 
-        guestPermissions.some(
-          (permission: Permission) => permission.action === action && permission.subject === subject
+    // Check each permission individually
+    for (const { action, subject } of permissions) {
+      const permissionRecord = await db
+        .select({
+          granted: rolePermissionsTable.granted
+        })
+        .from(rolePermissionsTable)
+        .where(
+          and(
+            eq(rolePermissionsTable.role, userRole),
+            eq(rolePermissionsTable.resource, subject),
+            eq(rolePermissionsTable.action, action)
+          )
         )
-      );
+        .limit(1);
+      
+      // If any permission is not granted, return false
+      if (!permissionRecord.length || !permissionRecord[0].granted) {
+        return false;
+      }
     }
     
-    const userPermissions = rolePermissions[userRole];
-    
-    // Check if the user has all specified permissions
-    return permissions.every(({ action, subject }) => 
-      userPermissions.some(
-        (permission: Permission) => permission.action === action && permission.subject === subject
-      )
-    );
+    // All permissions are granted
+    return true;
   } catch (error) {
     console.error('Multiple permissions check error:', error);
     return false;
@@ -185,26 +199,30 @@ export async function hasAnyPermission(
     
     const userRole = memberRecord[0].role as Role;
     
-    // Check if the role exists in rolePermissions
-    if (!rolePermissions[userRole]) {
-      console.error(`Role "${userRole}" not found in rolePermissions`);
-      // Default to guest permissions if role is not found
-      const guestPermissions = rolePermissions['guest'];
-      return permissions.some(({ action, subject }) => 
-        guestPermissions.some(
-          (permission: Permission) => permission.action === action && permission.subject === subject
+    // Check each permission individually
+    for (const { action, subject } of permissions) {
+      const permissionRecord = await db
+        .select({
+          granted: rolePermissionsTable.granted
+        })
+        .from(rolePermissionsTable)
+        .where(
+          and(
+            eq(rolePermissionsTable.role, userRole),
+            eq(rolePermissionsTable.resource, subject),
+            eq(rolePermissionsTable.action, action)
+          )
         )
-      );
+        .limit(1);
+      
+      // If any permission is granted, return true
+      if (permissionRecord.length && permissionRecord[0].granted) {
+        return true;
+      }
     }
     
-    const userPermissions = rolePermissions[userRole];
-    
-    // Check if the user has any of the specified permissions
-    return permissions.some(({ action, subject }) => 
-      userPermissions.some(
-        (permission: Permission) => permission.action === action && permission.subject === subject
-      )
-    );
+    // No permissions are granted
+    return false;
   } catch (error) {
     console.error('Any permission check error:', error);
     return false;
