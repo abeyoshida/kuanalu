@@ -1,6 +1,6 @@
 # API Permission Checks
 
-This document outlines the implementation of permission checks in the API routes of the FlowBoard application.
+This document outlines the implementation of permission checks in the API routes of the FlowBoardAI application.
 
 ## Overview
 

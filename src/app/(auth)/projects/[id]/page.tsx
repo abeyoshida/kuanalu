@@ -17,8 +17,8 @@ export async function generateMetadata({ params }: ProjectPageProps) {
   
   if (isNaN(projectId)) {
     return {
-      title: "Project Not Found | Kuanalu",
-      description: "The requested project could not be found.",
+      title: "Project Not Found | FlowBoardAI",
+      description: "The project you are looking for does not exist or you do not have access to it.",
     };
   }
   
@@ -32,19 +32,19 @@ export async function generateMetadata({ params }: ProjectPageProps) {
     
     if (!project) {
       return {
-        title: "Project Not Found | Kuanalu",
-        description: "The requested project could not be found.",
+        title: "Project Not Found | FlowBoardAI",
+        description: "The project you are looking for does not exist or you do not have access to it.",
       };
     }
     
     return {
-      title: `${project.name} | Kuanalu`,
-      description: `Project details for ${project.name}`,
+      title: `${project.name} | FlowBoardAI`,
+      description: `${project.name} project dashboard and management`,
     };
   } catch {
     return {
-      title: "Project | Kuanalu",
-      description: "Project details",
+      title: "Project | FlowBoardAI",
+      description: "Project dashboard and management",
     };
   }
 }

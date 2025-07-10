@@ -6,8 +6,8 @@ import { notFound } from "next/navigation";
 import ProfileContent from "@/components/profile/profile-content";
 
 export const metadata = {
-  title: "Profile | Kuanalu",
-  description: "Manage your profile settings",
+  title: "Profile | FlowBoardAI",
+  description: "Manage your user profile",
 };
 
 export default async function ProfilePage() {

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         assignerName: 'John Doe',
         taskTitle: 'Implement email notifications',
         taskId: 123,
-        projectName: 'Kuanalu Email System',
+        projectName: 'FlowBoardAI Email System',
         organizationName: 'Acme Inc.',
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         priority: 'high',
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         updaterName: 'John Doe',
         taskTitle: 'Implement email notifications',
         taskId: 123,
-        projectName: 'Kuanalu Email System',
+        projectName: 'FlowBoardAI Email System',
         organizationName: 'Acme Inc.',
         updateType: updateType as 'status' | 'priority' | 'dueDate' | 'description' | 'other',
       };
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
         commentContent: isMention 
           ? 'Hey @Jane, could you review the email templates I\'ve created? I want to make sure they follow our design guidelines.'
           : 'I\'ve made some progress on this task. The email templates are now working correctly, but we still need to integrate them with the task update flow.',
-        projectName: 'Kuanalu Email System',
+        projectName: 'FlowBoardAI Email System',
         organizationName: 'Acme Inc.',
         isMention,
       });

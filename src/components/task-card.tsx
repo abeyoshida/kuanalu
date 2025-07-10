@@ -1,7 +1,7 @@
 "use client"
 
 import type { Task } from "@/types/tasks"
-import { Calendar, User, AlertCircle, Clock, CheckCircle, Pencil } from "lucide-react"
+import { Calendar, User, AlertCircle, Clock, CheckCircle, Pencil, CalendarClock, Loader2, Eye, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 
 interface TaskCardProps {
@@ -18,13 +18,14 @@ const priorityColors = {
   urgent: "bg-purple-100 text-purple-800",
 }
 
-const statusIcons = {
-  backlog: <Clock className="w-3 h-3 text-gray-500" />,
-  todo: <AlertCircle className="w-3 h-3 text-blue-500" />,
-  in_progress: <Clock className="w-3 h-3 text-yellow-500" />,
-  in_review: <AlertCircle className="w-3 h-3 text-orange-500" />,
-  done: <CheckCircle className="w-3 h-3 text-green-500" />,
-}
+// Status icons
+const statusIcons: Record<string, React.ReactNode> = {
+  todo: <Clock className="w-3 h-3 text-gray-500" />,
+  today: <CalendarClock className="w-3 h-3 text-blue-500" />,
+  in_progress: <Loader2 className="w-3 h-3 text-yellow-500" />,
+  in_review: <Eye className="w-3 h-3 text-orange-500" />,
+  done: <CheckCircle2 className="w-3 h-3 text-green-500" />
+};
 
 export default function TaskCard({ task, onDragStart, onDragEnd, isDragging = false }: TaskCardProps) {
   // Format the date safely

@@ -100,9 +100,9 @@ export async function GET(
       );
     }
     
-    // Add status filter
-    if (status.length > 0) {
-      whereConditions.push(inArray(tasks.status, status as Array<"backlog" | "todo" | "in_progress" | "in_review" | "done">));
+    // Filter by status if provided
+    if (status && status.length > 0) {
+      whereConditions.push(inArray(tasks.status, status as Array<"todo" | "today" | "in_progress" | "in_review" | "done">));
     }
     
     // Add priority filter

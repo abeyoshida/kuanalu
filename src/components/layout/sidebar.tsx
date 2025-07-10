@@ -124,15 +124,9 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       >
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">FB</span>
-              </div>
-              <div>
-                <h2 className="font-semibold text-gray-900">FlowBoard</h2>
-                <p className="text-xs text-gray-500">Workspace</p>
-              </div>
+          <div className="px-4 py-2 border-b border-gray-200 h-[53px] flex items-center">
+            <div className="flex items-center">
+              <h2 className="font-semibold text-gray-900">FlowBoardAI</h2>
             </div>
           </div>
 
@@ -166,15 +160,9 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     >
       <div className="flex flex-col h-full">
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-              <span className="text-white font-bold text-sm">FB</span>
-            </div>
-            <div>
-              <h2 className="font-semibold text-gray-900">FlowBoard</h2>
-              <p className="text-xs text-gray-500">Workspace</p>
-            </div>
+        <div className="px-4 py-2 border-b border-gray-200 h-[53px] flex items-center">
+          <div className="flex items-center">
+            <h2 className="font-semibold text-gray-900">FlowBoardAI</h2>
           </div>
         </div>
 

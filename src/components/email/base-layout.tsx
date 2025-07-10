@@ -20,7 +20,7 @@ export const BaseEmailLayout = ({
   previewText,
   children,
 }: BaseEmailLayoutProps) => {
-  const appName = 'Kuanalu';
+  const appName = 'FlowBoardAI';
   const currentYear = new Date().getFullYear();
 
   return (

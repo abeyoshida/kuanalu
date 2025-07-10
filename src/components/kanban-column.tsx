@@ -40,8 +40,8 @@ export default function KanbanColumn<T extends Task = Task>({
   // Extract status from title
   const getStatusFromTitle = (): TaskStatus => {
     const statusMap: Record<string, TaskStatus> = {
-      "Backlog": "backlog",
       "Todo": "todo",
+      "Today": "today",
       "In Progress": "in_progress",
       "In Review": "in_review",
       "Done": "done"

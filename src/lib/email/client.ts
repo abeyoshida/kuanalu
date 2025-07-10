@@ -56,7 +56,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
 
     // Prepare email data with required fields
     const emailData: EmailData = {
-      from: options.from || `Kuanalu <noreply@hogalulu.com>`,
+      from: options.from || `FlowBoardAI <noreply@hogalulu.com>`,
       to: options.to,
       subject: options.subject,
     };

@@ -8,15 +8,15 @@ async function main() {
     console.log('Sending test task assignment email...');
 
     const result = await sendTaskAssignmentEmail({
-      recipientEmail: 'delivered@resend.dev', // Valid test email for Resend
-      recipientName: 'Test User',
+      recipientEmail: 'user@example.com',
+      recipientName: 'John Doe',
       assignerName: 'Admin User',
-      taskTitle: 'Implement task assignment email template',
+      taskTitle: 'Implement email notifications',
       taskId: 123,
-      projectName: 'Kuanalu Email System',
-      organizationName: 'Kuanalu',
+      projectName: 'FlowBoardAI Email System',
+      organizationName: 'FlowBoardAI',
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      priority: 'high',
+      priority: 'high'
     });
 
     console.log('Email sent successfully:', result);

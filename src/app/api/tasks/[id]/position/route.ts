@@ -11,7 +11,7 @@ import {
 
 // Schema for task position update
 const updatePositionSchema = z.object({
-  newStatus: z.enum(["backlog", "todo", "in_progress", "in_review", "done"]),
+  newStatus: z.enum(["todo", "today", "in_progress", "in_review", "done"]),
   newPosition: z.number().int().min(0)
 });
 
@@ -34,7 +34,11 @@ export async function PATCH(
     }
     
     // Validate request body
-    const validation = await validateRequestBody(request, updatePositionSchema);
+    const schema = z.object({
+      newStatus: z.enum(["todo", "today", "in_progress", "in_review", "done"]),
+      newPosition: z.number().int().min(0)
+    });
+    const validation = await validateRequestBody(request, schema);
     if ('error' in validation) return validation.error;
     
     const { newStatus, newPosition } = validation.data;

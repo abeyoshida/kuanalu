@@ -2,7 +2,7 @@ import { AcceptInvitationForm } from '@/app/invitations/accept/accept-invitation
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata = {
-  title: 'Accept Invitation | Kuanalu',
+  title: 'Accept Invitation | FlowBoardAI',
   description: 'Accept an invitation to join an organization',
 };
 

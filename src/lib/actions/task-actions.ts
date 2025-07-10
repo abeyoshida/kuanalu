@@ -747,11 +747,11 @@ export async function updateTaskPositions(
     }
     
     // Validate newStatus is a valid task status
-    if (!["backlog", "todo", "in_progress", "in_review", "done"].includes(newStatus)) {
+    if (!["todo", "today", "in_progress", "in_review", "done"].includes(newStatus)) {
       throw new Error("Invalid task status");
     }
     
-    const typedNewStatus = newStatus as "backlog" | "todo" | "in_progress" | "in_review" | "done";
+    const typedNewStatus = newStatus as "todo" | "today" | "in_progress" | "in_review" | "done";
     
     // No change in position or status
     if (oldStatus === typedNewStatus && oldPosition === newPosition) {

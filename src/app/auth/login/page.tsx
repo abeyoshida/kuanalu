@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth/auth';
 import { redirect } from 'next/navigation';
 
 export const metadata = {
-  title: 'Login | Kuanalu',
+  title: 'Login | FlowBoardAI',
   description: 'Login to your account',
 };
 

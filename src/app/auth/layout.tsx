@@ -3,8 +3,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "FlowBoard - Authentication",
-  description: "Sign in or register for FlowBoard",
+  title: "FlowBoardAI - Authentication",
+  description: "Sign in or register for FlowBoardAI",
 };
 
 export default function AuthLayout({
@@ -20,7 +20,7 @@ export default function AuthLayout({
           <div className="flex justify-between items-center h-16">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="flex items-center">
-                <span className="text-xl font-bold text-primary">FlowBoard</span>
+                <span className="text-xl font-bold text-primary">FlowBoardAI</span>
               </Link>
             </div>
             <div className="flex items-center space-x-4">

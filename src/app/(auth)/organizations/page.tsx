@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import OrganizationsListContent from "@/components/organizations/organizations-list-content";
 
 export const metadata = {
-  title: "Organizations | Kuanalu",
+  title: "Organizations | FlowBoardAI",
   description: "Manage your organizations",
 };
 

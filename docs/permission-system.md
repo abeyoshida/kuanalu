@@ -1,10 +1,10 @@
-# FlowBoard Role-Based Permission System
+# FlowBoardAI Role-Based Permission System
 
-This document explains the role-based permission system implemented in FlowBoard.
+This document explains the role-based permission system implemented in FlowBoardAI.
 
 ## Overview
 
-FlowBoard uses a comprehensive role-based access control (RBAC) system to manage permissions across the application. The system is designed to be flexible, easy to understand, and efficient.
+FlowBoardAI uses a comprehensive role-based access control (RBAC) system to manage permissions across the application. The system is designed to be flexible, easy to understand, and efficient.
 
 ## Roles and Hierarchy
 

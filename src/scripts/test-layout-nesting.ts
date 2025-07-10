@@ -16,42 +16,42 @@ const routeConfigs: RouteConfig[] = [
   {
     route: "/",
     layouts: ["RootLayout"],
-    expectedTitle: "FlowBoard"
+    expectedTitle: "FlowBoardAI"
   },
   {
     route: "/auth/login",
     layouts: ["RootLayout", "AuthLayout"],
-    expectedTitle: "Kuanalu - Authentication"
+    expectedTitle: "FlowBoardAI - Authentication"
   },
   {
     route: "/auth/register",
     layouts: ["RootLayout", "AuthLayout"],
-    expectedTitle: "Kuanalu - Authentication"
+    expectedTitle: "FlowBoardAI - Authentication"
   },
   {
     route: "/dashboard",
     layouts: ["RootLayout", "AuthenticatedLayout"],
-    expectedTitle: "Kuanalu - Dashboard"
+    expectedTitle: "FlowBoardAI - Dashboard"
   },
   {
     route: "/profile",
     layouts: ["RootLayout", "AuthenticatedLayout"],
-    expectedTitle: "Profile | Kuanalu"
+    expectedTitle: "Profile | FlowBoardAI"
   },
   {
     route: "/organizations",
     layouts: ["RootLayout", "AuthenticatedLayout"],
-    expectedTitle: "Organizations | Kuanalu"
+    expectedTitle: "Organizations | FlowBoardAI"
   },
   {
     route: "/organizations/1",
     layouts: ["RootLayout", "AuthenticatedLayout"],
-    expectedTitle: "Organization | Kuanalu"
+    expectedTitle: "Organization | FlowBoardAI"
   },
   {
     route: "/projects/1",
     layouts: ["RootLayout", "AuthenticatedLayout"],
-    expectedTitle: "Project | Kuanalu"
+    expectedTitle: "Project | FlowBoardAI"
   }
 ];
 

@@ -142,18 +142,18 @@ export default function TaskList({
   // Helper function to render status badge
   const renderStatusBadge = (status: string) => {
     switch (status) {
-      case 'backlog':
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800">Backlog</Badge>;
       case 'todo':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">To Do</Badge>;
+        return <Badge variant="outline" className="bg-gray-100 text-gray-800">Todo</Badge>;
+      case 'today':
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Today</Badge>;
       case 'in_progress':
-        return <Badge variant="outline" className="bg-purple-100 text-purple-800">In Progress</Badge>;
+        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">In Progress</Badge>;
       case 'in_review':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">In Review</Badge>;
+        return <Badge variant="outline" className="bg-orange-100 text-orange-800">In Review</Badge>;
       case 'done':
         return <Badge variant="outline" className="bg-green-100 text-green-800">Done</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 

@@ -71,7 +71,7 @@ export default function DashboardContent() {
         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
           <Building className="h-8 w-8 text-blue-600" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Welcome to FlowBoard</h2>
+        <h2 className="text-2xl font-bold mb-2">Welcome to FlowBoardAI</h2>
         <p className="text-gray-600 mb-6">
           Get started by creating your first organization to manage projects and tasks.
         </p>

@@ -14,16 +14,16 @@ async function main() {
 
     // Test regular comment notification
     const commentResult = await sendCommentEmail({
-      recipientEmail: 'abeyoshida@gmail.com',
-      recipientName: 'Task Owner',
-      commenterName: 'John Doe',
+      recipientEmail: 'user@example.com',
+      recipientName: 'John Doe',
+      commenterName: 'Admin User',
       taskTitle: 'Implement email notifications',
       taskId: 123,
       commentId: 456,
-      commentContent: 'I\'ve made some progress on this task. The email templates are now working correctly, but we still need to integrate them with the task update flow.',
-      projectName: 'Kuanalu Email System',
-      organizationName: 'Kuanalu',
-      isMention: false,
+      commentContent: 'This is a test comment for the email template.',
+      projectName: 'FlowBoardAI Email System',
+      organizationName: 'FlowBoardAI',
+      isMention: false
     });
     
     console.log('Comment notification email sent:', commentResult);
@@ -33,16 +33,16 @@ async function main() {
 
     // Test mention notification
     const mentionResult = await sendCommentEmail({
-      recipientEmail: 'abeyoshida@gmail.com',
-      recipientName: 'Jane Smith',
-      commenterName: 'John Doe',
+      recipientEmail: 'user@example.com',
+      recipientName: 'John Doe',
+      commenterName: 'Admin User',
       taskTitle: 'Implement email notifications',
       taskId: 123,
       commentId: 457,
-      commentContent: 'Hey @Jane, could you review the email templates I\'ve created? I want to make sure they follow our design guidelines.',
-      projectName: 'Kuanalu Email System',
-      organizationName: 'Kuanalu',
-      isMention: true,
+      commentContent: 'Hey @John, can you review this implementation?',
+      projectName: 'FlowBoardAI Email System',
+      organizationName: 'FlowBoardAI',
+      isMention: true
     });
     
     console.log('Mention notification email sent:', mentionResult);

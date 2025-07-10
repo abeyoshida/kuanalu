@@ -8,7 +8,7 @@ import { Metadata } from "next"
 export async function generateMetadata(): Promise<Metadata> {
   // Use a generic title that doesn't access params.id
   return {
-    title: "Task Details | FlowBoard",
+    title: "Task Details | FlowBoardAI",
     description: "View and manage task details",
   };
 }

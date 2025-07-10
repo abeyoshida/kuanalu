@@ -5,7 +5,7 @@ import AppShell from "@/components/layout/app-shell";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Kuanalu - Dashboard",
+  title: "FlowBoardAI - Dashboard",
   description: "Project and task management dashboard",
 };
 

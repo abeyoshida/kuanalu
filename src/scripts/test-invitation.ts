@@ -93,13 +93,13 @@ async function testInvitation() {
     const htmlContent = await renderEmail(emailComponent);
     const textContent = await renderEmailText(emailComponent);
     
-    // Add the email to the queue with immediate processing
-    const queueResult = await addToQueue({
+    // Add the email to the queue and process immediately
+    const result = await addToQueue({
       to: email,
       subject: `You've been invited to join ${organization.name}`,
       htmlContent,
       textContent,
-      from: `Kuanalu <noreply@hogalulu.com>`,
+      from: `FlowBoardAI <noreply@hogalulu.com>`,
       metadata: {
         invitationType: 'organization',
         organizationName: organization.name,
@@ -112,12 +112,12 @@ async function testInvitation() {
       processImmediately: true, // Process immediately
     });
     
-    console.log('Email queue result:', queueResult);
+    console.log('Email queue result:', result);
     
-    if (queueResult.success && queueResult.emailId) {
-      console.log(`Email sent successfully with ID: ${queueResult.emailId}`);
-    } else if (queueResult.error) {
-      console.error(`Failed to send email: ${queueResult.error}`);
+    if (result.success && result.emailId) {
+      console.log(`Email sent successfully with ID: ${result.emailId}`);
+    } else if (result.error) {
+      console.error(`Failed to send email: ${result.error}`);
     } else {
       console.log('Email queued successfully but not sent immediately');
     }

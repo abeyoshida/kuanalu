@@ -12,76 +12,61 @@ async function main() {
   try {
     console.log('Sending test task update emails...');
 
-    // Test status update
-    const statusResult = await sendTaskUpdateEmail({
-      recipientEmail: 'abeyoshida@gmail.com',
-      recipientName: 'Test User',
+    // Example 1: Status update
+    await sendTaskUpdateEmail({
+      recipientEmail: 'user@example.com',
+      recipientName: 'John Doe',
       updaterName: 'Admin User',
       taskTitle: 'Implement email notifications',
       taskId: 123,
-      projectName: 'Kuanalu Email System',
-      organizationName: 'Kuanalu',
+      projectName: 'FlowBoardAI Email System',
+      organizationName: 'FlowBoardAI',
       updateType: 'status',
-      oldValue: 'todo',
-      newValue: 'in_progress',
+      oldValue: 'In Progress',
+      newValue: 'In Review'
     });
-    
-    console.log('Status update email sent:', statusResult);
-    
-    // Wait 1 second to avoid rate limits
-    await sleep(1000);
 
-    // Test priority update
-    const priorityResult = await sendTaskUpdateEmail({
-      recipientEmail: 'abeyoshida@gmail.com',
-      recipientName: 'Test User',
+    // Example 2: Priority update
+    await sendTaskUpdateEmail({
+      recipientEmail: 'user@example.com',
+      recipientName: 'John Doe',
       updaterName: 'Admin User',
-      taskTitle: 'Implement email notifications',
-      taskId: 123,
-      projectName: 'Kuanalu Email System',
-      organizationName: 'Kuanalu',
+      taskTitle: 'Fix authentication bug',
+      taskId: 124,
+      projectName: 'FlowBoardAI Email System',
+      organizationName: 'FlowBoardAI',
       updateType: 'priority',
-      oldValue: 'medium',
-      newValue: 'high',
+      oldValue: 'Medium',
+      newValue: 'High'
     });
-    
-    console.log('Priority update email sent:', priorityResult);
-    
-    // Wait 1 second to avoid rate limits
-    await sleep(1000);
 
-    // Test due date update
-    const dueDateResult = await sendTaskUpdateEmail({
-      recipientEmail: 'abeyoshida@gmail.com',
-      recipientName: 'Test User',
+    // Example 3: Due date update
+    await sendTaskUpdateEmail({
+      recipientEmail: 'user@example.com',
+      recipientName: 'John Doe',
       updaterName: 'Admin User',
-      taskTitle: 'Implement email notifications',
-      taskId: 123,
-      projectName: 'Kuanalu Email System',
-      organizationName: 'Kuanalu',
+      taskTitle: 'Deploy to production',
+      taskId: 125,
+      projectName: 'FlowBoardAI Email System',
+      organizationName: 'FlowBoardAI',
       updateType: 'dueDate',
-      oldValue: new Date(Date.now()).toISOString(),
-      newValue: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+      oldValue: '2023-12-01',
+      newValue: '2023-12-15'
     });
-    
-    console.log('Due date update email sent:', dueDateResult);
-    
-    // Wait 1 second to avoid rate limits
-    await sleep(1000);
 
-    // Test description update
-    const descriptionResult = await sendTaskUpdateEmail({
-      recipientEmail: 'abeyoshida@gmail.com',
-      recipientName: 'Test User',
+    // Example 4: Description update
+    await sendTaskUpdateEmail({
+      recipientEmail: 'user@example.com',
+      recipientName: 'John Doe',
       updaterName: 'Admin User',
-      taskTitle: 'Implement email notifications',
-      taskId: 123,
-      projectName: 'Kuanalu Email System',
-      organizationName: 'Kuanalu',
+      taskTitle: 'Update documentation',
+      taskId: 126,
+      projectName: 'FlowBoardAI Email System',
+      organizationName: 'FlowBoardAI',
       updateType: 'description',
+      oldValue: 'Old description',
+      newValue: 'New detailed description'
     });
-    
-    console.log('Description update email sent:', descriptionResult);
 
     console.log('All test emails sent successfully!');
   } catch (error) {

@@ -157,7 +157,7 @@ export async function sendInvitationEmailAction({
       subject: `You've been invited to join ${organizationName}`,
       htmlContent,
       textContent,
-      from: `Kuanalu <noreply@hogalulu.com>`,
+      from: `FlowBoardAI <noreply@hogalulu.com>`,
       metadata: {
         invitationType: 'organization',
         organizationName,

@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FlowBoard - Project Management",
+  title: "FlowBoardAI - Project Management",
   description: "A modern project and task management application",
 };
 

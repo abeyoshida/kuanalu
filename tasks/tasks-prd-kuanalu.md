@@ -232,7 +232,9 @@
   - [x] 10.1 Change flowboard column titles
     - Changed "Backlog" to "Todo" and "Todo" to "Today" in the UI components
     - Note: Database migration needs to be handled separately due to enum type constraints
-  - [ ] 10.2 Update the Flowboard name to FlowBoardAI
+  - [x] 10.2 Update the Flowboard name to FlowBoardAI
+    - Changed all instances of "FlowBoard" to "FlowBoardAI" in UI components
+    - Updated email templates to use "FlowBoardAI" instead of "Kuanalu"
   - [ ] 10.3 Update the sidebar menu
   - [ ] 10.4 Update the header section - one header, sidebar, content
   - [ ] 10.5 Add role to the user Profile Information

@@ -178,26 +178,27 @@ export default function TaskListFilter({ onFilterChange }: TaskListFilterProps) 
             <div className="space-y-4">
               <div>
                 <h4 className="font-medium mb-2">Status</h4>
-                <div className="grid grid-cols-2 gap-2">
+                {/* Status checkboxes */}
+                <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <Checkbox 
-                      id="status-backlog" 
-                      checked={status.includes('backlog' as TaskStatus)}
-                      onCheckedChange={() => toggleStatus('backlog' as TaskStatus)}
-                    />
-                    <Label htmlFor="status-backlog">Backlog</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="status-todo" 
+                      id="status-todo"
                       checked={status.includes('todo' as TaskStatus)}
                       onCheckedChange={() => toggleStatus('todo' as TaskStatus)}
                     />
-                    <Label htmlFor="status-todo">To Do</Label>
+                    <Label htmlFor="status-todo">Todo</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox 
-                      id="status-in_progress" 
+                      id="status-today"
+                      checked={status.includes('today' as TaskStatus)}
+                      onCheckedChange={() => toggleStatus('today' as TaskStatus)}
+                    />
+                    <Label htmlFor="status-today">Today</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="status-in_progress"
                       checked={status.includes('in_progress' as TaskStatus)}
                       onCheckedChange={() => toggleStatus('in_progress' as TaskStatus)}
                     />
@@ -205,7 +206,7 @@ export default function TaskListFilter({ onFilterChange }: TaskListFilterProps) 
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox 
-                      id="status-in_review" 
+                      id="status-in_review"
                       checked={status.includes('in_review' as TaskStatus)}
                       onCheckedChange={() => toggleStatus('in_review' as TaskStatus)}
                     />
@@ -213,7 +214,7 @@ export default function TaskListFilter({ onFilterChange }: TaskListFilterProps) 
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox 
-                      id="status-done" 
+                      id="status-done"
                       checked={status.includes('done' as TaskStatus)}
                       onCheckedChange={() => toggleStatus('done' as TaskStatus)}
                     />

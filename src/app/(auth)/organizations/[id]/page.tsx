@@ -17,22 +17,31 @@ export async function generateMetadata({ params }: OrganizationPageProps) {
   
   if (isNaN(organizationId)) {
     return {
-      title: "Organization Not Found | Kuanalu",
-      description: "The requested organization could not be found.",
+      title: "Organization Not Found | FlowBoardAI",
+      description: "The organization you are looking for does not exist or you do not have access to it.",
     };
   }
   
   try {
     const organization = await getOrganizationById(organizationId);
     
+    // If no organization is found, return a 404 page
+    if (!organization) {
+      return {
+        title: "Organization Not Found | FlowBoardAI",
+        description: "The organization you are looking for does not exist or you do not have access to it.",
+      };
+    }
+
+    // If we have an organization, use its name in the title
     return {
-      title: `${organization.name} | Kuanalu`,
-      description: organization.description || `Organization details for ${organization.name}`,
+      title: `${organization.name} | FlowBoardAI`,
+      description: `${organization.name} organization dashboard and management`,
     };
   } catch {
     return {
-      title: "Organization | Kuanalu",
-      description: "Organization details",
+      title: "Organization | FlowBoardAI",
+      description: "Organization dashboard and management",
     };
   }
 }

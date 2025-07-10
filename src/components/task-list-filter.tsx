@@ -222,49 +222,47 @@ export default function TaskListFilter({ onFilterChange }: TaskListFilterProps) 
           </PopoverTrigger>
           <PopoverContent className="w-80">
             <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Status</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="status-backlog" 
-                      checked={status.includes('backlog' as TaskStatus)}
-                      onCheckedChange={() => toggleStatus('backlog' as TaskStatus)}
-                    />
-                    <Label htmlFor="status-backlog">Backlog</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="status-todo" 
-                      checked={status.includes('todo' as TaskStatus)}
-                      onCheckedChange={() => toggleStatus('todo' as TaskStatus)}
-                    />
-                    <Label htmlFor="status-todo">To Do</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="status-in_progress" 
-                      checked={status.includes('in_progress' as TaskStatus)}
-                      onCheckedChange={() => toggleStatus('in_progress' as TaskStatus)}
-                    />
-                    <Label htmlFor="status-in_progress">In Progress</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="status-in_review" 
-                      checked={status.includes('in_review' as TaskStatus)}
-                      onCheckedChange={() => toggleStatus('in_review' as TaskStatus)}
-                    />
-                    <Label htmlFor="status-in_review">In Review</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="status-done" 
-                      checked={status.includes('done' as TaskStatus)}
-                      onCheckedChange={() => toggleStatus('done' as TaskStatus)}
-                    />
-                    <Label htmlFor="status-done">Done</Label>
-                  </div>
+              {/* Status checkboxes */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="status-todo"
+                    checked={status.includes('todo' as TaskStatus)}
+                    onCheckedChange={() => toggleStatus('todo' as TaskStatus)}
+                  />
+                  <Label htmlFor="status-todo">Todo</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="status-today"
+                    checked={status.includes('today' as TaskStatus)}
+                    onCheckedChange={() => toggleStatus('today' as TaskStatus)}
+                  />
+                  <Label htmlFor="status-today">Today</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="status-in_progress"
+                    checked={status.includes('in_progress' as TaskStatus)}
+                    onCheckedChange={() => toggleStatus('in_progress' as TaskStatus)}
+                  />
+                  <Label htmlFor="status-in_progress">In Progress</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="status-in_review"
+                    checked={status.includes('in_review' as TaskStatus)}
+                    onCheckedChange={() => toggleStatus('in_review' as TaskStatus)}
+                  />
+                  <Label htmlFor="status-in_review">In Review</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="status-done"
+                    checked={status.includes('done' as TaskStatus)}
+                    onCheckedChange={() => toggleStatus('done' as TaskStatus)}
+                  />
+                  <Label htmlFor="status-done">Done</Label>
                 </div>
               </div>
               

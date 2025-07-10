@@ -20,7 +20,7 @@ export default async function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-bold text-primary">FlowBoard</span>
+              <span className="text-xl font-bold text-primary">FlowBoardAI</span>
             </div>
             <nav className="hidden md:flex space-x-8">
               {/*<Link href="#features" className="text-gray-600 hover:text-gray-900">Features</Link>
@@ -48,7 +48,7 @@ export default async function LandingPage() {
                 Manage projects simply
               </h1>
               <p className="text-xl text-gray-600 mb-8">
-                FlowBoard helps to get it done all at once.
+                FlowBoardAI helps to get it done all at once.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/auth/register">
@@ -131,7 +131,7 @@ export default async function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Everything you need to manage your projects</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              FlowBoard combines the best features of task management simply and easily.
+              FlowBoardAI combines the best features of task management simply and easily.
             </p>
           </div>
           
@@ -206,7 +206,7 @@ export default async function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-6">Ready to get started?</h2>
           <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-            Start using FlowBoard to streamline your workflows and boost productivity.
+            Start using FlowBoardAI to streamline your workflows and boost productivity.
           </p>
           <Link href="/auth/register">
             <Button size="lg" variant="secondary" className="text-blue-600">
@@ -221,7 +221,7 @@ export default async function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between">
             <div className="mb-8 md:mb-0">
-              <span className="text-xl font-bold text-gray-900">FlowBoard</span>
+              <span className="text-xl font-bold text-gray-900">FlowBoardAI</span>
               <p className="mt-2 text-gray-600 max-w-xs">
                 Get it all done all at once.
               </p>
@@ -261,7 +261,7 @@ export default async function LandingPage() {
           </div>
           <div className="mt-12 border-t border-gray-200 pt-8">
             <p className="text-gray-500 text-sm text-center">
-              © {new Date().getFullYear()} FlowBoard. All rights reserved.
+              © {new Date().getFullYear()} FlowBoardAI. All rights reserved.
             </p>
           </div>
         </div>
