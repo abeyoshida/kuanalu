@@ -59,12 +59,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   
   // Fetch project details
   const project = await db
-    .select({
-      id: projects.id,
-      name: projects.name,
-      description: projects.description,
-      status: projects.status
-    })
+    .select()
     .from(projects)
     .where(eq(projects.id, projectId))
     .limit(1)

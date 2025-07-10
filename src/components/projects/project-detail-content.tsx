@@ -169,7 +169,7 @@ export default function ProjectDetailContent({ project, initialTab = "board" }: 
     <div className="w-full overflow-x-hidden">
       <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
         <TabsList className="mb-6 flex flex-wrap justify-start !justify-start">
-          <TabsTrigger value="board">Kanban Board</TabsTrigger>
+          <TabsTrigger value="board">Flow Board</TabsTrigger>
           <TabsTrigger value="list">List View</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
