@@ -1,11 +1,6 @@
 import { sendTaskUpdateEmail } from '@/lib/email/send-task-update';
 
 /**
- * Sleep for a specified number of milliseconds
- */
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-/**
  * Test script for sending task update emails
  */
 async function main() {

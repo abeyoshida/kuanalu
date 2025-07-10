@@ -1,7 +1,7 @@
 "use client"
 
 import type { Task } from "@/types/tasks"
-import { Calendar, User, AlertCircle, Clock, CheckCircle, Pencil, CalendarClock, Loader2, Eye, CheckCircle2 } from "lucide-react"
+import { Calendar, User, Clock, CalendarClock, Loader2, Eye, CheckCircle2, Pencil } from "lucide-react"
 import Link from "next/link"
 
 interface TaskCardProps {

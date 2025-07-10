@@ -1,36 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth/auth";
-import { updateTaskPositions } from "@/lib/actions/task-actions";
 import { z } from "zod";
-import { 
-  validateAuthentication, 
-  validateNumericParam,
-  validateRequestBody,
-  handleApiError
-} from "@/lib/validation/api-validation";
+import { validateRequestBody } from "@/lib/validation/api-validation";
+import { validateTaskPermission } from "@/lib/validation/permission-validation";
+import { updateTaskPositions } from "@/lib/actions/task-actions";
+import { auth } from "@/lib/auth/auth";
 
-// Schema for task position update
-const updatePositionSchema = z.object({
-  newStatus: z.enum(["todo", "today", "in_progress", "in_review", "done"]),
-  newPosition: z.number().int().min(0)
-});
-
-// PATCH /api/tasks/[id]/position - Update task position
-export async function PATCH(
+export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await auth();
+    const taskId = parseInt(params.id);
     
-    // Validate authentication
-    const authError = validateAuthentication(session);
-    if (authError) return authError;
-    
-    // Validate task ID
-    const taskIdResult = validateNumericParam(params.id, "task ID");
-    if (typeof taskIdResult !== 'number') {
-      return taskIdResult;
+    if (isNaN(taskId)) {
+      return NextResponse.json({ error: "Invalid task ID" }, { status: 400 });
     }
     
     // Validate request body
@@ -43,14 +27,19 @@ export async function PATCH(
     
     const { newStatus, newPosition } = validation.data;
     
-    // Update task position
-    await updateTaskPositions(taskIdResult, newStatus, newPosition);
+    // Validate permission
+    const permissionCheck = await validateTaskPermission(session, taskId, 'update');
+    if (permissionCheck) return permissionCheck;
     
-    return NextResponse.json(
-      { message: "Task position updated successfully" },
-      { status: 200 }
-    );
+    // Update task position
+    await updateTaskPositions(taskId, newStatus, newPosition);
+    
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return handleApiError(error, "task position");
+    console.error("Error updating task position:", error);
+    return NextResponse.json(
+      { error: "Failed to update task position" },
+      { status: 500 }
+    );
   }
 } 
