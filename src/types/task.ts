@@ -22,7 +22,7 @@ export type Subtask = InferSelectModel<typeof subtasks>;
 export type Comment = InferSelectModel<typeof comments>;
 
 // Task status type
-export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done';
+export type TaskStatus = 'todo' | 'today' | 'in_progress' | 'in_review' | 'done';
 
 // Task priority type
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';

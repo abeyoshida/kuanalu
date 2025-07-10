@@ -33,8 +33,8 @@ const mapDbTaskToUiTask = (dbTask: TaskWithMeta) => {
 }
 
 const columns: { id: TaskStatus; title: string; color: string }[] = [
-  { id: "backlog", title: "Backlog", color: "bg-gray-100" },
-  { id: "todo", title: "Todo", color: "bg-blue-100" },
+  { id: "todo", title: "Todo", color: "bg-gray-100" },
+  { id: "today", title: "Today", color: "bg-blue-100" },
   { id: "in_progress", title: "In Progress", color: "bg-yellow-100" },
   { id: "in_review", title: "In Review", color: "bg-orange-100" },
   { id: "done", title: "Done", color: "bg-green-100" },

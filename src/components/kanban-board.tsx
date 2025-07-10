@@ -11,7 +11,7 @@ const initialTasks: Task[] = [
     id: "1",
     title: "Design user authentication flow",
     description: "Create wireframes and mockups for login and signup pages",
-    status: "backlog",
+    status: "todo",
     priority: "high",
     assignee: "John Doe",
     createdAt: new Date("2024-01-15"),
@@ -20,7 +20,7 @@ const initialTasks: Task[] = [
     id: "2",
     title: "Implement API endpoints",
     description: "Build REST API for user management and task operations",
-    status: "todo",
+    status: "today",
     priority: "medium",
     assignee: "Jane Smith",
     createdAt: new Date("2024-01-16"),
@@ -65,7 +65,7 @@ const initialTasks: Task[] = [
     id: "7",
     title: "Fix authentication bug",
     description: "Resolve issue with token expiration handling",
-    status: "todo",
+    status: "today",
     priority: "high",
     assignee: "Mike Johnson",
     createdAt: new Date("2024-01-21"),
@@ -91,8 +91,8 @@ const initialTasks: Task[] = [
 ]
 
 const columns: { id: TaskStatus; title: string; color: string }[] = [
-  { id: "backlog", title: "Backlog", color: "bg-gray-100" },
-  { id: "todo", title: "Todo", color: "bg-blue-100" },
+  { id: "todo", title: "Todo", color: "bg-gray-100" },
+  { id: "today", title: "Today", color: "bg-blue-100" },
   { id: "in_progress", title: "In Progress", color: "bg-yellow-100" },
   { id: "in_review", title: "In Review", color: "bg-orange-100" },
   { id: "done", title: "Done", color: "bg-green-100" },

@@ -840,8 +840,8 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="backlog">Backlog</SelectItem>
-                            <SelectItem value="todo">To Do</SelectItem>
+                            <SelectItem value="todo">Todo</SelectItem>
+                            <SelectItem value="today">Today</SelectItem>
                             <SelectItem value="in_progress">In Progress</SelectItem>
                             <SelectItem value="in_review">In Review</SelectItem>
                             <SelectItem value="done">Done</SelectItem>
@@ -1545,8 +1545,8 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
 // Helper functions
 function getStatusColor(status: string): string {
   const statusColors: Record<string, string> = {
-    backlog: "bg-gray-100 text-gray-800",
-    todo: "bg-blue-100 text-blue-800",
+    todo: "bg-gray-100 text-gray-800",
+    today: "bg-blue-100 text-blue-800",
     in_progress: "bg-yellow-100 text-yellow-800",
     in_review: "bg-orange-100 text-orange-800",
     done: "bg-green-100 text-green-800",

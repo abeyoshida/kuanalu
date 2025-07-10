@@ -14,8 +14,8 @@ import { relations } from 'drizzle-orm';
 
 // Enums for task status and priority
 export const taskStatusEnum = pgEnum('task_status', [
-  'backlog',
   'todo',
+  'today',
   'in_progress',
   'in_review',
   'done'
