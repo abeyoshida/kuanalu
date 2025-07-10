@@ -15,11 +15,14 @@ import { revalidatePath } from "next/cache";
 import { 
   TaskWithMeta, 
   CreateTaskInput, 
-  UpdateTaskInput,
-  TaskFilterOptions
+  TaskFilterOptions,
+  TaskStatus,
+  TaskPriority,
+  TaskType
 } from "@/types/task";
 import { hasPermission } from "@/lib/auth/permissions";
 import { updateMultipleEntities } from "@/lib/db/sequential-ops";
+import { handleActionError } from "@/lib/utils";
 
 /**
  * Get all tasks for a project
@@ -476,127 +479,134 @@ export async function createTask(input: CreateTaskInput): Promise<TaskWithMeta> 
 /**
  * Update a task
  */
-export async function updateTask(taskId: number, input: UpdateTaskInput): Promise<TaskWithMeta> {
+export async function updateTask(
+  taskId: number,
+  data: {
+    title?: string;
+    description?: string | null;
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    type?: TaskType;
+    assigneeId?: number | null;
+    dueDate?: Date | null;
+    startDate?: Date | null;
+    estimatedHours?: number | null;
+    actualHours?: number | null;
+    points?: number | null;
+    position?: number | null;
+    labels?: string[] | null;
+    metadata?: Record<string, unknown> | null;
+  }
+): Promise<{ success: boolean; message?: string; data?: TaskWithMeta; isPermissionError?: boolean }> {
   const session = await auth();
   
   if (!session?.user) {
-    throw new Error("You must be logged in to update a task");
+    return {
+      success: false,
+      message: "You must be logged in to update a task",
+      isPermissionError: false
+    };
   }
   
   const userId = parseInt(session.user.id);
   
   try {
-    // Get the task to check permissions and get project ID
+    // Get the task to check project permissions
     const task = await db
-      .select({
-        projectId: tasks.projectId,
-        status: tasks.status,
-        completedAt: tasks.completedAt
-      })
+      .select({ projectId: tasks.projectId })
       .from(tasks)
       .where(eq(tasks.id, taskId))
       .limit(1);
     
     if (!task.length) {
-      throw new Error("Task not found");
+      return {
+        success: false,
+        message: "Task not found",
+        isPermissionError: false
+      };
     }
     
     const projectId = task[0].projectId;
     
-    // Check if user is a member of the project
-    const projectMembership = await db
-      .select()
-      .from(projectMembers)
-      .where(
-        and(
-          eq(projectMembers.userId, userId),
-          eq(projectMembers.projectId, projectId)
-        )
-      )
+    // Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
       .limit(1);
     
-    const isProjectMember = projectMembership.length > 0;
-    
-    // If not a project member, check if user has organization-level permissions
-    if (!isProjectMember) {
-      // Get the project and its organization
-      const project = await db
-        .select({
-          organizationId: projects.organizationId
-        })
-        .from(projects)
-        .where(eq(projects.id, projectId))
-        .limit(1);
-      
-      if (!project.length) {
-        throw new Error("Project not found");
-      }
-      
-      // Check if user has organization-level permissions
-      const hasUpdatePermission = await hasPermission(
-        userId,
-        project[0].organizationId,
-        'update',
-        'task'
-      );
-      
-      if (!hasUpdatePermission) {
-        throw new Error("You don't have permission to update tasks in this project");
-      }
+    if (!project.length) {
+      return {
+        success: false,
+        message: "Project not found",
+        isPermissionError: false
+      };
     }
     
-    // Prepare update data
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date()
-    };
+    const organizationId = project[0].organizationId;
     
-    // Only include fields that are provided in the input
-    if (input.title !== undefined) updateData.title = input.title;
-    if (input.description !== undefined) updateData.description = input.description;
-    if (input.priority !== undefined) updateData.priority = input.priority;
-    if (input.type !== undefined) updateData.type = input.type;
-    if (input.assigneeId !== undefined) updateData.assigneeId = input.assigneeId;
-    if (input.parentTaskId !== undefined) updateData.parentTaskId = input.parentTaskId;
-    if (input.dueDate !== undefined) updateData.dueDate = input.dueDate ? new Date(input.dueDate) : null;
-    if (input.startDate !== undefined) updateData.startDate = input.startDate ? new Date(input.startDate) : null;
-    if (input.estimatedHours !== undefined) updateData.estimatedHours = input.estimatedHours;
-    if (input.actualHours !== undefined) updateData.actualHours = input.actualHours;
-    if (input.points !== undefined) updateData.points = input.points;
-    if (input.labels !== undefined) updateData.labels = input.labels;
+    // Check if user has permission to update tasks
+    const hasUpdatePermission = await hasPermission(
+      userId,
+      organizationId,
+      'update',
+      'task'
+    );
     
-    // Handle status change specially
-    if (input.status !== undefined && input.status !== task[0].status) {
-      updateData.status = input.status;
-      
-      // Set completedAt when moving to done
-      if (input.status === 'done' && task[0].status !== 'done') {
-        updateData.completedAt = new Date();
-      }
-      // Clear completedAt when moving from done
-      else if (input.status !== 'done' && task[0].status === 'done') {
-        updateData.completedAt = null;
-      }
+    if (!hasUpdatePermission) {
+      return {
+        success: false,
+        message: "You don't have permission to update tasks in this project",
+        isPermissionError: true
+      };
     }
+    
+    // Check if status is changing to 'done'
+    const isCompletingTask = data.status === 'done';
     
     // Update the task
     await db
       .update(tasks)
-      .set(updateData)
+      .set({
+        title: data.title !== undefined ? data.title : undefined,
+        description: data.description !== undefined ? data.description : undefined,
+        status: data.status !== undefined ? data.status : undefined,
+        priority: data.priority !== undefined ? data.priority : undefined,
+        type: data.type !== undefined ? data.type : undefined,
+        assigneeId: data.assigneeId !== undefined ? data.assigneeId : undefined,
+        dueDate: data.dueDate !== undefined ? data.dueDate : undefined,
+        startDate: data.startDate !== undefined ? data.startDate : undefined,
+        estimatedHours: data.estimatedHours !== undefined ? data.estimatedHours : undefined,
+        actualHours: data.actualHours !== undefined ? data.actualHours : undefined,
+        points: data.points !== undefined ? data.points : undefined,
+        position: data.position !== undefined ? data.position : undefined,
+        labels: data.labels !== undefined ? JSON.stringify(data.labels) : undefined,
+        metadata: data.metadata !== undefined ? JSON.stringify(data.metadata) : undefined,
+        completedAt: isCompletingTask ? new Date() : undefined,
+        updatedAt: new Date()
+      })
       .where(eq(tasks.id, taskId));
+    
+    revalidatePath(`/task/${taskId}`);
+    revalidatePath(`/projects/${projectId}`);
     
     // Get the updated task with meta information
     const updatedTask = await getTaskById(taskId);
     
     if (!updatedTask) {
-      throw new Error("Failed to retrieve updated task");
+      return {
+        success: false,
+        message: "Failed to retrieve updated task",
+        isPermissionError: false
+      };
     }
     
-    revalidatePath(`/projects/${projectId}`);
-    
-    return updatedTask;
+    return {
+      success: true,
+      data: updatedTask
+    };
   } catch (error) {
-    console.error('Failed to update task:', error);
-    throw error;
+    return handleActionError(error);
   }
 }
 

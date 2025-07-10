@@ -9,6 +9,7 @@ import { SubtaskWithMeta } from "@/types/subtask";
 import { hasPermission } from "@/lib/auth/permissions";
 import { rolePermissions } from "@/lib/auth/permissions-data";
 import { updateMultipleEntities } from "@/lib/db/sequential-ops";
+import { handleActionError } from "@/lib/utils";
 
 /**
  * Get all subtasks for a task
@@ -415,11 +416,15 @@ export async function updateSubtask(
     position?: number;
     metadata?: Record<string, unknown>;
   }
-): Promise<SubtaskWithMeta> {
+): Promise<{ success: boolean; message?: string; data?: SubtaskWithMeta; isPermissionError?: boolean }> {
   const session = await auth();
   
   if (!session?.user) {
-    throw new Error("You must be logged in to update a subtask");
+    return {
+      success: false,
+      message: "You must be logged in to update a subtask",
+      isPermissionError: false
+    };
   }
   
   const userId = parseInt(session.user.id);
@@ -433,7 +438,11 @@ export async function updateSubtask(
       .limit(1);
     
     if (!subtask.length) {
-      throw new Error("Subtask not found");
+      return {
+        success: false,
+        message: "Subtask not found",
+        isPermissionError: false
+      };
     }
     
     const taskId = subtask[0].taskId;
@@ -446,7 +455,11 @@ export async function updateSubtask(
       .limit(1);
     
     if (!task.length) {
-      throw new Error("Parent task not found");
+      return {
+        success: false,
+        message: "Parent task not found",
+        isPermissionError: false
+      };
     }
     
     const projectId = task[0].projectId;
@@ -459,7 +472,11 @@ export async function updateSubtask(
       .limit(1);
     
     if (!project.length) {
-      throw new Error("Project not found");
+      return {
+        success: false,
+        message: "Project not found",
+        isPermissionError: false
+      };
     }
     
     const organizationId = project[0].organizationId;
@@ -473,7 +490,11 @@ export async function updateSubtask(
     );
     
     if (!hasUpdatePermission) {
-      throw new Error("You don't have permission to update this subtask");
+      return {
+        success: false,
+        message: "You don't have permission to update this subtask",
+        isPermissionError: true
+      };
     }
     
     // Check if completion status is changing
@@ -504,13 +525,19 @@ export async function updateSubtask(
     const updatedSubtask = await getSubtaskById(subtaskId);
     
     if (!updatedSubtask) {
-      throw new Error("Failed to retrieve updated subtask");
+      return {
+        success: false,
+        message: "Failed to retrieve updated subtask",
+        isPermissionError: false
+      };
     }
     
-    return updatedSubtask;
+    return {
+      success: true,
+      data: updatedSubtask
+    };
   } catch (error) {
-    console.error('Failed to update subtask:', error);
-    throw error;
+    return handleActionError(error);
   }
 }
 

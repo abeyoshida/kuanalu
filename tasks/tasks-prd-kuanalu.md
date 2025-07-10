@@ -216,10 +216,10 @@
   - [x] 8.4 Implement permission checks for all API endpoints
   - [x] 8.5 Add UI components for role management
   - [x] 8.6 Create user invitation flow with role assignment
-  - [ ] 8.7 Implement organization settings page with member management
+  - [x] 8.7 Implement organization settings page with member management
   - [ ] 8.8 Add visual indicators for user permissions in UI
   - [ ] 8.9 Create audit logging for permission changes
-  - [ ] 8.10 Add graceful error handling for permission denied scenarios 
+  - [x] 8.10 Add graceful error handling for permission denied scenarios 
 
 - [ ] 9.0 Set up Development and Production Environments
   - [ ] 9.1 Set up Git dev branch from main branch and start doing development from the dev branch
@@ -237,3 +237,6 @@
 - [ ] 11.0 Bug Fixes
   - [x] 11.1 Edit Subtask does not work
   - [x] 11.2 Missing a way to add assignee to a subtask
+
+- [ ] 12.0 Domain Switch
+  - [ ] Redirect FlowBoardAI.com to the Vercel production server

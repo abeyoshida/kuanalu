@@ -53,6 +53,7 @@ import { getTaskComments, createComment } from "@/lib/actions/comment-actions"
 import { getProjectMembers } from "@/lib/actions/project-actions"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
+import { PermissionError } from "@/components/ui/permission-error"
 
 interface TaskDetailProps {
   _taskId: string
@@ -437,9 +438,28 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
         assigneeId: editSubtaskAssigneeId
       });
       
+      if (!response.success) {
+        // Handle error based on type
+        if (response.isPermissionError) {
+          setSubtasksPermissionError(true);
+          toast({
+            title: "Permission denied",
+            description: response.message || "You don't have permission to update subtasks for this task",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: response.message || "Failed to update subtask",
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+      
       // Update the subtask in the list
       setSubtasks(prev => 
-        prev.map(st => st.id === editingSubtaskId ? response : st)
+        prev.map(st => st.id === editingSubtaskId ? response.data! : st)
       );
       
       // Reset form and close dialog
@@ -500,8 +520,28 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
         priority: editTaskPriority
       });
       
+      if (!response.success) {
+        // Handle error based on type
+        if (response.isPermissionError) {
+          toast({
+            title: "Permission denied",
+            description: response.message || "You don't have permission to update this task",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: response.message || "Failed to update task",
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+      
       // Update the task in state
-      setTask(response);
+      if (response.data) {
+        setTask(response.data);
+      }
       
       // Reset form and close dialog
       setIsEditTaskDialogOpen(false);
@@ -542,8 +582,27 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
         assigneeId: userId
       });
       
+      if (!response.success) {
+        if (response.isPermissionError) {
+          toast({
+            title: "Permission denied",
+            description: response.message || "You don't have permission to assign this task",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: response.message || "Failed to assign task",
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+      
       // Update the task in state
-      setTask(response);
+      if (response.data) {
+        setTask(response.data);
+      }
       
       toast({
         title: "Task assigned",
@@ -583,8 +642,27 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
         priority: priority
       });
       
+      if (!response.success) {
+        if (response.isPermissionError) {
+          toast({
+            title: "Permission denied",
+            description: response.message || "You don't have permission to update this task's priority",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: response.message || "Failed to update priority",
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+      
       // Update the task in state
-      setTask(response);
+      if (response.data) {
+        setTask(response.data);
+      }
       
       toast({
         title: "Priority updated",
@@ -622,8 +700,27 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
         dueDate: date || null
       });
       
+      if (!response.success) {
+        if (response.isPermissionError) {
+          toast({
+            title: "Permission denied",
+            description: response.message || "You don't have permission to update this task's due date",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: response.message || "Failed to update due date",
+            variant: "destructive"
+          });
+        }
+        return;
+      }
+      
       // Update the task in state
-      setTask(response);
+      if (response.data) {
+        setTask(response.data);
+      }
       
       toast({
         title: "Due date updated",
@@ -963,7 +1060,14 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
 
             {/* Subtasks list */}
             <div className="space-y-2">
-              {subtasks.length > 0 ? (
+              {subtasksPermissionError ? (
+                <PermissionError 
+                  resource="subtasks"
+                  action="view"
+                  showBackButton={false}
+                  message="You don't have permission to view or manage subtasks for this task."
+                />
+              ) : subtasks.length > 0 ? (
                 subtasks.map((subtask) => (
                   <div
                     key={subtask.id}
@@ -1014,22 +1118,16 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Clipboard className="h-10 w-10 text-gray-300 mb-2" />
-                  <p className="text-gray-500 mb-2">
-                    {subtasksPermissionError 
-                      ? "You don't have permission to view subtasks" 
-                      : "No subtasks yet"}
-                  </p>
-                  {!subtasksPermissionError && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex items-center gap-1"
-                      onClick={() => setIsSubtaskDialogOpen(true)}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add your first subtask</span>
-                    </Button>
-                  )}
+                  <p className="text-gray-500 mb-2">No subtasks yet</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-1"
+                    onClick={() => setIsSubtaskDialogOpen(true)}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add your first subtask</span>
+                  </Button>
                 </div>
               )}
             </div>
@@ -1041,7 +1139,14 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
 
             {/* Comment list */}
             <div className="space-y-6 mb-6">
-              {comments.length > 0 ? (
+              {commentsPermissionError ? (
+                <PermissionError 
+                  resource="comments"
+                  action="view"
+                  showBackButton={false}
+                  message="You don't have permission to view or add comments for this task."
+                />
+              ) : comments.length > 0 ? (
                 comments.map((comment) => (
                   <div key={comment.id} className="flex gap-4">
                     <Avatar className="w-8 h-8">
@@ -1062,11 +1167,7 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <MessageSquare className="h-10 w-10 text-gray-300 mb-2" />
-                  <p className="text-gray-500">
-                    {commentsPermissionError 
-                      ? "You don't have permission to view comments" 
-                      : "No comments yet"}
-                  </p>
+                  <p className="text-gray-500">No comments yet</p>
                 </div>
               )}
             </div>
