@@ -9,11 +9,12 @@ export async function POST() {
     });
     
     // Get domain for production
-    const domain = process.env.NODE_ENV === "production" 
-      ? process.env.NEXTAUTH_URL 
-        ? new URL(process.env.NEXTAUTH_URL).hostname 
-        : undefined
-      : undefined;
+    const domain = process.env.COOKIE_DOMAIN || 
+      (process.env.NODE_ENV === "production" 
+        ? process.env.NEXTAUTH_URL 
+          ? new URL(process.env.NEXTAUTH_URL).hostname 
+          : undefined
+        : undefined);
     
     // Clear the session cookies by setting them with past expiry
     response.cookies.set("next-auth.session-token", "", { 
