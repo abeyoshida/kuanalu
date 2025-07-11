@@ -66,22 +66,34 @@ export function useSession() {
 // Simple sign out function
 export async function signOut() {
   try {
+    // First try to use the custom logout endpoint
     const response = await fetch("/api/auth/logout", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include" // Important for including cookies
     });
     
     // Check if the response is successful
     if (response.ok) {
-      // Only redirect after successful logout
+      // Clear any local storage items if you're using them
+      localStorage.removeItem("user");
+      sessionStorage.clear();
+      
+      // Force reload to ensure all state is cleared
       window.location.href = "/auth/login";
+      return;
     } else {
-      console.error("Logout failed:", await response.json());
+      console.error("Logout failed:", await response.text());
+      
+      // Fallback: If the API route fails, try to redirect to the logout page
+      window.location.href = "/auth/logout";
     }
   } catch (error) {
     console.error("Sign out error:", error);
+    // If all else fails, redirect to login
+    window.location.href = "/auth/login";
   }
 }
 

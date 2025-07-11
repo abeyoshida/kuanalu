@@ -5,6 +5,7 @@ import { Menu, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useHeader } from "./header-context";
+import { signOut } from "@/lib/auth/client";
 
 interface HeaderProps {
   userName: string;
@@ -23,18 +24,8 @@ export default function Header({
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      
-      if (response.ok) {
-        router.push("/auth/login");
-      } else {
-        console.error("Logout failed");
-      }
+      await signOut();
+      // The signOut function now handles the redirect
     } catch (error) {
       console.error("Logout error:", error);
     }
