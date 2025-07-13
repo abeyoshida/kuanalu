@@ -47,9 +47,7 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
     setError(null);
 
     try {
-      console.log("Inviting user:", email, "to organization:", organizationId, "with role:", role);
       const result = await inviteUserToOrganization(organizationId, email, role);
-      console.log("Invitation result:", result);
       
       if (result.success) {
         // Show success toast
@@ -84,7 +82,6 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
         });
       }
     } catch (error) {
-      console.error("Error inviting user:", error);
       setError("An unexpected error occurred. Please try again.");
       
       // Show error toast for unexpected errors

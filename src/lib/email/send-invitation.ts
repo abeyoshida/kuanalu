@@ -39,7 +39,7 @@ export async function sendInvitationEmail({
 
   return sendEmail({
     to: inviteeEmail,
-    from: "invitations@hogalulu.com",
+    from: process.env.EMAIL_FROM || "invitations@flowboardai.com",
     subject: `You've been invited to join ${organizationName}`,
     html: emailHtml,
   });

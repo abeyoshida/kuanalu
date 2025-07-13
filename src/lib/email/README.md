@@ -9,7 +9,7 @@ Add the following environment variables to your `.env.local` file:
 ```
 # Email (Resend)
 RESEND_API_KEY="your_resend_api_key"
-EMAIL_FROM="noreply@yourdomain.com"
+EMAIL_FROM="support@flowboardai.com"
 # Set to "log" to log emails instead of sending them in development
 EMAIL_DEV_MODE="log"
 ```

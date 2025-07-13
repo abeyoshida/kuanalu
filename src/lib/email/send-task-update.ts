@@ -71,7 +71,7 @@ export async function sendTaskUpdateEmail({
   // Send the email
   return sendEmail({
     to: recipientEmail,
-    from: `${organizationName} <updates@hogalulu.com>`,
+    from: process.env.EMAIL_FROM || `${organizationName} <updates@flowboardai.com>`,
     subject,
     html: emailHtml,
   });

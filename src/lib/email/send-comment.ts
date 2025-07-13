@@ -66,7 +66,7 @@ export async function sendCommentEmail({
   // Send the email
   return sendEmail({
     to: recipientEmail,
-    from: `${organizationName} <comments@hogalulu.com>`,
+    from: process.env.EMAIL_FROM || `${organizationName} <comments@flowboardai.com>`,
     subject,
     html: emailHtml,
   });
