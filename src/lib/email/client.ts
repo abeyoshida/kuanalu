@@ -36,9 +36,22 @@ try {
 // Function to send an email
 export async function sendEmail(options: EmailOptions): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
+    console.log('[DEBUG] sendEmail called with options:', {
+      to: options.to,
+      subject: options.subject,
+      from: options.from || process.env.EMAIL_FROM,
+      hasHtml: !!options.html || !!options.htmlContent,
+      hasText: !!options.text || !!options.textContent,
+      queueId: options.queueId
+    });
+    
     if (!resendClient) {
+      console.error('[DEBUG] Resend client not initialized');
       throw new Error('Resend client not initialized');
     }
+
+    console.log('[DEBUG] Resend API key exists:', !!process.env.RESEND_API_KEY);
+    console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
 
     // Define a type that matches what we need for Resend
     interface EmailData {
@@ -60,6 +73,8 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       to: options.to,
       subject: options.subject,
     };
+    
+    console.log('[DEBUG] Email data prepared with from:', emailData.from);
 
     // In development or if using Resend in test mode, redirect all emails to the developer's email
     // This is required by Resend's free tier which only allows sending to verified emails
@@ -105,24 +120,27 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       emailData.text = "Please view this email in an HTML-capable email client.";
     }
 
+    console.log('[DEBUG] About to send email via Resend API');
+    
     // Send the email
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await resendClient.emails.send(emailData as any);
 
     if (error) {
-      console.error('Failed to send email:', error);
+      console.error('[DEBUG] Failed to send email:', error);
       return { success: false, error: error.message };
     }
 
     if (!data) {
-      console.error('No data returned from email service');
+      console.error('[DEBUG] No data returned from email service');
       return { success: false, error: 'No data returned from email service' };
     }
 
-    console.log('Email sent successfully:', data);
+    console.log('[DEBUG] Email sent successfully:', data);
 
     // Update the email queue record with the email ID from Resend
     if (options.queueId) {
+      console.log('[DEBUG] Updating email queue record with ID:', options.queueId);
       await db.update(emailQueue)
         .set({ 
           emailId: data.id,
@@ -131,6 +149,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
           updatedAt: new Date()
         })
         .where(eq(emailQueue.id, options.queueId));
+      console.log('[DEBUG] Email queue record updated');
     }
 
     return {
@@ -138,7 +157,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       id: data.id,
     };
   } catch (error) {
-    console.error('Failed to send email:', error);
+    console.error('[DEBUG] Failed to send email:', error);
     let errorMessage = 'Unknown error';
     
     if (error instanceof Error) {

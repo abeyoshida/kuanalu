@@ -16,6 +16,12 @@ export async function inviteUserToOrganization(
   role: string
 ) {
   try {
+    console.log('[DEBUG] Starting invitation process...');
+    console.log('[DEBUG] Environment:', process.env.NODE_ENV);
+    console.log('[DEBUG] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+    console.log('[DEBUG] EMAIL_FROM:', process.env.EMAIL_FROM);
+    console.log('[DEBUG] RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+    
     // Get the current user's session
     const session = await auth();
     
@@ -110,13 +116,24 @@ export async function inviteUserToOrganization(
     }
     
     // Send invitation email
-    const emailResult = await sendInvitationEmail({
-      inviteeEmail: email,
-      organizationName: organization.name,
-      inviterName: session.user.name || 'Someone',
-      invitationToken: token,
-      role,
-    });
+    console.log('[DEBUG] About to send invitation email to:', email);
+    try {
+      const emailResult = await sendInvitationEmail({
+        inviteeEmail: email,
+        organizationName: organization.name,
+        inviterName: session.user.name || 'Someone',
+        invitationToken: token,
+        role,
+      });
+      
+      console.log('[DEBUG] Email sending result:', emailResult);
+      
+      if (!emailResult.success) {
+        console.error('[DEBUG] Failed to send email:', emailResult.error);
+      }
+    } catch (emailError) {
+      console.error('[DEBUG] Exception while sending email:', emailError);
+    }
     
     return { success: true, message: "Invitation sent successfully" };
   } catch (error) {

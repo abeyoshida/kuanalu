@@ -199,6 +199,13 @@ export async function addToQueue(options: {
   processImmediately?: boolean;
 }): Promise<{ success: boolean; id?: number; emailId?: string; error?: string }> {
   try {
+    console.log('[DEBUG] addToQueue called with options:', {
+      to: options.to,
+      subject: options.subject,
+      from: options.from || process.env.EMAIL_FROM,
+      processImmediately: options.processImmediately
+    });
+    
     // Convert arrays to strings for storage
     const to = Array.isArray(options.to) ? options.to.join(',') : options.to;
     const cc = Array.isArray(options.cc) ? options.cc.join(',') : options.cc;
@@ -226,39 +233,47 @@ export async function addToQueue(options: {
       updatedAt: new Date()
     }).returning({ id: emailQueue.id });
 
+    console.log('[DEBUG] Email added to queue with ID:', result.id);
+
     // Process the email immediately if requested
     if (options.processImmediately) {
+      console.log('[DEBUG] Processing email immediately');
       try {
         // Process just this email
         const queueItem = await db.select().from(emailQueue).where(eq(emailQueue.id, result.id)).limit(1);
         
         if (queueItem.length > 0) {
           const email = queueItem[0];
+          console.log('[DEBUG] Found queue item to process immediately:', email.id);
           const processResult = await processQueueItem(email);
           
           if (processResult.success) {
+            console.log('[DEBUG] Email processed successfully with ID:', processResult.emailId);
             return { 
               success: true, 
               id: result.id, 
               emailId: processResult.emailId 
             };
           } else {
+            console.error('[DEBUG] Failed to process email immediately:', processResult.error);
             return { 
               success: false, 
               id: result.id, 
               error: processResult.error 
             };
           }
+        } else {
+          console.error('[DEBUG] Could not find queue item to process immediately');
         }
       } catch (processError) {
-        console.error('Error processing email immediately:', processError);
+        console.error('[DEBUG] Error processing email immediately:', processError);
         // Continue even if immediate processing fails - the email is still in the queue
       }
     }
 
     return { success: true, id: result.id };
   } catch (error) {
-    console.error('Error adding email to queue:', error);
+    console.error('[DEBUG] Error adding email to queue:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -275,10 +290,14 @@ async function processQueueItem(email: typeof emailQueue.$inferSelect): Promise<
   error?: string 
 }> {
   try {
+    console.log('[DEBUG] Processing queue item:', email.id);
+    
     // Convert comma-separated strings back to arrays if needed
     const to = email.to.includes(',') ? email.to.split(',') : email.to;
     const cc = email.cc?.includes(',') ? email.cc.split(',') : email.cc;
     const bcc = email.bcc?.includes(',') ? email.bcc.split(',') : email.bcc;
+    
+    console.log('[DEBUG] Sending email with from:', email.from);
     
     // Send the email
     const result = await sendEmail({
@@ -294,12 +313,15 @@ async function processQueueItem(email: typeof emailQueue.$inferSelect): Promise<
     });
     
     if (result.error) {
+      console.error('[DEBUG] Email sending failed:', result.error);
+      
       // Email failed to send, update the queue record
       const attempts = email.attempts + 1;
       const maxAttempts = email.maxAttempts || 3;
       
       if (attempts >= maxAttempts) {
         // Max attempts reached, mark as failed
+        console.log('[DEBUG] Max attempts reached, marking as failed');
         await db.update(emailQueue)
           .set({
             status: 'failed',
@@ -314,6 +336,7 @@ async function processQueueItem(email: typeof emailQueue.$inferSelect): Promise<
         const nextAttemptAt = new Date();
         nextAttemptAt.setMinutes(nextAttemptAt.getMinutes() + backoffMinutes);
         
+        console.log(`[DEBUG] Scheduling retry in ${backoffMinutes} minutes`);
         await db.update(emailQueue)
           .set({
             status: 'retrying',
@@ -327,6 +350,8 @@ async function processQueueItem(email: typeof emailQueue.$inferSelect): Promise<
       
       return { success: false, error: result.error };
     } else {
+      console.log('[DEBUG] Email sent successfully with ID:', result.id);
+      
       // Email was sent successfully, update the queue record
       await db.update(emailQueue)
         .set({
@@ -340,6 +365,8 @@ async function processQueueItem(email: typeof emailQueue.$inferSelect): Promise<
       return { success: true, emailId: result.id };
     }
   } catch (error) {
+    console.error('[DEBUG] Error in processQueueItem:', error);
+    
     // Update the queue record with the error
     const attempts = email.attempts + 1;
     const maxAttempts = email.maxAttempts || 3;
