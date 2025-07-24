@@ -21,6 +21,8 @@
     "db:seed": "tsx src/scripts/seed.ts",
     "db:clear": "tsx src/scripts/clear-db.ts",
     "db:reset": "tsx src/scripts/reset-db.ts",
+    "password:check": "tsx src/scripts/migrate-passwords.ts check",
+    "password:migrate": "tsx src/scripts/migrate-passwords.ts migrate",
     "clean-dev": "rm -rf .next && next dev"
   },
   "dependencies": {

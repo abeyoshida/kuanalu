@@ -7,6 +7,8 @@ import { z } from "zod";
 
 // Schema for validating registration input
 const registerSchema = z.object({
+  firstName: z.string().min(1, { message: "First name is required" }),
+  lastName: z.string().min(1, { message: "Last name is required" }),
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Invalid email address" }),
   password: z.string().min(8, { message: "Password must be at least 8 characters" }),
@@ -25,7 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: errorMessage }, { status: 400 });
     }
     
-    const { name, email, password, organizationName, invitationToken } = result.data;
+    const { firstName, lastName, name, email, password, organizationName, invitationToken } = result.data;
     
     // Check if user already exists
     const existingUser = await db
@@ -45,90 +47,112 @@ export async function POST(request: NextRequest) {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Start a transaction to ensure data consistency
-    const result2 = await db.transaction(async (tx) => {
+    // Handle invitation flow if token is provided
+    if (invitationToken) {
+      // Find the invitation
+      const invitation = await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.token, invitationToken))
+        .limit(1)
+        .then(results => results[0]);
+      
+      if (!invitation) {
+        return NextResponse.json(
+          { success: false, message: "Invalid invitation token" },
+          { status: 400 }
+        );
+      }
+      
+      if (invitation.email.toLowerCase() !== email.toLowerCase()) {
+        return NextResponse.json(
+          { success: false, message: "Invitation email does not match the registration email" },
+          { status: 400 }
+        );
+      }
+      
+      if (invitation.status !== "pending") {
+        return NextResponse.json(
+          { success: false, message: "Invitation has already been used or has expired" },
+          { status: 400 }
+        );
+      }
+      
       // Create the user
-      const [newUser] = await tx
+      const [newUser] = await db
         .insert(users)
         .values({
           name,
+          firstName,
+          lastName,
           email,
           password: hashedPassword,
         })
         .returning();
       
-      // Handle invitation if token is provided
-      if (invitationToken) {
-        // Find the invitation
-        const invitation = await tx
-          .select()
-          .from(invitations)
-          .where(eq(invitations.token, invitationToken))
-          .limit(1)
-          .then(results => results[0]);
-        
-        if (!invitation) {
-          throw new Error("Invalid invitation token");
-        }
-        
-        if (invitation.email.toLowerCase() !== email.toLowerCase()) {
-          throw new Error("Invitation email does not match the registration email");
-        }
-        
-        if (invitation.status !== "pending") {
-          throw new Error("Invitation has already been used or has expired");
-        }
-        
-        // Add user to the organization
-        await tx
-          .insert(organizationMembers)
-          .values({
-            userId: newUser.id,
-            organizationId: invitation.organizationId,
-            role: invitation.role,
-            invitedBy: invitation.invitedBy,
-          });
-        
-        // Update invitation status
-        await tx
-          .update(invitations)
-          .set({ status: "accepted" })
-          .where(eq(invitations.id, invitation.id));
-        
-        return { user: newUser, organizationId: invitation.organizationId };
-      } 
-      // If no invitation, create a new organization for the user
-      else {
-        // Create organization name from user's name if not provided
-        const orgName = organizationName || `${name}'s Organization`;
-        
-        // Create a new organization
-        const [newOrg] = await tx
-          .insert(organizations)
-          .values({
-            name: orgName,
-            slug: orgName.toLowerCase().replace(/\s+/g, "-"),
-          })
-          .returning();
-        
-        // Add the user as owner of the organization
-        await tx
-          .insert(organizationMembers)
-          .values({
-            userId: newUser.id,
-            organizationId: newOrg.id,
-            role: "owner",
-          });
-        
-        return { user: newUser, organizationId: newOrg.id };
-      }
-    });
-    
-    return NextResponse.json({
-      success: true,
-      message: "User registered successfully",
-      userId: result2.user.id,
-    });
+      // Add user to the organization
+      await db
+        .insert(organizationMembers)
+        .values({
+          userId: newUser.id,
+          organizationId: invitation.organizationId,
+          role: invitation.role,
+          invitedBy: invitation.invitedBy,
+        });
+      
+      // Update invitation status
+      await db
+        .update(invitations)
+        .set({ status: "accepted" })
+        .where(eq(invitations.id, invitation.id));
+      
+      return NextResponse.json({
+        success: true,
+        message: "User registered successfully",
+        userId: newUser.id,
+      });
+    } 
+    // Handle new organization creation
+    else {
+      // Create organization name from user's name if not provided
+      const orgName = organizationName || `${name}'s Organization`;
+      
+      // Create the user first
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          name,
+          firstName,
+          lastName,
+          email,
+          password: hashedPassword,
+        })
+        .returning();
+      
+      // Create the organization
+      const [newOrg] = await db
+        .insert(organizations)
+        .values({
+          name: orgName,
+          slug: orgName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
+        })
+        .returning();
+      
+      // Add the user as owner of the organization
+      await db
+        .insert(organizationMembers)
+        .values({
+          userId: newUser.id,
+          organizationId: newOrg.id,
+          role: "owner",
+        });
+      
+      return NextResponse.json({
+        success: true,
+        message: "User registered successfully",
+        userId: newUser.id,
+      });
+    }
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json(

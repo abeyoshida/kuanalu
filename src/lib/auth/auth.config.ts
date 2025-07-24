@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 // Extend the default session and JWT types to include custom properties
 declare module "next-auth" {
@@ -30,6 +31,18 @@ declare module "next-auth" {
     firstName?: string | null;
     lastName?: string | null;
     role?: string;
+  }
+}
+
+// Helper function to validate password
+async function validatePassword(inputPassword: string, storedPassword: string): Promise<boolean> {
+  // Check if stored password is bcrypt hashed (starts with $2b$, $2a$, or $2y$)
+  if (storedPassword.match(/^\$2[aby]\$/)) {
+    // Use bcrypt to compare encrypted password
+    return await bcrypt.compare(inputPassword, storedPassword);
+  } else {
+    // For development: simple string comparison for plain text passwords
+    return storedPassword === inputPassword;
   }
 }
 
@@ -114,9 +127,14 @@ export const authConfig: NextAuthConfig = {
 
           const user = userResults[0];
           
-          // Simple password comparison that works in Edge Runtime
-          // For development purposes only - in production use secure password hashing
-          const passwordsMatch = user.password === credentials.password;
+          // Additional null check for password
+          if (!user.password) {
+            console.log("User password is null");
+            return null;
+          }
+          
+          // Use the helper function to validate password (handles both encrypted and plain text)
+          const passwordsMatch = await validatePassword(credentials.password as string, user.password);
           
           console.log("Password match:", passwordsMatch);
           

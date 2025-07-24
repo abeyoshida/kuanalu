@@ -19,9 +19,11 @@ export function RegisterForm() {
   const invitedEmail = searchParams?.get('email') || '';
   const invitationToken = searchParams?.get('invitationToken') || '';
   
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState(invitedEmail);
   const [password, setPassword] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
   
   // Update email if searchParams change
   useEffect(() => {
@@ -36,8 +38,14 @@ export function RegisterForm() {
     setError(null);
     
     // Basic validation
-    if (!name.trim()) {
-      setError('Name is required');
+    if (!firstName.trim()) {
+      setError('First name is required');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!lastName.trim()) {
+      setError('Last name is required');
       setIsLoading(false);
       return;
     }
@@ -54,14 +62,24 @@ export function RegisterForm() {
       return;
     }
     
+    // Only require organization name if there's no invitation token
+    if (!invitationToken && !organizationName.trim()) {
+      setError('Organization name is required');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          name: `${firstName.trim()} ${lastName.trim()}`, // Full name for compatibility
           email,
           password,
+          organizationName: organizationName.trim(),
           invitationToken,
         }),
       });
@@ -92,17 +110,32 @@ export function RegisterForm() {
       )}
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Name</Label>
-          <Input
-            id="name"
-            type="text"
-            placeholder="John Doe"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={isLoading}
-            required
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">First Name</Label>
+            <Input
+              id="firstName"
+              type="text"
+              placeholder="John"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              disabled={isLoading}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name</Label>
+            <Input
+              id="lastName"
+              type="text"
+              placeholder="Doe"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              disabled={isLoading}
+              required
+            />
+          </div>
         </div>
         
         <div className="space-y-2">
@@ -117,6 +150,22 @@ export function RegisterForm() {
             required
           />
         </div>
+        
+        {/* Only show organization field if user is not being invited */}
+        {!invitationToken && (
+          <div className="space-y-2">
+            <Label htmlFor="organization">Organization</Label>
+            <Input
+              id="organization"
+              type="text"
+              placeholder="Acme Inc"
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
+              disabled={isLoading}
+              required
+            />
+          </div>
+        )}
         
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
