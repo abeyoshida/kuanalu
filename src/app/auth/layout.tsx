@@ -35,11 +35,9 @@ export default function AuthLayout({
         </div>
       </header>
 
-      {/* Auth form - centered both horizontally and vertically */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-full max-w-md px-4 sm:px-6 lg:px-8">
-          {children}
-        </div>
+      {/* Allow pages to control their own layout */}
+      <div className="flex-1">
+        {children}
       </div>
     </div>
   );
