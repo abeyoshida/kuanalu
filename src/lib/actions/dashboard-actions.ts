@@ -6,8 +6,7 @@ import {
   tasks, 
   projects, 
   organizationMembers, 
-  users,
-  subtasks 
+  users
 } from "@/lib/db/schema";
 import { and, eq, count, desc, asc, gte, lt, isNull, or, inArray } from "drizzle-orm";
 

@@ -7,13 +7,17 @@ import Header from "./header";
 
 interface AppShellProps {
   children: React.ReactNode;
-  userName: string;
+  user: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
   title?: string;
 }
 
 export default function AppShell({ 
   children,
-  userName,
+  user,
   title = "Dashboard"
 }: AppShellProps) {
   const { sidebarOpen, toggleSidebar } = useSidebar();
@@ -27,10 +31,7 @@ export default function AppShell({
         {/* Main Content */}
         <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
           {/* Header */}
-          <Header 
-            userName={userName} 
-            toggleSidebar={toggleSidebar}
-          />
+          <Header user={user} />
           
           {/* Page Content */}
           <main className="flex-1 bg-gray-50">

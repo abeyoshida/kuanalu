@@ -97,8 +97,8 @@ export async function signOut() {
           credentials: "include",
           body: JSON.stringify({ callbackUrl: "/auth/login" })
         });
-      } catch (e) {
-        // Silently handle error
+      } catch {
+        // Silently handle error - connection issues are ok
       }
       
       // Redirect to login page
@@ -108,7 +108,7 @@ export async function signOut() {
     
     // If response was not ok, still try to redirect
     window.location.href = "/auth/login";
-  } catch (error) {
+  } catch {
     // If there's an error, still try to redirect
     window.location.href = "/auth/login";
   }
@@ -210,3 +210,5 @@ export async function signIn(credentials: { email: string; password: string }) {
     return { success: false, error: "Authentication failed" };
   }
 } 
+
+ 

@@ -81,16 +81,9 @@ export function InviteUserDialog({ children, organizationId }: InviteUserDialogP
           duration: 5000
         });
       }
-    } catch (error) {
-      setError("An unexpected error occurred. Please try again.");
-      
-      // Show error toast for unexpected errors
-      toast({
-        variant: "destructive",
-        title: "Invitation Failed",
-        description: "There was a problem sending the invitation.",
-        duration: 5000
-      });
+    } catch (err) {
+      console.error('Failed to send invitation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send invitation');
     } finally {
       setIsSubmitting(false);
     }

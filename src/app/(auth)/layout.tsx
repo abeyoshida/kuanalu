@@ -22,11 +22,15 @@ export default async function AuthenticatedLayout({
     redirect("/auth/login");
   }
   
-  const userName = session.user.name || "User";
+  const user = {
+    name: session.user.name || null,
+    email: session.user.email || null,
+    image: session.user.image || null,
+  };
 
   return (
     <SidebarProvider>
-      <AppShell userName={userName}>
+      <AppShell user={user}>
         {children}
       </AppShell>
     </SidebarProvider>
