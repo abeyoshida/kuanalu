@@ -13,15 +13,19 @@ interface ProfileContentProps {
 }
 
 export default function ProfileContent({ user }: ProfileContentProps) {
-  const { setEntityName } = useHeader();
+  const { setTitle, setEntityName } = useHeader();
 
-  // Set the user name in the header when the component mounts
+  // Set the header title when the component mounts
   useEffect(() => {
-    setEntityName(user.name || "Profile");
+    setTitle("Profile");
+    setEntityName(null);
     
     // Clean up when unmounting
-    return () => setEntityName(null);
-  }, [user.name, setEntityName]);
+    return () => {
+      setTitle("Dashboard");
+      setEntityName(null);
+    };
+  }, [setTitle, setEntityName]);
 
   return (
     <div className="space-y-6">

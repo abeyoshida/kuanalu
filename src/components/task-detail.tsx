@@ -54,6 +54,7 @@ import { getProjectMembers } from "@/lib/actions/project-actions"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 import { PermissionError } from "@/components/ui/permission-error"
+import { useHeader } from "@/components/layout/header-context"
 
 interface TaskDetailProps {
   _taskId: string
@@ -71,6 +72,7 @@ const formatDescriptionWithLineBreaks = (description: string): React.ReactNode =
 
 export default function TaskDetail({ _taskId }: TaskDetailProps) {
   const router = useRouter()
+  const { setTitle, setEntityName } = useHeader()
   const [task, setTask] = useState<TaskWithMeta | null>(null)
   const [subtasks, setSubtasks] = useState<SubtaskWithMeta[]>([])
   const [comments, setComments] = useState<CommentWithMeta[]>([])
@@ -113,6 +115,20 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
   // Add state for due date picker
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false)
+
+  // Set header title when task is loaded
+  useEffect(() => {
+    setTitle("Task Details");
+    if (task) {
+      setEntityName(task.title);
+    }
+    
+    // Clean up when unmounting
+    return () => {
+      setTitle("Dashboard");
+      setEntityName(null);
+    };
+  }, [task, setTitle, setEntityName]);
 
   // Fetch task data when component mounts
   useEffect(() => {

@@ -26,7 +26,7 @@ interface ProjectDetailContentProps {
 }
 
 export default function ProjectDetailContent({ project, initialTab = "board" }: ProjectDetailContentProps) {
-  const { setEntityName } = useHeader();
+  const { setTitle, setEntityName } = useHeader();
   const [tasks, setTasks] = useState<TaskWithMeta[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -36,13 +36,17 @@ export default function ProjectDetailContent({ project, initialTab = "board" }: 
   const [totalItems, setTotalItems] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   
-  // Set the project name in the header when the component mounts
+  // Set the project title and name in the header when the component mounts
   useEffect(() => {
+    setTitle("Projects");
     setEntityName(project.name);
     
     // Clean up when unmounting
-    return () => setEntityName(null);
-  }, [project.name, setEntityName]);
+    return () => {
+      setTitle("Dashboard");
+      setEntityName(null);
+    };
+  }, [project.name, setTitle, setEntityName]);
 
   // Load tasks with optional page size override
   const loadTasks = useCallback(async (page = currentPage, pageSizeOverride?: number) => {

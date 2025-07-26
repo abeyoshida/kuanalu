@@ -7,12 +7,25 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { formatDistanceToNow } from "date-fns";
 import { CreateOrganizationDialog } from "@/components/organizations/create-organization-dialog";
 import { OrganizationWithMeta } from "@/types/organization";
+import { useHeader } from "@/components/layout/header-context";
+import { useEffect } from "react";
 
 interface OrganizationsListContentProps {
   organizations: OrganizationWithMeta[];
 }
 
 export default function OrganizationsListContent({ organizations }: OrganizationsListContentProps) {
+  const { setTitle, setEntityName } = useHeader();
+
+  // Set the header title when component mounts
+  useEffect(() => {
+    setTitle("Organizations");
+    setEntityName(null);
+    
+    // Clean up when unmounting
+    return () => setTitle("Dashboard");
+  }, [setTitle, setEntityName]);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">

@@ -30,7 +30,7 @@ export default function OrganizationContent({
 }: OrganizationContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { setEntityName } = useHeader();
+  const { setTitle, setEntityName } = useHeader();
   const [activeTab, setActiveTab] = useState<string>("projects");
   
   // Set the organization name in the header when the component mounts
@@ -48,6 +48,20 @@ export default function OrganizationContent({
       setActiveTab(tabParam);
     }
   }, [searchParams]);
+
+  // Set the appropriate title based on the active tab
+  useEffect(() => {
+    const titleMap: Record<string, string> = {
+      projects: "Projects",
+      members: "Members", 
+      settings: "Settings"
+    };
+    
+    setTitle(titleMap[activeTab] || "Projects");
+    
+    // Clean up when unmounting
+    return () => setTitle("Dashboard");
+  }, [activeTab, setTitle]);
   
   // Update URL when tab changes
   const handleTabChange = (value: string) => {

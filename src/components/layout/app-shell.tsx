@@ -31,7 +31,7 @@ export default function AppShell({
         {/* Main Content */}
         <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
           {/* Header */}
-          <Header user={user} />
+          <Header user={user} toggleSidebar={toggleSidebar} />
           
           {/* Page Content */}
           <main className="flex-1 bg-gray-50">
