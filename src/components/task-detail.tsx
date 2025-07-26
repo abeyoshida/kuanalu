@@ -20,6 +20,7 @@ import {
   Loader2,
   UserPlus,
   X,
+  Trash2,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -33,6 +34,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Select,
   SelectContent,
@@ -115,6 +132,10 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
   // Add state for due date picker
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false)
+
+  // Add state for delete confirmation dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeletingTask, setIsDeletingTask] = useState(false)
 
   // Set header title when task is loaded
   useEffect(() => {
@@ -766,6 +787,48 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
     }
   };
 
+  // Add function to handle task deletion
+  const handleDeleteTask = async () => {
+    if (!task) return;
+
+    try {
+      setIsDeletingTask(true);
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error?.includes("permission")) {
+          toast({
+            title: "Permission denied",
+            description: "You don't have permission to delete this task",
+            variant: "destructive"
+          });
+          return;
+        }
+        throw new Error('Failed to delete task');
+      }
+
+      toast({
+        title: "Task deleted",
+        description: "Your task has been deleted.",
+      });
+      router.push(`/projects/${task.projectId}`);
+    } catch (error: unknown) {
+      console.error("Error deleting task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeletingTask(false);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -915,9 +978,26 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                <Button variant="outline" size="sm" className="p-0 w-8 h-8">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="p-0 w-8 h-8">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={openEditTaskDialog}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setIsDeleteDialogOpen(true)} 
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Task
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -1554,6 +1634,40 @@ export default function TaskDetail({ _taskId }: TaskDetailProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Task Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deleting a task cannot be undone. This will permanently delete this task and remove the data from the server.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingTask}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteTask} 
+              disabled={isDeletingTask}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeletingTask ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Task
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -241,12 +241,12 @@
   - [ ] 10.4 Update the header section - one header, sidebar, content
   - [ ] 10.5 Add role to the user Profile Information
 
-- [ ] 11.0 Bug Fixes
+- [x] 11.0 Bug Fixes
   - [x] 11.1 Edit Subtask does not work
   - [x] 11.2 Missing a way to add assignee to a subtask
 
-- [ ] 12.0 Domain Switch
-  - [ ] Redirect FlowBoardAI.com to the Vercel production server
+- [x] 12.0 Domain Switch
+  - [x] Redirect FlowBoardAI.com to the Vercel production server
 
 - [x] 13.0 MVP Tasks
   - [x] 13.1 Update the Dashboard landing page to display live data in each section.

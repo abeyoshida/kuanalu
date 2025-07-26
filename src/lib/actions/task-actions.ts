@@ -623,25 +623,27 @@ export async function deleteTask(taskId: number): Promise<void> {
   const userId = parseInt(session.user.id);
   
   try {
-    // Get the task to check permissions and project ID
-    const task = await db
+    // Get the task and project to check permissions and organization ID
+    const taskWithProject = await db
       .select({
-        projectId: tasks.projectId
+        projectId: tasks.projectId,
+        organizationId: projects.organizationId
       })
       .from(tasks)
+      .innerJoin(projects, eq(tasks.projectId, projects.id))
       .where(eq(tasks.id, taskId))
       .limit(1);
     
-    if (!task.length) {
+    if (!taskWithProject.length) {
       throw new Error("Task not found");
     }
     
-    const projectId = task[0].projectId;
+    const { projectId, organizationId } = taskWithProject[0];
     
-    // Check if user has permission to delete tasks in this project
+    // Check if user has permission to delete tasks in this organization
     const hasDeletePermission = await hasPermission(
       userId,
-      projectId,
+      organizationId,
       'delete',
       'task'
     );

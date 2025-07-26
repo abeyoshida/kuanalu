@@ -13,17 +13,18 @@ import { updateTaskSchema, convertToUpdateTaskInput } from "@/types/task";
 // GET /api/tasks/[id] - Get a specific task
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
+    const { id } = await params;
     
     // Validate authentication
     const authError = validateAuthentication(session);
     if (authError) return authError;
     
     // Validate task ID
-    const taskIdResult = validateNumericParam(params.id, "task ID");
+    const taskIdResult = validateNumericParam(id, "task ID");
     if (typeof taskIdResult !== 'number') {
       return taskIdResult;
     }
@@ -51,17 +52,18 @@ export async function GET(
 // PATCH /api/tasks/[id] - Update a task
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
+    const { id } = await params;
     
     // Validate authentication
     const authError = validateAuthentication(session);
     if (authError) return authError;
     
     // Validate task ID
-    const taskIdResult = validateNumericParam(params.id, "task ID");
+    const taskIdResult = validateNumericParam(id, "task ID");
     if (typeof taskIdResult !== 'number') {
       return taskIdResult;
     }
@@ -89,17 +91,18 @@ export async function PATCH(
 // DELETE /api/tasks/[id] - Delete a task
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
+    const { id } = await params;
     
     // Validate authentication
     const authError = validateAuthentication(session);
     if (authError) return authError;
     
     // Validate task ID
-    const taskIdResult = validateNumericParam(params.id, "task ID");
+    const taskIdResult = validateNumericParam(id, "task ID");
     if (typeof taskIdResult !== 'number') {
       return taskIdResult;
     }
