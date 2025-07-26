@@ -2,32 +2,39 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, CheckCircle, Clock, Building, Plus } from "lucide-react";
+import { BarChart3, CheckCircle, Clock, Building, Plus, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getUserOrganizations } from "@/lib/actions/organization-actions";
+import { getDashboardStats, DashboardStats } from "@/lib/actions/dashboard-actions";
 
 export default function DashboardContent() {
   const [error, setError] = useState<Error | null>(null);
   const [hasOrganizations, setHasOrganizations] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
   
-  // Check if user has any organizations
+  // Check if user has any organizations and load dashboard data
   useEffect(() => {
-    async function checkOrganizations() {
+    async function loadDashboardData() {
       try {
         setLoading(true);
         const orgs = await getUserOrganizations();
         setHasOrganizations(orgs.length > 0);
+        
+        if (orgs.length > 0) {
+          const stats = await getDashboardStats();
+          setDashboardData(stats);
+        }
       } catch (err) {
-        console.error("Error checking organizations:", err);
-        setError(err instanceof Error ? err : new Error('Failed to check organizations'));
+        console.error("Error loading dashboard data:", err);
+        setError(err instanceof Error ? err : new Error('Failed to load dashboard data'));
       } finally {
         setLoading(false);
       }
     }
     
-    checkOrganizations();
+    loadDashboardData();
   }, []);
   
   // Add error boundary
@@ -85,6 +92,30 @@ export default function DashboardContent() {
     );
   }
 
+  // Helper function to format time ago
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+      return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
+    }
+  };
+
+  // Helper function to format due date
+  const formatDueDate = (daysUntilDue: number) => {
+    if (daysUntilDue === 0) return "Due today";
+    if (daysUntilDue === 1) return "Due tomorrow";
+    if (daysUntilDue < 7) return `Due in ${daysUntilDue} days`;
+    return `Due in ${Math.ceil(daysUntilDue / 7)} week${daysUntilDue >= 14 ? 's' : ''}`;
+  };
+
   try {
     return (
       <div className="space-y-6">
@@ -95,8 +126,8 @@ export default function DashboardContent() {
               <BarChart3 className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-gray-500">+2 from last month</p>
+              <div className="text-2xl font-bold">{dashboardData?.totalProjects || 0}</div>
+              <p className="text-xs text-gray-500">Across your organizations</p>
             </CardContent>
           </Card>
           
@@ -106,8 +137,8 @@ export default function DashboardContent() {
               <CheckCircle className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">64</div>
-              <p className="text-xs text-gray-500">+12 from last week</p>
+              <div className="text-2xl font-bold">{dashboardData?.completedTasks || 0}</div>
+              <p className="text-xs text-gray-500">Tasks marked as done</p>
             </CardContent>
           </Card>
           
@@ -117,8 +148,8 @@ export default function DashboardContent() {
               <Clock className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">23</div>
-              <p className="text-xs text-gray-500">-5 from last week</p>
+              <div className="text-2xl font-bold">{dashboardData?.pendingTasks || 0}</div>
+              <p className="text-xs text-gray-500">Tasks in progress</p>
             </CardContent>
           </Card>
         </div>
@@ -130,18 +161,22 @@ export default function DashboardContent() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="border-b pb-2">
-                  <p className="font-medium">Task &quot;Homepage redesign&quot; was completed</p>
-                  <p className="text-sm text-gray-500">2 hours ago by John Doe</p>
-                </div>
-                <div className="border-b pb-2">
-                  <p className="font-medium">New task &quot;API Integration&quot; was created</p>
-                  <p className="text-sm text-gray-500">Yesterday by Jane Smith</p>
-                </div>
-                <div className="border-b pb-2">
-                  <p className="font-medium">Project &quot;Mobile App&quot; status changed to &quot;In Progress&quot;</p>
-                  <p className="text-sm text-gray-500">2 days ago by Mike Johnson</p>
-                </div>
+                {dashboardData?.recentActivity && dashboardData.recentActivity.length > 0 ? (
+                  dashboardData.recentActivity.map((activity) => (
+                    <div key={activity.id} className="border-b pb-2 last:border-b-0">
+                      <p className="font-medium">{activity.description}</p>
+                      <p className="text-sm text-gray-500">
+                        {formatTimeAgo(activity.timestamp)} by {activity.userDisplayName}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No recent activity</p>
+                    <p className="text-xs">Start working on tasks to see activity here</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -152,18 +187,22 @@ export default function DashboardContent() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="border-b pb-2">
-                  <p className="font-medium">Database Migration</p>
-                  <p className="text-sm text-gray-500">Due in 2 days</p>
-                </div>
-                <div className="border-b pb-2">
-                  <p className="font-medium">User Testing</p>
-                  <p className="text-sm text-gray-500">Due in 5 days</p>
-                </div>
-                <div className="border-b pb-2">
-                  <p className="font-medium">Final Presentation</p>
-                  <p className="text-sm text-gray-500">Due in 1 week</p>
-                </div>
+                {dashboardData?.upcomingDeadlines && dashboardData.upcomingDeadlines.length > 0 ? (
+                  dashboardData.upcomingDeadlines.map((deadline) => (
+                    <div key={deadline.id} className="border-b pb-2 last:border-b-0">
+                      <p className="font-medium">{deadline.title}</p>
+                      <p className="text-sm text-gray-500">
+                        {formatDueDate(deadline.daysUntilDue)} • {deadline.projectName}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No upcoming deadlines</p>
+                    <p className="text-xs">Tasks with due dates will appear here</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

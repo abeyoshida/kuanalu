@@ -80,6 +80,8 @@
 - `components/layout/app-shell.tsx` - Main layout component for the application
 - `components/layout/header.tsx` - Header component for the application
 - `components/layout/sidebar.tsx` - Sidebar component with navigation and project list
+- `src/lib/actions/dashboard-actions.ts` - Server actions for fetching dashboard statistics with live data
+- `src/components/dashboard/dashboard-content.tsx` - Updated dashboard component displaying live data instead of dummy data
 
 ### Notes
 
@@ -245,3 +247,12 @@
 
 - [ ] 12.0 Domain Switch
   - [ ] Redirect FlowBoardAI.com to the Vercel production server
+
+- [x] 13.0 MVP Tasks
+  - [x] 13.1 Update the Dashboard landing page to display live data in each section.
+     - [x] Total Projects
+     - [x] Completed Tasks
+     - [x] Pending Tasks
+     - [x] Recent Activity
+     - [x] Upcoming Deadlines
+  - [x] 13.2 Update the Setting landing page

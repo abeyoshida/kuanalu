@@ -97,23 +97,68 @@ export function OrganizationSettings({ organization }: OrganizationSettingsProps
   return (
     <div className="space-y-6">
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            General
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Appearance
-          </TabsTrigger>
-        </TabsList>
+        {/* Custom styled tabs that connect to cards */}
+        <div className="relative">
+          <TabsList className="h-auto p-0 bg-transparent border-b-0 justify-start">
+            <TabsTrigger 
+              value="general" 
+              className="
+                flex items-center gap-2 px-4 py-3 
+                bg-gray-100 border border-gray-200 border-b-0 border-r-0
+                rounded-tl-lg rounded-br-none rounded-tr-none rounded-bl-none
+                data-[state=active]:bg-white 
+                data-[state=active]:border-gray-200
+                data-[state=active]:shadow-none
+                data-[state=inactive]:text-gray-600
+                data-[state=inactive]:hover:bg-gray-50
+                transition-colors
+                relative z-10
+              "
+            >
+              <Settings className="h-4 w-4" />
+              General
+            </TabsTrigger>
+            <TabsTrigger 
+              value="notifications" 
+              className="
+                flex items-center gap-2 px-4 py-3 
+                bg-gray-100 border border-gray-200 border-b-0 border-r-0
+                rounded-none
+                data-[state=active]:bg-white 
+                data-[state=active]:border-gray-200
+                data-[state=active]:shadow-none
+                data-[state=inactive]:text-gray-600
+                data-[state=inactive]:hover:bg-gray-50
+                transition-colors
+                relative z-10
+              "
+            >
+              <Bell className="h-4 w-4" />
+              Notifications
+            </TabsTrigger>
+            <TabsTrigger 
+              value="appearance" 
+              className="
+                flex items-center gap-2 px-4 py-3 
+                bg-gray-100 border border-gray-200 border-b-0 
+                rounded-tr-lg rounded-tl-none rounded-br-none rounded-bl-none
+                data-[state=active]:bg-white 
+                data-[state=active]:border-gray-200
+                data-[state=active]:shadow-none
+                data-[state=inactive]:text-gray-600
+                data-[state=inactive]:hover:bg-gray-50
+                transition-colors
+                relative z-10
+              "
+            >
+              <Users className="h-4 w-4" />
+              Appearance
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
-        <TabsContent value="general">
-          <Card>
+        <TabsContent value="general" className="mt-0">
+          <Card className="border-t-0 rounded-t-none">
             <CardHeader>
               <CardTitle>General Settings</CardTitle>
               <CardDescription>
@@ -203,8 +248,8 @@ export function OrganizationSettings({ organization }: OrganizationSettingsProps
           </Card>
         </TabsContent>
         
-        <TabsContent value="notifications">
-          <Card>
+        <TabsContent value="notifications" className="mt-0">
+          <Card className="border-t-0 rounded-t-none">
             <CardHeader>
               <CardTitle>Notification Settings</CardTitle>
               <CardDescription>
@@ -307,8 +352,8 @@ export function OrganizationSettings({ organization }: OrganizationSettingsProps
           </Card>
         </TabsContent>
         
-        <TabsContent value="appearance">
-          <Card>
+        <TabsContent value="appearance" className="mt-0">
+          <Card className="border-t-0 rounded-t-none">
             <CardHeader>
               <CardTitle>Appearance Settings</CardTitle>
               <CardDescription>
