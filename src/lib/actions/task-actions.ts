@@ -797,7 +797,223 @@ export async function deleteTask(taskId: number): Promise<void> {
   }
 }
 
-export async function updateTaskPositions(taskId: number, newStatus: string, newPosition: number): Promise<void> {
-  // TODO: Restore full implementation
-  throw new Error("Function temporarily disabled - will be restored soon");
+export async function updateTaskPositions(
+  taskId: number, 
+  newStatus: string, 
+  newPosition: number
+): Promise<void> {
+  console.log('🔄 updateTaskPositions called for taskId:', taskId, 'newStatus:', newStatus, 'newPosition:', newPosition);
+  
+  try {
+    // Step 1: Auth check
+    const session = await auth();
+    if (!session?.user) {
+      throw new Error("You must be logged in to update task positions");
+    }
+    
+    const userId = parseInt(session.user.id);
+    console.log('✅ Auth check passed for user:', userId);
+
+    // Step 2: Get the task to check permissions and current position
+    console.log('📋 Fetching task current state...');
+    
+    const task = await db
+      .select({
+        projectId: tasks.projectId,
+        status: tasks.status,
+        position: tasks.position,
+        title: tasks.title
+      })
+      .from(tasks)
+      .where(eq(tasks.id, taskId))
+      .limit(1);
+    
+    if (!task.length) {
+      throw new Error("Task not found");
+    }
+    
+    const projectId = task[0].projectId;
+    const oldStatus = task[0].status;
+    const oldPosition = task[0].position || 0;
+    const taskTitle = task[0].title;
+    
+    console.log('✅ Task found:', taskTitle, 'current status:', oldStatus, 'position:', oldPosition);
+
+    // Step 3: Get the organization ID from the project for permission check
+    const project = await db
+      .select({
+        organizationId: projects.organizationId
+      })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      throw new Error("Project not found");
+    }
+    
+    const organizationId = project[0].organizationId;
+
+    // Step 4: Permission check - ensure user can update tasks
+    console.log('🔒 Checking task position update permissions...');
+    
+    // First check if user is a member of the project
+    const projectMembership = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, projectId)
+        )
+      )
+      .limit(1);
+    
+    const isProjectMember = projectMembership.length > 0;
+    
+    // If not a project member, check organization permissions
+    if (!isProjectMember) {
+      console.log('👀 User not a project member, checking organization permissions...');
+      
+      const hasUpdatePermission = await hasPermission(
+        userId,
+        organizationId,
+        'update',
+        'task'
+      );
+      
+      if (!hasUpdatePermission) {
+        throw new Error("You don't have permission to update tasks in this project");
+      }
+      
+      console.log('✅ Organization-level update permission granted');
+    } else {
+      console.log('✅ Project member update access granted');
+    }
+
+    // Step 5: Validate newStatus is a valid task status
+    const validStatuses = ["todo", "today", "in_progress", "in_review", "done"];
+    if (!validStatuses.includes(newStatus)) {
+      throw new Error("Invalid task status");
+    }
+    
+    const typedNewStatus = newStatus as "todo" | "today" | "in_progress" | "in_review" | "done";
+
+    // Step 6: Check if there's actually a change needed
+    if (oldStatus === typedNewStatus && oldPosition === newPosition) {
+      console.log('ℹ️ No position change needed');
+      return;
+    }
+
+    console.log('🔄 Processing position changes...');
+
+    // Step 7: Handle position updates based on status change
+    if (oldStatus !== typedNewStatus) {
+      console.log('📊 Status changed - updating positions in both columns');
+      
+      // Status changed: need to update positions in both old and new columns
+      
+      // 1. Update positions in the old status column (shift up tasks after old position)
+      console.log('⬆️ Shifting tasks up in old column');
+      await db
+        .update(tasks)
+        .set({
+          position: sql`${tasks.position} - 1`,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(tasks.projectId, projectId),
+            eq(tasks.status, oldStatus),
+            sql`${tasks.position} > ${oldPosition}`
+          )
+        );
+      
+      // 2. Make space in the new status column (shift down tasks at/after new position)
+      console.log('⬇️ Making space in new column');
+      await db
+        .update(tasks)
+        .set({
+          position: sql`${tasks.position} + 1`,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(tasks.projectId, projectId),
+            eq(tasks.status, typedNewStatus),
+            sql`${tasks.position} >= ${newPosition}`
+          )
+        );
+      
+      // 3. Update the task with new status and position
+      console.log('🎯 Updating task with new status and position');
+      await db
+        .update(tasks)
+        .set({
+          status: typedNewStatus,
+          position: newPosition,
+          updatedAt: new Date(),
+          completedAt: typedNewStatus === 'done' ? new Date() : (oldStatus === 'done' ? null : undefined)
+        })
+        .where(eq(tasks.id, taskId));
+        
+    } else {
+      console.log('📊 Same status - reordering within column');
+      
+      // Same status, just reordering within the same column
+      if (newPosition > oldPosition) {
+        // Moving down: shift tasks between old and new position up
+        console.log('⬇️ Moving task down - shifting others up');
+        await db
+          .update(tasks)
+          .set({
+            position: sql`${tasks.position} - 1`,
+            updatedAt: new Date()
+          })
+          .where(
+            and(
+              eq(tasks.projectId, projectId),
+              eq(tasks.status, typedNewStatus),
+              sql`${tasks.position} > ${oldPosition}`,
+              sql`${tasks.position} <= ${newPosition}`
+            )
+          );
+      } else if (newPosition < oldPosition) {
+        // Moving up: shift tasks between new and old position down
+        console.log('⬆️ Moving task up - shifting others down');
+        await db
+          .update(tasks)
+          .set({
+            position: sql`${tasks.position} + 1`,
+            updatedAt: new Date()
+          })
+          .where(
+            and(
+              eq(tasks.projectId, projectId),
+              eq(tasks.status, typedNewStatus),
+              sql`${tasks.position} >= ${newPosition}`,
+              sql`${tasks.position} < ${oldPosition}`
+            )
+          );
+      }
+      
+      // Update the task with new position
+      console.log('🎯 Updating task with new position');
+      await db
+        .update(tasks)
+        .set({
+          position: newPosition,
+          updatedAt: new Date()
+        })
+        .where(eq(tasks.id, taskId));
+    }
+
+    // Step 8: Revalidate cache
+    revalidatePath(`/projects/${projectId}`);
+    
+    console.log('✅ Task position update complete for:', taskTitle);
+  } catch (error) {
+    console.error('❌ Failed to update task positions:', error);
+    throw error;
+  }
 }
