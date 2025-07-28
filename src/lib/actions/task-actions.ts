@@ -41,9 +41,63 @@ export async function getProjectTasks(
       throw new Error("You must be logged in to view tasks");
     }
     
-    console.log('✅ Auth check passed for user:', session.user.id);
+    const userId = parseInt(session.user.id);
+    console.log('✅ Auth check passed for user:', userId);
 
-    // Step 2: Add basic database query
+    // Step 2: Permission check - ensure user has access to this project
+    console.log('🔒 Checking project access permissions...');
+    
+    // Check if user is a member of the project
+    const membership = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, projectId)
+        )
+      )
+      .limit(1);
+    
+    const isProjectMember = membership.length > 0;
+    
+    // If not a project member, check if project is public or if user has organization-level permissions
+    if (!isProjectMember) {
+      console.log('👀 User not a project member, checking organization permissions...');
+      
+      // Get the project and its organization
+      const project = await db
+        .select({
+          visibility: projects.visibility,
+          organizationId: projects.organizationId
+        })
+        .from(projects)
+        .where(eq(projects.id, projectId))
+        .limit(1);
+      
+      if (!project.length) {
+        throw new Error("Project not found");
+      }
+      
+      // Check if user has organization-level permissions
+      const hasViewPermission = await hasPermission(
+        userId,
+        project[0].organizationId,
+        'read',
+        'task'
+      );
+      
+      // If user doesn't have org-level permissions and project is not public, deny access
+      if (!hasViewPermission && project[0].visibility !== 'public') {
+        throw new Error("You don't have access to this project's tasks");
+      }
+      
+      console.log('✅ Organization-level permission granted');
+    } else {
+      console.log('✅ Project member access granted');
+    }
+
+    // Step 3: Database query (working)
     console.log('🔍 Fetching tasks from database...');
     
     const tasksList = await db
@@ -85,7 +139,7 @@ export async function getProjectTasks(
 
     console.log(`✅ Found ${tasksList.length} tasks in database`);
 
-    // Step 3: Convert to TaskWithMeta format (simple version)
+    // Step 4: Convert to TaskWithMeta format (simple version)
     const tasksWithMeta: TaskWithMeta[] = tasksList.map(task => ({
       ...task,
       assigneeName: task.assigneeName || undefined,
