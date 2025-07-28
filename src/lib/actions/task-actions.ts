@@ -525,9 +525,181 @@ export async function createTask(input: CreateTaskInput): Promise<TaskWithMeta> 
   }
 }
 
-export async function updateTask(taskId: number, data: any): Promise<any> {
-  // TODO: Restore full implementation
-  throw new Error("Function temporarily disabled - will be restored soon");
+export async function updateTask(
+  taskId: number,
+  data: {
+    title?: string;
+    description?: string | null;
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    type?: TaskType;
+    assigneeId?: number | null;
+    dueDate?: Date | null;
+    startDate?: Date | null;
+    estimatedHours?: number | null;
+    actualHours?: number | null;
+    points?: number | null;
+    position?: number | null;
+    labels?: string[] | null;
+    metadata?: Record<string, unknown> | null;
+  }
+): Promise<{ success: boolean; message?: string; data?: TaskWithMeta; isPermissionError?: boolean }> {
+  console.log('✏️ updateTask called for taskId:', taskId, 'with data keys:', Object.keys(data));
+  
+  try {
+    // Step 1: Auth check
+    const session = await auth();
+    if (!session?.user) {
+      return {
+        success: false,
+        message: "You must be logged in to update a task",
+        isPermissionError: false
+      };
+    }
+    
+    const userId = parseInt(session.user.id);
+    console.log('✅ Auth check passed for user:', userId);
+
+    // Step 2: Get the task to check project permissions
+    console.log('📋 Fetching task to verify permissions...');
+    
+    const task = await db
+      .select({ projectId: tasks.projectId })
+      .from(tasks)
+      .where(eq(tasks.id, taskId))
+      .limit(1);
+    
+    if (!task.length) {
+      return {
+        success: false,
+        message: "Task not found",
+        isPermissionError: false
+      };
+    }
+    
+    const projectId = task[0].projectId;
+    console.log('✅ Task found in project:', projectId);
+
+    // Step 3: Get the organization ID for the project
+    const project = await db
+      .select({ organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+    
+    if (!project.length) {
+      return {
+        success: false,
+        message: "Project not found",
+        isPermissionError: false
+      };
+    }
+    
+    const organizationId = project[0].organizationId;
+
+    // Step 4: Permission check - ensure user can update tasks
+    console.log('🔒 Checking task update permissions...');
+    
+    // Check if user is a member of the project first
+    const membership = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, projectId)
+        )
+      )
+      .limit(1);
+    
+    const isProjectMember = membership.length > 0;
+    
+    // If not a project member, check organization-level permissions
+    if (!isProjectMember) {
+      console.log('👀 User not a project member, checking organization permissions...');
+      
+      const hasUpdatePermission = await hasPermission(
+        userId,
+        organizationId,
+        'update',
+        'task'
+      );
+      
+      if (!hasUpdatePermission) {
+        return {
+          success: false,
+          message: "You don't have permission to update tasks in this project",
+          isPermissionError: true
+        };
+      }
+      
+      console.log('✅ Organization-level update permission granted');
+    } else {
+      console.log('✅ Project member update access granted');
+    }
+
+    // Step 5: Check if status is changing to 'done' for completion timestamp
+    const isCompletingTask = data.status === 'done';
+    console.log('📊 Task completion status:', isCompletingTask);
+
+    // Step 6: Update the task
+    console.log('💾 Updating task in database...');
+    
+    await db
+      .update(tasks)
+      .set({
+        title: data.title !== undefined ? data.title : undefined,
+        description: data.description !== undefined ? data.description : undefined,
+        status: data.status !== undefined ? data.status : undefined,
+        priority: data.priority !== undefined ? data.priority : undefined,
+        type: data.type !== undefined ? data.type : undefined,
+        assigneeId: data.assigneeId !== undefined ? data.assigneeId : undefined,
+        dueDate: data.dueDate !== undefined ? data.dueDate : undefined,
+        startDate: data.startDate !== undefined ? data.startDate : undefined,
+        estimatedHours: data.estimatedHours !== undefined ? data.estimatedHours : undefined,
+        actualHours: data.actualHours !== undefined ? data.actualHours : undefined,
+        points: data.points !== undefined ? data.points : undefined,
+        position: data.position !== undefined ? data.position : undefined,
+        labels: data.labels !== undefined ? JSON.stringify(data.labels) : undefined,
+        metadata: data.metadata !== undefined ? JSON.stringify(data.metadata) : undefined,
+        completedAt: isCompletingTask ? new Date() : undefined,
+        updatedAt: new Date()
+      })
+      .where(eq(tasks.id, taskId));
+
+    console.log('✅ Task updated in database');
+
+    // Step 7: Revalidate cache
+    revalidatePath(`/task/${taskId}`);
+    revalidatePath(`/projects/${projectId}`);
+
+    // Step 8: Get the updated task with meta information
+    console.log('📋 Retrieving updated task with metadata...');
+    
+    const updatedTask = await getTaskById(taskId);
+    
+    if (!updatedTask) {
+      return {
+        success: false,
+        message: "Failed to retrieve updated task",
+        isPermissionError: false
+      };
+    }
+
+    console.log('✅ Task update complete:', updatedTask.title);
+    
+    return {
+      success: true,
+      data: updatedTask
+    };
+  } catch (error) {
+    console.error('❌ Failed to update task:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "An unexpected error occurred",
+      isPermissionError: false
+    };
+  }
 }
 
 export async function deleteTask(taskId: number): Promise<void> {
