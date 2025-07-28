@@ -703,8 +703,98 @@ export async function updateTask(
 }
 
 export async function deleteTask(taskId: number): Promise<void> {
-  // TODO: Restore full implementation
-  throw new Error("Function temporarily disabled - will be restored soon");
+  console.log('🗑️ deleteTask called for taskId:', taskId);
+  
+  try {
+    // Step 1: Auth check
+    const session = await auth();
+    if (!session?.user) {
+      throw new Error("You must be logged in to delete a task");
+    }
+    
+    const userId = parseInt(session.user.id);
+    console.log('✅ Auth check passed for user:', userId);
+
+    // Step 2: Get the task and project to check permissions and organization ID
+    console.log('📋 Fetching task and project info...');
+    
+    const taskWithProject = await db
+      .select({
+        projectId: tasks.projectId,
+        organizationId: projects.organizationId,
+        taskTitle: tasks.title
+      })
+      .from(tasks)
+      .innerJoin(projects, eq(tasks.projectId, projects.id))
+      .where(eq(tasks.id, taskId))
+      .limit(1);
+    
+    if (!taskWithProject.length) {
+      throw new Error("Task not found");
+    }
+    
+    const { projectId, organizationId, taskTitle } = taskWithProject[0];
+    console.log('✅ Task found:', taskTitle, 'in project:', projectId, 'organization:', organizationId);
+
+    // Step 3: Permission check - ensure user can delete tasks
+    console.log('🔒 Checking task deletion permissions...');
+    
+    // Check if user is a member of the project first
+    const membership = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, projectId)
+        )
+      )
+      .limit(1);
+    
+    const isProjectMember = membership.length > 0;
+    
+    // If not a project member, check organization-level permissions
+    if (!isProjectMember) {
+      console.log('👀 User not a project member, checking organization permissions...');
+      
+      const hasDeletePermission = await hasPermission(
+        userId,
+        organizationId,
+        'delete',
+        'task'
+      );
+      
+      if (!hasDeletePermission) {
+        throw new Error("You don't have permission to delete tasks in this project");
+      }
+      
+      console.log('✅ Organization-level delete permission granted');
+    } else {
+      console.log('✅ Project member delete access granted');
+    }
+
+    // Step 4: Soft delete by setting archivedAt timestamp
+    console.log('💾 Soft deleting task (setting archivedAt)...');
+    
+    await db
+      .update(tasks)
+      .set({
+        archivedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(tasks.id, taskId));
+
+    console.log('✅ Task soft deleted (archived)');
+
+    // Step 5: Revalidate cache so task disappears from UI
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath(`/task/${taskId}`); // In case someone has task detail page open
+    
+    console.log('✅ Task deletion complete for:', taskTitle);
+  } catch (error) {
+    console.error('❌ Failed to delete task:', error);
+    throw error;
+  }
 }
 
 export async function updateTaskPositions(taskId: number, newStatus: string, newPosition: number): Promise<void> {
