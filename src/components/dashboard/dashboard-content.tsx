@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, CheckCircle, Clock, Building, Plus, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -58,14 +59,59 @@ export default function DashboardContent() {
     );
   }
   
-  // If loading, show a loading state
+  // If loading, show skeleton layout
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="animate-pulse flex space-x-2">
-          <div className="h-3 w-3 bg-blue-400 rounded-full"></div>
-          <div className="h-3 w-3 bg-blue-400 rounded-full"></div>
-          <div className="h-3 w-3 bg-blue-400 rounded-full"></div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-1" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Recent Activity skeleton */}
+          <Card className="col-span-1">
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="border-b pb-2 last:border-b-0">
+                    <Skeleton className="h-4 w-3/4 mb-2" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Upcoming Deadlines skeleton */}
+          <Card className="col-span-1">
+            <CardHeader>
+              <Skeleton className="h-6 w-36" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="border-b pb-2 last:border-b-0">
+                    <Skeleton className="h-4 w-2/3 mb-2" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

@@ -1,28 +1,29 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getOrganizationMembers } from "@/lib/actions/organization-actions";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getUserRole } from "@/lib/auth/permissions";
-import { RoleManager } from "@/components/auth/role-manager";
 import { UserPlus } from "lucide-react";
+import { getOrganizationMembers } from "@/lib/actions/organization-actions";
+import { getUserRole } from "@/lib/auth/server-permissions";
 import { InviteUserDialog } from "@/components/organizations/invite-user-dialog";
+import { RoleManager } from "@/components/auth/role-manager";
 import { Role } from "@/lib/auth/client-permissions";
-
-interface OrganizationMembersProps {
-  organizationId: number;
-  currentUserId: number;
-}
 
 interface Member {
   userId: number;
   name: string;
   email: string;
   image: string | null;
-  role: string;
+  role: "owner" | "admin" | "member" | "guest";
   joinedAt: Date;
+}
+
+interface OrganizationMembersProps {
+  organizationId: number;
+  currentUserId: number;
 }
 
 export function OrganizationMembers({ organizationId, currentUserId }: OrganizationMembersProps) {
@@ -63,7 +64,36 @@ export function OrganizationMembers({ organizationId, currentUserId }: Organizat
   const canInviteUsers = currentUserRole === 'owner' || currentUserRole === 'admin';
   
   if (loading) {
-    return <div className="text-center py-8">Loading members...</div>;
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Organization Members</CardTitle>
+            <CardDescription>Manage organization members and their roles</CardDescription>
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-8 w-8" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
   
   if (error) {

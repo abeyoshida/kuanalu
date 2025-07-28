@@ -1,99 +1,75 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getUserPendingInvitations } from "@/lib/actions/invitation-actions";
-import { Badge } from "../ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Check, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { Loader2, Check, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
+import { getUserPendingInvitations, acceptInvitation } from "@/lib/actions/invitation-actions";
+import { toast } from "@/hooks/use-toast";
 
 interface Invitation {
   id: number;
   token: string;
   organizationId: number;
-  role: string;
+  organizationName: string;
+  inviterName: string;
+  role: "owner" | "admin" | "member" | "guest";
   invitedBy: number;
   createdAt: Date;
   expiresAt: Date;
-  organizationName: string;
-  inviterName: string;
 }
 
 export function PendingInvitations() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [acceptingInvitation, setAcceptingInvitation] = useState<number | null>(null);
-  const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
-    const fetchInvitations = async () => {
-      try {
-        const pendingInvitations = await getUserPendingInvitations();
-        setInvitations(pendingInvitations || []);
-      } catch (err) {
-        console.error("Error fetching invitations:", err);
-        // Silently handle the error - the table might not exist yet
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInvitations();
+    loadInvitations();
   }, []);
 
-  const handleAcceptInvitation = async (token: string, id: number) => {
-    setAcceptingInvitation(id);
+  const loadInvitations = async () => {
     try {
-      const response = await fetch('/api/invitations/accept', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: "Invitation accepted",
-          description: data.message,
-        });
-        
-        // Remove the invitation from the list
-        setInvitations(invitations.filter(inv => inv.id !== id));
-        
-        // Redirect to the organization page
-        const invitation = invitations.find(inv => inv.id === id);
-        if (invitation) {
-          router.push(`/organizations/${invitation.organizationId}`);
-        }
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: data.error || "Failed to accept invitation",
-        });
-      }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const data = await getUserPendingInvitations();
+      setInvitations(data);
     } catch (error) {
+      console.error("Failed to load invitations:", error);
       toast({
-        variant: "destructive",
         title: "Error",
+        description: "Failed to load invitations",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptInvitation = async (token: string, invitationId: number) => {
+    try {
+      setAcceptingInvitation(invitationId);
+      await acceptInvitation(token);
+      
+      toast({
+        title: "Success",
+        description: "Invitation accepted successfully!",
+      });
+      
+      // Remove the accepted invitation from the list
+      setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+    } catch (error) {
+      console.error("Failed to accept invitation:", error);
+      toast({
+        title: "Error", 
         description: "Failed to accept invitation",
+        variant: "destructive",
       });
     } finally {
       setAcceptingInvitation(null);
     }
   };
-
-  if (!loading && invitations.length === 0) {
-    return null;
-  }
 
   return (
     <Card>
@@ -105,8 +81,20 @@ export function PendingInvitations() {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-5 w-48" />
+                  <Skeleton className="h-4 w-64" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-8" />
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="space-y-4">

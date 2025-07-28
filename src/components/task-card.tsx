@@ -1,11 +1,11 @@
 "use client"
 
-import type { Task } from "@/types/tasks"
+import type { TaskWithMeta } from "@/types/task"
 import { Calendar, User, Clock, CalendarClock, Loader2, Eye, CheckCircle2, Pencil } from "lucide-react"
 import Link from "next/link"
 
 interface TaskCardProps {
-  task: Task
+  task: TaskWithMeta
   onDragStart: () => void
   onDragEnd: () => void
   isDragging?: boolean
@@ -59,7 +59,7 @@ export default function TaskCard({ task, onDragStart, onDragEnd, isDragging = fa
       <div className="flex flex-wrap items-center justify-between text-xs text-gray-500 gap-y-1">
         <div className="flex items-center gap-1 min-w-[80px]">
           <User className="w-3 h-3" />
-          <span className="truncate max-w-[80px]">{task.assignee}</span>
+          <span className="truncate max-w-[80px]">{task.assigneeName || "Unassigned"}</span>
         </div>
         <span className={`px-1.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap ${priorityColors[task.priority]}`}>
           {task.priority}

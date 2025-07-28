@@ -5,25 +5,24 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TaskCard from "./task-card"
 import CreateTaskDialog from "./create-task-dialog"
-import type { Task } from "@/types/tasks"
-import type { TaskStatus } from "@/types/tasks"
+import type { TaskWithMeta, TaskStatus } from "@/types/task"
 
-interface KanbanColumnProps<T extends Task = Task> {
+interface KanbanColumnProps {
   title: string
   color: string
-  tasks: T[]
+  tasks: TaskWithMeta[]
   projectId: number
   onDragOver: (e: React.DragEvent) => void
   onDragLeave: (e: React.DragEvent) => void
   onDrop: (e: React.DragEvent) => void
-  onDragStart: (task: T) => void
+  onDragStart: (task: TaskWithMeta) => void
   onDragEnd: () => void
   isActiveDropTarget: boolean
   draggedTaskId?: string
   onTaskCreated?: () => void
 }
 
-export default function KanbanColumn<T extends Task = Task>({ 
+export default function KanbanColumn({ 
   title, 
   color, 
   tasks, 
@@ -36,7 +35,7 @@ export default function KanbanColumn<T extends Task = Task>({
   isActiveDropTarget,
   draggedTaskId,
   onTaskCreated
-}: KanbanColumnProps<T>) {
+}: KanbanColumnProps) {
   // Extract status from title
   const getStatusFromTitle = (): TaskStatus => {
     const statusMap: Record<string, TaskStatus> = {
@@ -85,7 +84,7 @@ export default function KanbanColumn<T extends Task = Task>({
             task={task} 
             onDragStart={() => onDragStart(task)}
             onDragEnd={onDragEnd}
-            isDragging={draggedTaskId === task.id}
+            isDragging={draggedTaskId === task.id.toString()}
           />
         ))}
         {tasks.length === 0 && (
