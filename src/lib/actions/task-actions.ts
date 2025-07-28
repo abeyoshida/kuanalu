@@ -139,54 +139,75 @@ export async function getProjectTasks(
 
     console.log(`✅ Found ${tasksList.length} tasks in database`);
 
-    // Step 4: Convert to TaskWithMeta format (simple version)
-    const tasksWithMeta: TaskWithMeta[] = tasksList.map(task => ({
-      ...task,
-      assigneeName: task.assigneeName || undefined,
-      reporterName: undefined, // Will add this back later
-      subtaskCount: 0, // Will add this back later  
-      commentCount: 0, // Will add this back later
-      childTaskCount: 0, // Will add this back later
-      isOverdue: false // Will add this back later
-    }));
-
-    // Add a distinctive indicator task to confirm new permission code is running
-    const indicatorTask: TaskWithMeta = {
-      id: -1, // Negative ID so it doesn't conflict with real tasks
-      title: "🔒 PERMISSION CHECKS ACTIVE - NEW CODE DEPLOYED ✅",
-      description: "This task confirms the permission-checking version is running",
-      status: 'todo' as any,
-      priority: 'high' as any,
-      type: 'task' as any,
-      projectId: projectId,
-      assigneeId: null,
-      reporterId: userId,
-      parentTaskId: null,
-      dueDate: null,
-      startDate: null,
-      estimatedHours: null,
-      actualHours: null,
-      points: null,
-      position: -1, // Position at top
-      labels: null,
-      metadata: null,
-      completedAt: null,
-      createdBy: userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      archivedAt: null,
-      assigneeName: undefined,
-      reporterName: undefined,
-      subtaskCount: 0,
-      commentCount: 0,
-      childTaskCount: 0,
-      isOverdue: false
-    };
-
-    console.log('✅ Tasks converted to TaskWithMeta format');
+    // Step 4: Add metadata to tasks
+    console.log('📊 Adding metadata (subtasks, comments, etc.)...');
     
-    // Return indicator task first, then real tasks
-    return [indicatorTask, ...tasksWithMeta];
+    const tasksWithMeta = await Promise.all(
+      tasksList.map(async (task) => {
+        try {
+          // Get subtask count
+          const [subtaskResult] = await db
+            .select({ count: count() })
+            .from(subtasks)
+            .where(eq(subtasks.taskId, task.id));
+          
+          // Get comment count
+          const [commentResult] = await db
+            .select({ count: count() })
+            .from(comments)
+            .where(eq(comments.taskId, task.id));
+          
+          // Get child task count
+          const [childTaskResult] = await db
+            .select({ count: count() })
+            .from(tasks)
+            .where(
+              and(
+                eq(tasks.parentTaskId, task.id),
+                isNull(tasks.archivedAt)
+              )
+            );
+          
+          // Get reporter name if exists
+          const reporter = task.reporterId ? await db
+            .select({ name: users.name })
+            .from(users)
+            .where(eq(users.id, task.reporterId))
+            .limit(1)
+            .then(results => results[0] || null) : null;
+          
+          // Check if task is overdue
+          const isOverdue = task.dueDate && task.status !== 'done' && 
+            new Date(task.dueDate) < new Date() && !task.completedAt;
+          
+          return {
+            ...task,
+            assigneeName: task.assigneeName || undefined,
+            reporterName: reporter?.name || undefined,
+            subtaskCount: Number(subtaskResult.count),
+            commentCount: Number(commentResult.count),
+            childTaskCount: Number(childTaskResult.count),
+            isOverdue: isOverdue || false
+          } as TaskWithMeta;
+        } catch (metaError) {
+          console.warn(`⚠️ Failed to get metadata for task ${task.id}:`, metaError);
+          // Return task without metadata rather than failing completely
+          return {
+            ...task,
+            assigneeName: task.assigneeName || undefined,
+            reporterName: undefined,
+            subtaskCount: 0,
+            commentCount: 0,
+            childTaskCount: 0,
+            isOverdue: false
+          } as TaskWithMeta;
+        }
+      })
+    );
+
+    console.log('✅ Tasks converted to TaskWithMeta format with full metadata');
+    
+    return tasksWithMeta;
   } catch (error) {
     console.error('❌ Failed to get project tasks:', error);
     throw error;
