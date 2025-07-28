@@ -35,7 +35,7 @@ export async function getProjectTasks(
   console.log('🔥 getProjectTasks called with projectId:', projectId);
   
   try {
-    // Step 1: Add back auth check
+    // Step 1: Auth check (working)
     const session = await auth();
     if (!session?.user) {
       throw new Error("You must be logged in to view tasks");
@@ -43,42 +43,64 @@ export async function getProjectTasks(
     
     console.log('✅ Auth check passed for user:', session.user.id);
 
-    // For now, return test data but with auth working
-    return [
-      {
-        id: 1,
-        title: "🔄 Auth Working - Ready for Real Data",
-        description: "Auth check passed, ready to add database queries", 
-        status: 'todo' as any,
-        priority: 'medium' as any,
-        type: 'task' as any,
-        projectId: projectId,
-        assigneeId: null,
-        reporterId: 1,
-        parentTaskId: null,
-        dueDate: null,
-        startDate: null,
-        estimatedHours: null,
-        actualHours: null,
-        points: null,
-        position: 0,
-        labels: null,
-        metadata: null,
-        completedAt: null,
-        createdBy: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        archivedAt: null,
-        assigneeName: "Test User",
-        reporterName: undefined,
-        subtaskCount: 0,
-        commentCount: 0,
-        childTaskCount: 0,
-        isOverdue: false
-      } as TaskWithMeta
-    ];
+    // Step 2: Add basic database query
+    console.log('🔍 Fetching tasks from database...');
+    
+    const tasksList = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        description: tasks.description,
+        status: tasks.status,
+        priority: tasks.priority,
+        type: tasks.type,
+        projectId: tasks.projectId,
+        assigneeId: tasks.assigneeId,
+        reporterId: tasks.reporterId,
+        parentTaskId: tasks.parentTaskId,
+        dueDate: tasks.dueDate,
+        startDate: tasks.startDate,
+        estimatedHours: tasks.estimatedHours,
+        actualHours: tasks.actualHours,
+        points: tasks.points,
+        position: tasks.position,
+        labels: tasks.labels,
+        metadata: tasks.metadata,
+        completedAt: tasks.completedAt,
+        createdBy: tasks.createdBy,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        archivedAt: tasks.archivedAt,
+        assigneeName: users.name
+      })
+      .from(tasks)
+      .leftJoin(users, eq(tasks.assigneeId, users.id))
+      .where(
+        and(
+          eq(tasks.projectId, projectId),
+          isNull(tasks.archivedAt) // Exclude archived tasks
+        )
+      )
+      .orderBy(asc(tasks.position));
+
+    console.log(`✅ Found ${tasksList.length} tasks in database`);
+
+    // Step 3: Convert to TaskWithMeta format (simple version)
+    const tasksWithMeta: TaskWithMeta[] = tasksList.map(task => ({
+      ...task,
+      assigneeName: task.assigneeName || undefined,
+      reporterName: undefined, // Will add this back later
+      subtaskCount: 0, // Will add this back later  
+      commentCount: 0, // Will add this back later
+      childTaskCount: 0, // Will add this back later
+      isOverdue: false // Will add this back later
+    }));
+
+    console.log('✅ Tasks converted to TaskWithMeta format');
+    
+    return tasksWithMeta;
   } catch (error) {
-    console.error('Failed to get project tasks:', error);
+    console.error('❌ Failed to get project tasks:', error);
     throw error;
   }
 }
