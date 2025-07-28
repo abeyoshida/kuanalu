@@ -33,6 +33,12 @@ export async function hasPermission(
     
     const userRole = memberRecord[0].role as Role;
     
+    // Check if rolePermissions and the user's role permissions exist
+    if (!rolePermissions || !rolePermissions[userRole]) {
+      console.error('Role permissions not found for role:', userRole);
+      return false;
+    }
+    
     // Check if the user's role has the required permission
     return rolePermissions[userRole].some(
       (permission) => permission.action === action && permission.subject === subject
@@ -69,10 +75,17 @@ export async function hasMultiplePermissions(
     }
     
     const userRole = memberRecord[0].role as Role;
+    
+    // Check if rolePermissions and the user's role permissions exist
+    if (!rolePermissions || !rolePermissions[userRole]) {
+      console.error('Role permissions not found for role:', userRole);
+      return false;
+    }
+    
     const userPermissions = rolePermissions[userRole];
     
-    // Check if the user has all specified permissions
-    return permissions.every(({ action, subject }) => 
+    // Check if the user has all required permissions
+    return permissions.every(({ action, subject }) =>
       userPermissions.some(
         (permission) => permission.action === action && permission.subject === subject
       )
@@ -109,6 +122,13 @@ export async function hasAnyPermission(
     }
     
     const userRole = memberRecord[0].role as Role;
+    
+    // Check if rolePermissions and the user's role permissions exist
+    if (!rolePermissions || !rolePermissions[userRole]) {
+      console.error('Role permissions not found for role:', userRole);
+      return false;
+    }
+    
     const userPermissions = rolePermissions[userRole];
     
     // Check if the user has any of the specified permissions
