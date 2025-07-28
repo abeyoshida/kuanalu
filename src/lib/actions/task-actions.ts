@@ -394,8 +394,135 @@ export async function getTaskById(taskId: number): Promise<TaskWithMeta | null> 
 }
 
 export async function createTask(input: CreateTaskInput): Promise<TaskWithMeta> {
-  // TODO: Restore full implementation  
-  throw new Error("Function temporarily disabled - will be restored soon");
+  console.log('🆕 createTask called with input:', { title: input.title, projectId: input.projectId });
+  
+  try {
+    // Step 1: Auth check
+    const session = await auth();
+    if (!session?.user) {
+      throw new Error("You must be logged in to create a task");
+    }
+    
+    const userId = parseInt(session.user.id);
+    console.log('✅ Auth check passed for user:', userId);
+
+    // Step 2: Permission check - ensure user can create tasks in this project
+    console.log('🔒 Checking task creation permissions...');
+    
+    // Check if user is a member of the project
+    const membership = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, input.projectId)
+        )
+      )
+      .limit(1);
+    
+    const isProjectMember = membership.length > 0;
+    
+    // If not a project member, check if user has organization-level permissions
+    if (!isProjectMember) {
+      console.log('👀 User not a project member, checking organization permissions...');
+      
+      // Get the project and its organization
+      const project = await db
+        .select({
+          organizationId: projects.organizationId
+        })
+        .from(projects)
+        .where(eq(projects.id, input.projectId))
+        .limit(1);
+      
+      if (!project.length) {
+        throw new Error("Project not found");
+      }
+      
+      // Check if user has organization-level permissions
+      const hasCreatePermission = await hasPermission(
+        userId,
+        project[0].organizationId,
+        'create',
+        'task'
+      );
+      
+      if (!hasCreatePermission) {
+        throw new Error("You don't have permission to create tasks in this project");
+      }
+      
+      console.log('✅ Organization-level create permission granted');
+    } else {
+      console.log('✅ Project member create access granted');
+    }
+
+    // Step 3: Get the highest position for the status column
+    console.log('📊 Calculating task position...');
+    
+    const [positionResult] = await db
+      .select({
+        maxPosition: sql<number>`COALESCE(MAX(${tasks.position}), -1) + 1`
+      })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.projectId, input.projectId),
+          eq(tasks.status, input.status || 'todo')
+        )
+      );
+
+    const newPosition = positionResult.maxPosition;
+    console.log('✅ New task position:', newPosition);
+
+    // Step 4: Create the task
+    console.log('💾 Creating new task in database...');
+    
+    const [newTask] = await db
+      .insert(tasks)
+      .values({
+        title: input.title,
+        description: input.description || null,
+        status: input.status || 'todo',
+        priority: input.priority || 'medium',
+        type: input.type || 'task',
+        projectId: input.projectId,
+        assigneeId: input.assigneeId || null,
+        reporterId: userId,
+        parentTaskId: input.parentTaskId || null,
+        dueDate: input.dueDate ? new Date(input.dueDate) : null,
+        startDate: input.startDate ? new Date(input.startDate) : null,
+        estimatedHours: input.estimatedHours || null,
+        points: input.points || null,
+        position: newPosition,
+        labels: input.labels ? JSON.stringify(input.labels) : null,
+        createdBy: userId,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+
+    console.log('✅ Task created with ID:', newTask.id);
+
+    // Step 5: Get the task with full metadata
+    console.log('📋 Retrieving created task with metadata...');
+    
+    const taskWithMeta = await getTaskById(newTask.id);
+    
+    if (!taskWithMeta) {
+      throw new Error("Failed to retrieve created task");
+    }
+
+    // Step 6: Revalidate the project page cache
+    revalidatePath(`/projects/${input.projectId}`);
+    
+    console.log('✅ Task creation complete:', taskWithMeta.title);
+    
+    return taskWithMeta;
+  } catch (error) {
+    console.error('❌ Failed to create task:', error);
+    throw error;
+  }
 }
 
 export async function updateTask(taskId: number, data: any): Promise<any> {
