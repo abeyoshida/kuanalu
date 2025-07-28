@@ -31,7 +31,7 @@ import { handleActionError } from "@/lib/utils";
 interface TaskWithMeta {
   id: number;
   title: string;
-  description?: string;
+  description: string | null; // Changed from undefined to null to match schema
   status: any;
   priority: any;
   type: any;
@@ -129,6 +129,48 @@ export async function getProjectTasks(
 export async function testServerAction(): Promise<string> {
   console.log('testServerAction called');
   return "Server action works!";
+}
+
+// NEW: Different function name to bypass caching issues
+export async function getProjectTasksV2(
+  projectId: number, 
+  filters?: TaskFilterOptions
+): Promise<TaskWithMeta[]> {
+  console.log('getProjectTasksV2 called with projectId:', projectId);
+  
+  return [
+    {
+      id: 1,
+      title: "Production Test Task V2",
+      description: "This proves the function works in production", 
+      status: 'todo' as any,
+      priority: 'high' as any,
+      type: 'task' as any,
+      projectId: projectId,
+      assigneeId: null,
+      reporterId: 1,
+      parentTaskId: null,
+      dueDate: null,
+      startDate: null,
+      estimatedHours: null,
+      actualHours: null,
+      points: null,
+      position: 0,
+      labels: null,
+      metadata: null,
+      completedAt: null,
+      createdBy: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      archivedAt: null,
+      assigneeName: "Prod Test User",
+      reporterName: undefined,
+      subtaskCount: 0,
+      commentCount: 0,
+      childTaskCount: 0,
+      isOverdue: false
+    } as TaskWithMeta
+  ];
 }
 
 // Placeholder functions to maintain exports (all commented out logic)
