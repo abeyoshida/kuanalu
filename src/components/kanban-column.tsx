@@ -12,11 +12,11 @@ interface KanbanColumnProps {
   color: string
   tasks: TaskWithMeta[]
   projectId: number
-  onDragOver: (e: React.DragEvent) => void
-  onDragLeave: (e: React.DragEvent) => void
-  onDrop: (e: React.DragEvent) => void
-  onDragStart: (task: TaskWithMeta) => void
-  onDragEnd: () => void
+  onDragOver?: (e: React.DragEvent) => void
+  onDragLeave?: (e: React.DragEvent) => void
+  onDrop?: (e: React.DragEvent) => void
+  onDragStart?: (task: TaskWithMeta) => void
+  onDragEnd?: () => void
   isActiveDropTarget: boolean
   draggedTaskId?: string
   onTaskCreated?: () => void
@@ -74,16 +74,16 @@ export default function KanbanColumn({
         className={`min-h-[300px] sm:min-h-[400px] md:min-h-[500px] space-y-3 p-2 rounded-lg transition-colors duration-200 ${
           isActiveDropTarget ? 'bg-blue-50 border-2 border-dashed border-blue-300' : ''
         }`} 
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave} 
-        onDrop={onDrop}
+        onDragOver={onDragOver || (() => {})}
+        onDragLeave={onDragLeave || (() => {})} 
+        onDrop={onDrop || (() => {})}
       >
         {tasks.map((task) => (
           <TaskCard 
             key={task.id} 
             task={task} 
-            onDragStart={() => onDragStart(task)}
-            onDragEnd={onDragEnd}
+            onDragStart={() => onDragStart?.(task)}
+            onDragEnd={onDragEnd || (() => {})}
             isDragging={draggedTaskId === task.id.toString()}
           />
         ))}

@@ -39,8 +39,8 @@ export default function TaskCard({ task, onDragStart, onDragEnd, isDragging = fa
   return (
     <div
       draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      onDragStart={onDragStart || (() => {})}
+      onDragEnd={onDragEnd || (() => {})}
       className={`bg-white rounded-lg border p-3 shadow-sm transition-all cursor-move ${
         isDragging 
           ? 'opacity-50 border-blue-400 shadow-md scale-105' 

@@ -71,16 +71,20 @@ export async function getProjectTasks(
       }
       
       // Check if user has organization-level permissions
-      const hasViewPermission = await hasPermission(
-        userId,
-        project[0].organizationId,
-        'read',
-        'task'
-      );
-      
-      // If user doesn't have org-level permissions and project is not public, deny access
-      if (!hasViewPermission && project[0].visibility !== 'public') {
-        throw new Error("You don't have access to this project's tasks");
+      try {
+        const hasViewPermission = await hasPermission(
+          userId,
+          project[0].organizationId,
+          'read',
+          'task'
+        );
+        
+        // If user doesn't have org-level permissions and project is not public, deny access
+        if (!hasViewPermission && project[0].visibility !== 'public') {
+          throw new Error("You don't have access to this project's tasks");
+        }
+      } catch (permissionError) {
+        throw new Error(`Permission check failed: ${permissionError instanceof Error ? permissionError.message : 'Unknown error'}`);
       }
     }
     
@@ -168,48 +172,79 @@ export async function getProjectTasks(
       .where(and(...whereConditions));
     
     // Execute query with sorting
-    const tasksList = await baseQuery.orderBy(asc(tasks.position));
+    let tasksList;
+    try {
+      tasksList = await baseQuery.orderBy(asc(tasks.position));
+    } catch (queryError) {
+      throw new Error(`Database query failed: ${queryError instanceof Error ? queryError.message : 'Unknown query error'}`);
+    }
     
     // Get subtask, comment, and child task counts
-    const tasksWithMeta = await Promise.all(
-      tasksList.map(async (task: Record<string, unknown>) => {
-        const [subtaskResult] = await db
-          .select({ count: count() })
-          .from(subtasks)
-          .where(eq(subtasks.taskId, task.id as number));
-        
-        const [commentResult] = await db
-          .select({ count: count() })
-          .from(comments)
-          .where(eq(comments.taskId, task.id as number));
-        
-        const [childTaskResult] = await db
-          .select({ count: count() })
-          .from(tasks)
-          .where(
-            and(
-              eq(tasks.parentTaskId, task.id as number),
-              isNull(tasks.archivedAt)
-            )
-          );
-        
-        // Check if task is overdue
-        const isOverdue = task.dueDate && task.status !== 'done' && 
-          new Date(task.dueDate as Date) < new Date() && !task.completedAt;
-        
-        return {
-          ...task,
-          reporterName: undefined,
-          assigneeName: task.assigneeName || undefined,
-          subtaskCount: Number(subtaskResult.count),
-          commentCount: Number(commentResult.count),
-          childTaskCount: Number(childTaskResult.count),
-          isOverdue: isOverdue || false
-        } as TaskWithMeta;
-      })
-    );
-    
-    return tasksWithMeta;
+    try {
+      const tasksWithMeta = await Promise.all(
+        tasksList.map(async (task: Record<string, unknown>, index: number) => {
+          try {
+            const [subtaskResult] = await db
+              .select({ count: count() })
+              .from(subtasks)
+              .where(eq(subtasks.taskId, task.id as number));
+            
+            const [commentResult] = await db
+              .select({ count: count() })
+              .from(comments)
+              .where(eq(comments.taskId, task.id as number));
+            
+            const [childTaskResult] = await db
+              .select({ count: count() })
+              .from(tasks)
+              .where(
+                and(
+                  eq(tasks.parentTaskId, task.id as number),
+                  isNull(tasks.archivedAt)
+                )
+              );
+            
+            // Check if task is overdue
+            const isOverdue = task.dueDate && task.status !== 'done' && 
+              new Date(task.dueDate as Date) < new Date() && !task.completedAt;
+            
+            return {
+              ...task,
+              reporterName: undefined,
+              assigneeName: task.assigneeName || undefined,
+              subtaskCount: Number(subtaskResult.count),
+              commentCount: Number(commentResult.count),
+              childTaskCount: Number(childTaskResult.count),
+              isOverdue: isOverdue || false
+            } as TaskWithMeta;
+          } catch (metaError) {
+            // Return task without metadata rather than failing completely
+            return {
+              ...task,
+              reporterName: undefined,
+              assigneeName: task.assigneeName || undefined,
+              subtaskCount: 0,
+              commentCount: 0,
+              childTaskCount: 0,
+              isOverdue: false
+            } as TaskWithMeta;
+          }
+        })
+      );
+      
+      return tasksWithMeta;
+    } catch (metaProcessingError) {
+      // Fallback: return tasks without metadata
+      return tasksList.map(task => ({
+        ...task,
+        reporterName: undefined,
+        assigneeName: task.assigneeName || undefined,
+        subtaskCount: 0,
+        commentCount: 0,
+        childTaskCount: 0,
+        isOverdue: false
+      })) as TaskWithMeta[];
+    }
   } catch (error) {
     console.error('Failed to get project tasks:', error);
     throw error;
