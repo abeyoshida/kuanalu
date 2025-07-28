@@ -150,9 +150,43 @@ export async function getProjectTasks(
       isOverdue: false // Will add this back later
     }));
 
+    // Add a distinctive indicator task to confirm new permission code is running
+    const indicatorTask: TaskWithMeta = {
+      id: -1, // Negative ID so it doesn't conflict with real tasks
+      title: "🔒 PERMISSION CHECKS ACTIVE - NEW CODE DEPLOYED ✅",
+      description: "This task confirms the permission-checking version is running",
+      status: 'todo' as any,
+      priority: 'high' as any,
+      type: 'task' as any,
+      projectId: projectId,
+      assigneeId: null,
+      reporterId: userId,
+      parentTaskId: null,
+      dueDate: null,
+      startDate: null,
+      estimatedHours: null,
+      actualHours: null,
+      points: null,
+      position: -1, // Position at top
+      labels: null,
+      metadata: null,
+      completedAt: null,
+      createdBy: userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      archivedAt: null,
+      assigneeName: undefined,
+      reporterName: undefined,
+      subtaskCount: 0,
+      commentCount: 0,
+      childTaskCount: 0,
+      isOverdue: false
+    };
+
     console.log('✅ Tasks converted to TaskWithMeta format');
     
-    return tasksWithMeta;
+    // Return indicator task first, then real tasks
+    return [indicatorTask, ...tasksWithMeta];
   } catch (error) {
     console.error('❌ Failed to get project tasks:', error);
     throw error;
