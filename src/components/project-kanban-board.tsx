@@ -7,7 +7,7 @@ import KanbanFilter, { FilterOptions } from "@/components/kanban-filter"
 import KanbanSort, { SortOptions } from "@/components/kanban-sort"
 import CreateTaskDialog from "@/components/create-task-dialog"
 import type { TaskStatus } from "@/types/tasks"
-import { getProjectTasks, getProjectTasksV2, updateTaskPositions } from "@/lib/actions/task-actions"
+import { getProjectTasks, updateTaskPositions } from "@/lib/actions/task-actions"
 import { TaskWithMeta, TaskSortField, SortDirection } from "@/types/task"
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -183,8 +183,8 @@ export default function ProjectKanbanBoard({ projectId }: ProjectKanbanBoardProp
     try {
       setIsLoading(true)
       setError(null)
-      // Temporarily use V2 function to test production caching issue
-      const tasks = await getProjectTasksV2(projectId)
+      // Back to original function name since caching issue is resolved
+      const tasks = await getProjectTasks(projectId)
       setAllTasks(tasks)
     } catch (error) {
       console.error("Error loading tasks:", error)
