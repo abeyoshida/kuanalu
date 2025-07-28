@@ -136,12 +136,14 @@ export async function getProjectTasksV2(
   projectId: number, 
   filters?: TaskFilterOptions
 ): Promise<TaskWithMeta[]> {
-  console.log('getProjectTasksV2 called with projectId:', projectId);
+  console.log('🔥🔥🔥 getProjectTasksV2 V2 CALLED WITH PROJECT ID:', projectId, '🔥🔥🔥');
+  console.log('🚀 Current timestamp:', new Date().toISOString());
+  console.log('🎯 This proves the NEW CODE is running in production');
   
   return [
     {
       id: 1,
-      title: "Production Test Task V2",
+      title: "🚨 PRODUCTION TEST TASK V2 - NEW CODE WORKING! 🚨",
       description: "This proves the function works in production", 
       status: 'todo' as any,
       priority: 'high' as any,
