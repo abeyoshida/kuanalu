@@ -222,8 +222,175 @@ export async function testServerAction(): Promise<string> {
 
 // Placeholder functions to maintain exports (all commented out logic)
 export async function getTaskById(taskId: number): Promise<TaskWithMeta | null> {
-  // TODO: Restore full implementation
-  return null;
+  console.log('🔍 getTaskById called with taskId:', taskId);
+  
+  try {
+    // Step 1: Auth check
+    const session = await auth();
+    if (!session?.user) {
+      throw new Error("You must be logged in to view task details");
+    }
+    
+    const userId = parseInt(session.user.id);
+    console.log('✅ Auth check passed for user:', userId);
+
+    // Step 2: Get the task with basic details
+    console.log('📋 Fetching task from database...');
+    
+    const task = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        description: tasks.description,
+        status: tasks.status,
+        priority: tasks.priority,
+        type: tasks.type,
+        projectId: tasks.projectId,
+        assigneeId: tasks.assigneeId,
+        reporterId: tasks.reporterId,
+        parentTaskId: tasks.parentTaskId,
+        dueDate: tasks.dueDate,
+        startDate: tasks.startDate,
+        estimatedHours: tasks.estimatedHours,
+        actualHours: tasks.actualHours,
+        points: tasks.points,
+        position: tasks.position,
+        labels: tasks.labels,
+        metadata: tasks.metadata,
+        completedAt: tasks.completedAt,
+        createdBy: tasks.createdBy,
+        createdAt: tasks.createdAt,
+        updatedAt: tasks.updatedAt,
+        archivedAt: tasks.archivedAt
+      })
+      .from(tasks)
+      .where(eq(tasks.id, taskId))
+      .limit(1)
+      .then(results => results[0] || null);
+    
+    if (!task) {
+      console.log('❌ Task not found in database');
+      return null;
+    }
+    
+    console.log('✅ Task found:', task.title);
+
+    // Step 3: Permission check - ensure user has access to this task's project
+    console.log('🔒 Checking task access permissions...');
+    
+    // Check if user is a member of the project
+    const membership = await db
+      .select()
+      .from(projectMembers)
+      .where(
+        and(
+          eq(projectMembers.userId, userId),
+          eq(projectMembers.projectId, task.projectId)
+        )
+      )
+      .limit(1);
+    
+    const isProjectMember = membership.length > 0;
+    
+    // If not a project member, check if project is public or if user has organization-level permissions
+    if (!isProjectMember) {
+      console.log('👀 User not a project member, checking organization permissions...');
+      
+      // Get the project and its organization
+      const project = await db
+        .select({
+          visibility: projects.visibility,
+          organizationId: projects.organizationId
+        })
+        .from(projects)
+        .where(eq(projects.id, task.projectId))
+        .limit(1);
+      
+      if (!project.length) {
+        throw new Error("Project not found");
+      }
+      
+      // Check if user has organization-level permissions
+      const hasViewPermission = await hasPermission(
+        userId,
+        project[0].organizationId,
+        'read',
+        'task'
+      );
+      
+      // If user doesn't have org-level permissions and project is not public, deny access
+      if (!hasViewPermission && project[0].visibility !== 'public') {
+        throw new Error("You don't have access to this task");
+      }
+      
+      console.log('✅ Organization-level permission granted');
+    } else {
+      console.log('✅ Project member access granted');
+    }
+
+    // Step 4: Get additional data (assignee, reporter, metadata)
+    console.log('📊 Adding metadata...');
+    
+    // Get assignee name
+    const assignee = task.assigneeId ? await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, task.assigneeId))
+      .limit(1)
+      .then(results => results[0] || null) : null;
+    
+    // Get reporter name
+    const reporter = task.reporterId ? await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, task.reporterId))
+      .limit(1)
+      .then(results => results[0] || null) : null;
+    
+    // Get subtask count
+    const [subtaskResult] = await db
+      .select({ count: count() })
+      .from(subtasks)
+      .where(eq(subtasks.taskId, taskId));
+    
+    // Get comment count
+    const [commentResult] = await db
+      .select({ count: count() })
+      .from(comments)
+      .where(eq(comments.taskId, taskId));
+    
+    // Get child task count
+    const [childTaskResult] = await db
+      .select({ count: count() })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.parentTaskId, taskId),
+          isNull(tasks.archivedAt)
+        )
+      );
+    
+    // Check if task is overdue
+    const isOverdue = task.dueDate && task.status !== 'done' && 
+      new Date(task.dueDate) < new Date() && !task.completedAt;
+    
+    const taskWithMeta: TaskWithMeta = {
+      ...task,
+      assigneeName: assignee?.name,
+      reporterName: reporter?.name,
+      subtaskCount: Number(subtaskResult.count),
+      commentCount: Number(commentResult.count),
+      childTaskCount: Number(childTaskResult.count),
+      isOverdue: isOverdue || false
+    };
+
+    console.log('✅ Task details retrieved with full metadata');
+    
+    return taskWithMeta;
+  } catch (error) {
+    console.error('❌ Failed to get task details:', error);
+    throw error;
+  }
 }
 
 export async function createTask(input: CreateTaskInput): Promise<TaskWithMeta> {
