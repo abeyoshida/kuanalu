@@ -80,7 +80,16 @@ export function OrganizationProjects({ organizationId }: OrganizationProjectsPro
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete project');
+        
+        // Handle specific error cases
+        if (response.status === 403) {
+          // Use the API's specific error message for permission issues
+          throw new Error(errorData.error || "You do not have permission to delete this project");
+        } else if (response.status === 401) {
+          throw new Error("You must be logged in to delete projects");
+        } else {
+          throw new Error(errorData.error || 'Failed to delete project');
+        }
       }
       
       // Remove the project from the local state immediately

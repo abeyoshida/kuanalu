@@ -24,7 +24,7 @@ const updateProjectSchema = z.object({
 // GET /api/projects/[id] - Get project details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -36,7 +36,9 @@ export async function GET(
       );
     }
     
-    const projectId = parseInt(params.id);
+    // Await params in Next.js 15
+    const { id } = await params;
+    const projectId = parseInt(id);
     if (isNaN(projectId)) {
       return NextResponse.json(
         { error: "Invalid project ID" },
@@ -55,14 +57,8 @@ export async function GET(
     
     return NextResponse.json(project);
   } catch (error) {
-    console.error(`Error fetching project ${params.id}:`, error);
-    
-    if (error instanceof Error && error.message.includes("must be logged in")) {
-      return NextResponse.json(
-        { error: "You must be logged in to view project details" },
-        { status: 401 }
-      );
-    }
+    const { id } = await params;
+    console.error(`Error fetching project ${id}:`, error);
     
     if (error instanceof Error && error.message.includes("don't have access")) {
       return NextResponse.json(
@@ -81,7 +77,7 @@ export async function GET(
 // PUT /api/projects/[id] - Update project details
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -93,7 +89,9 @@ export async function PUT(
       );
     }
     
-    const projectId = parseInt(params.id);
+    // Await params in Next.js 15
+    const { id } = await params;
+    const projectId = parseInt(id);
     if (isNaN(projectId)) {
       return NextResponse.json(
         { error: "Invalid project ID" },
@@ -116,28 +114,30 @@ export async function PUT(
     const formData = new FormData();
     Object.entries(result.data).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        if (key === 'settings' && typeof value === 'object') {
-          formData.append(key, JSON.stringify(value));
-        } else {
-          formData.append(key, value.toString());
-        }
+        formData.append(key, value.toString());
       }
     });
     
-    // Use the existing server action
     await updateProject(projectId, formData);
     
-    // Fetch the updated project
+    // Return the updated project
     const updatedProject = await getProjectById(projectId);
-    
     return NextResponse.json(updatedProject);
   } catch (error) {
-    console.error(`Error updating project ${params.id}:`, error);
+    const { id } = await params;
+    console.error(`Error updating project ${id}:`, error);
     
     if (error instanceof Error && error.message.includes("don't have permission")) {
       return NextResponse.json(
         { error: "You don't have permission to update this project" },
         { status: 403 }
+      );
+    }
+    
+    if (error instanceof Error && error.message.includes("not found")) {
+      return NextResponse.json(
+        { error: "Project not found" },
+        { status: 404 }
       );
     }
     
@@ -151,7 +151,7 @@ export async function PUT(
 // DELETE /api/projects/[id] - Delete a project
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -163,7 +163,9 @@ export async function DELETE(
       );
     }
     
-    const projectId = parseInt(params.id);
+    // Await params in Next.js 15
+    const { id } = await params;
+    const projectId = parseInt(id);
     if (isNaN(projectId)) {
       return NextResponse.json(
         { error: "Invalid project ID" },
@@ -178,9 +180,13 @@ export async function DELETE(
       { status: 200 }
     );
   } catch (error) {
-    console.error(`Error deleting project ${params.id}:`, error);
+    const { id } = await params;
+    console.error(`Error deleting project ${id}:`, error);
     
-    if (error instanceof Error && error.message.includes("don't have permission")) {
+    // Check for permission/access errors
+    if (error instanceof Error && 
+        (error.message.includes("don't have permission") || 
+         error.message.includes("don't have access"))) {
       return NextResponse.json(
         { error: "You don't have permission to delete this project" },
         { status: 403 }
