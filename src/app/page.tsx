@@ -42,15 +42,15 @@ export default async function LandingPage() {
       {/* Hero Section */}
       <section className="py-20 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="md:w-1/2 mb-10 md:mb-0">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="md:w-1/2 text-center md:text-left">
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6">
                 Manage projects simply
               </h1>
               <p className="text-xl text-gray-600 mb-8">
                 FlowBoardAI helps to get it done all at once.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <Link href="/auth/register">
                   <Button size="lg" className="flex items-center gap-2">
                     Get started
@@ -64,55 +64,57 @@ export default async function LandingPage() {
                 </Link>*/}
               </div>
             </div>
-            <div className="md:w-1/2">
+            <div className="w-full md:w-1/2 max-w-2xl">
               {/* Placeholder dashboard preview */}
-              <div className="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-200">
-                <div className="bg-gray-800 h-12 flex items-center px-4">
-                  <div className="flex space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <div className="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-200 w-full">
+                <div className="bg-gray-800 h-8 sm:h-12 flex items-center px-2 sm:px-4">
+                  <div className="flex space-x-1 sm:space-x-2">
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-500"></div>
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500"></div>
                   </div>
                 </div>
-                <div className="p-4">
-                  <div className="flex">
-                    <div className="w-48 bg-gray-100 h-64 rounded-md p-3">
-                      <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
-                      <div className="space-y-2">
-                        <div className="h-4 w-40 bg-gray-200 rounded"></div>
-                        <div className="h-4 w-36 bg-gray-200 rounded"></div>
-                        <div className="h-4 w-40 bg-gray-200 rounded"></div>
+                <div className="p-2 sm:p-4">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                    {/* Sidebar */}
+                    <div className="w-full sm:w-32 md:w-40 lg:w-48 bg-gray-100 h-32 sm:h-48 md:h-56 lg:h-64 rounded-md p-2 sm:p-3 flex-shrink-0">
+                      <div className="h-3 sm:h-4 md:h-6 w-16 sm:w-24 md:w-32 bg-gray-200 rounded mb-2 sm:mb-4"></div>
+                      <div className="space-y-1 sm:space-y-2">
+                        <div className="h-2 sm:h-3 md:h-4 w-20 sm:w-32 md:w-40 bg-gray-200 rounded"></div>
+                        <div className="h-2 sm:h-3 md:h-4 w-16 sm:w-28 md:w-36 bg-gray-200 rounded"></div>
+                        <div className="h-2 sm:h-3 md:h-4 w-20 sm:w-32 md:w-40 bg-gray-200 rounded"></div>
                       </div>
                     </div>
-                    <div className="flex-1 p-4">
-                      <div className="h-8 w-64 bg-gray-200 rounded mb-6"></div>
-                      <div className="grid grid-cols-4 gap-4">
-                        <div className="h-32 bg-blue-50 rounded-md p-3">
-                          <div className="h-4 w-16 bg-blue-100 rounded mb-2"></div>
-                          <div className="space-y-2">
-                            <div className="h-3 w-full bg-blue-100 rounded"></div>
-                            <div className="h-3 w-full bg-blue-100 rounded"></div>
+                    {/* Main content */}
+                    <div className="flex-1 p-2 sm:p-4">
+                      <div className="h-4 sm:h-6 md:h-8 w-32 sm:w-48 md:w-64 bg-gray-200 rounded mb-3 sm:mb-6"></div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                        <div className="h-20 sm:h-24 md:h-32 bg-blue-50 rounded-md p-2 sm:p-3">
+                          <div className="h-2 sm:h-3 md:h-4 w-8 sm:w-12 md:w-16 bg-blue-100 rounded mb-1 sm:mb-2"></div>
+                          <div className="space-y-1 sm:space-y-2">
+                            <div className="h-1.5 sm:h-2 md:h-3 w-full bg-blue-100 rounded"></div>
+                            <div className="h-1.5 sm:h-2 md:h-3 w-full bg-blue-100 rounded"></div>
                           </div>
                         </div>
-                        <div className="h-32 bg-yellow-50 rounded-md p-3">
-                          <div className="h-4 w-16 bg-yellow-100 rounded mb-2"></div>
-                          <div className="space-y-2">
-                            <div className="h-3 w-full bg-yellow-100 rounded"></div>
-                            <div className="h-3 w-full bg-yellow-100 rounded"></div>
+                        <div className="h-20 sm:h-24 md:h-32 bg-yellow-50 rounded-md p-2 sm:p-3">
+                          <div className="h-2 sm:h-3 md:h-4 w-8 sm:w-12 md:w-16 bg-yellow-100 rounded mb-1 sm:mb-2"></div>
+                          <div className="space-y-1 sm:space-y-2">
+                            <div className="h-1.5 sm:h-2 md:h-3 w-full bg-yellow-100 rounded"></div>
+                            <div className="h-1.5 sm:h-2 md:h-3 w-full bg-yellow-100 rounded"></div>
                           </div>
                         </div>
-                        <div className="h-32 bg-green-50 rounded-md p-3">
-                          <div className="h-4 w-16 bg-green-100 rounded mb-2"></div>
-                          <div className="space-y-2">
-                            <div className="h-3 w-full bg-green-100 rounded"></div>
-                            <div className="h-3 w-full bg-green-100 rounded"></div>
+                        <div className="h-20 sm:h-24 md:h-32 bg-green-50 rounded-md p-2 sm:p-3">
+                          <div className="h-2 sm:h-3 md:h-4 w-8 sm:w-12 md:w-16 bg-green-100 rounded mb-1 sm:mb-2"></div>
+                          <div className="space-y-1 sm:space-y-2">
+                            <div className="h-1.5 sm:h-2 md:h-3 w-full bg-green-100 rounded"></div>
+                            <div className="h-1.5 sm:h-2 md:h-3 w-full bg-green-100 rounded"></div>
                           </div>
                         </div>
-                        <div className="h-32 bg-purple-50 rounded-md p-3">
-                          <div className="h-4 w-16 bg-purple-100 rounded mb-2"></div>
-                          <div className="space-y-2">
-                            <div className="h-3 w-full bg-purple-100 rounded"></div>
-                            <div className="h-3 w-full bg-purple-100 rounded"></div>
+                        <div className="h-20 sm:h-24 md:h-32 bg-purple-50 rounded-md p-2 sm:p-3">
+                          <div className="h-2 sm:h-3 md:h-4 w-8 sm:w-12 md:w-16 bg-purple-100 rounded mb-1 sm:mb-2"></div>
+                          <div className="space-y-1 sm:space-y-2">
+                            <div className="h-1.5 sm:h-2 md:h-3 w-full bg-purple-100 rounded"></div>
+                            <div className="h-1.5 sm:h-2 md:h-3 w-full bg-purple-100 rounded"></div>
                           </div>
                         </div>
                       </div>
