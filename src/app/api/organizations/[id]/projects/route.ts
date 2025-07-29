@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
 import { projects, organizationMembers } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 interface RouteParams {
   params: {
@@ -55,11 +55,16 @@ export async function GET(request: Request, context: RouteParams) {
       );
     }
     
-    // Get all projects for the organization
+    // Get all non-archived projects for the organization
     const organizationProjects = await db
       .select()
       .from(projects)
-      .where(eq(projects.organizationId, organizationId))
+      .where(
+        and(
+          eq(projects.organizationId, organizationId),
+          isNull(projects.archivedAt) // Exclude archived/deleted projects
+        )
+      )
       .orderBy(projects.createdAt);
     
     return NextResponse.json({ projects: organizationProjects });

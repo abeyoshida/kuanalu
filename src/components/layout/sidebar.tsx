@@ -99,6 +99,23 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     fetchData()
   }, [fetchData])
 
+  // Listen for project deletion events to refresh sidebar
+  useEffect(() => {
+    const handleProjectDeleted = (event: CustomEvent) => {
+      const { organizationId } = event.detail;
+      if (organizationId && organizationProjects[organizationId]) {
+        console.log('Project deleted event received, refreshing sidebar projects for org:', organizationId);
+        refreshProjects(organizationId);
+      }
+    };
+
+    window.addEventListener('projectDeleted', handleProjectDeleted as EventListener);
+    
+    return () => {
+      window.removeEventListener('projectDeleted', handleProjectDeleted as EventListener);
+    };
+  }, [refreshProjects, organizationProjects]);
+
   // Get the selected organization
   const selectedOrg = organizations.find(org => org.id === selectedOrgId)
   

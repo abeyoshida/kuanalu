@@ -11,7 +11,7 @@ import {
   subtasks,
   comments
 } from "@/lib/db/schema";
-import { and, eq, isNull, count, inArray, sql, asc } from "drizzle-orm";
+import { and, eq, isNull, count, sql, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { 
   TaskWithMeta, 
@@ -22,15 +22,13 @@ import {
   TaskType
 } from "@/types/task";
 import { hasPermission } from "@/lib/auth/permissions";
-import { updateMultipleEntities } from "@/lib/db/sequential-ops";
-import { handleActionError } from "@/lib/utils";
 
 /**
  * Get all tasks for a project
  */
 export async function getProjectTasks(
   projectId: number, 
-  filters?: TaskFilterOptions
+  _filters?: TaskFilterOptions
 ): Promise<TaskWithMeta[]> {
   console.log('🔥 getProjectTasks called with projectId:', projectId);
   
