@@ -246,81 +246,11 @@ export default function ProjectDetailContent({ project, initialTab = "board" }: 
         </TabsContent>
         
         <TabsContent value="overview">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-gray-500" />
-                  Timeline
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-sm font-medium">Start Date</div>
-                    <div>Jan 15, 2023</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Due Date</div>
-                    <div>Dec 31, 2023</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Duration</div>
-                    <div>350 days</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-gray-500" />
-                  Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-sm font-medium">Tasks Completed</div>
-                    <div>24 / 36</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Progress</div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                      <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: '66%' }}></div>
-                    </div>
-                    <div className="text-sm mt-1">66% complete</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-gray-500" />
-                  Issues
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-sm font-medium">Open Issues</div>
-                    <div>3</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Critical Issues</div>
-                    <div>1</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Resolved Issues</div>
-                    <div>12</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-gray-500">Overview will be implemented soon.</p>
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="timeline">
