@@ -302,8 +302,10 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                       <Link
                         key={project.id}
                         href={`/projects/${project.id}`}
-                        className={`block px-2 py-1 text-sm hover:bg-gray-100 rounded-md group ${
-                          isActivePath(`/projects/${project.id}`) ? "bg-gray-50" : ""
+                        className={`block px-2 py-1 text-sm rounded-md group ${
+                          isActivePath(`/projects/${project.id}`) 
+                            ? "bg-blue-50 border-l-2 border-blue-400 hover:bg-blue-100" 
+                            : "hover:bg-gray-100"
                         }`}
                       >
                         <div className="flex items-center gap-2">

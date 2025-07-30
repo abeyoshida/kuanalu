@@ -86,10 +86,13 @@ export function AcceptInvitationClient({ token }: AcceptInvitationClientProps) {
       
       setSuccess(true);
       
+      // Refresh the router cache to ensure organizations are loaded
+      router.refresh();
+      
       // Redirect to the organization page after a short delay
       setTimeout(() => {
         router.push(`/organizations/${invitation?.organizationId}`);
-      }, 2000);
+      }, 1500);
     } catch (error) {
       console.error('Error accepting invitation:', error);
       setError(error instanceof Error ? error.message : 'Failed to accept invitation');

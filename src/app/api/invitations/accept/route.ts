@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { invitations, organizationMembers } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth/auth';
+import { revalidatePath } from 'next/cache';
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,24 +79,28 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Use a transaction to ensure data consistency
-    await db.transaction(async (tx) => {
-      // Add the user to the organization
-      await tx
-        .insert(organizationMembers)
-        .values({
-          userId: Number(session.user.id),
-          organizationId: invitation.organizationId,
-          role: invitation.role,
-          invitedBy: invitation.invitedBy,
-        });
-      
-      // Update the invitation status
-      await tx
-        .update(invitations)
-        .set({ status: 'accepted' })
-        .where(eq(invitations.id, invitation.id));
-    });
+    // Add the user to the organization
+    await db
+      .insert(organizationMembers)
+      .values({
+        userId: Number(session.user.id),
+        organizationId: invitation.organizationId,
+        role: invitation.role,
+        invitedBy: invitation.invitedBy,
+      });
+    
+    // Update the invitation status
+    await db
+      .update(invitations)
+      .set({ status: 'accepted' })
+      .where(eq(invitations.id, invitation.id));
+    
+    console.log(`User ${session.user.email} accepted invitation and joined organization ${invitation.organizationId} with role ${invitation.role}`);
+    
+    // Revalidate paths to ensure fresh data is loaded
+    revalidatePath('/organizations');
+    revalidatePath(`/organizations/${invitation.organizationId}`);
+    revalidatePath('/dashboard');
     
     return NextResponse.json({
       success: true,
